@@ -40,8 +40,31 @@ public:
 
 private:
 	IDXGIFactory1 *dxgiFactory;
+	IDXGIAdapter *dxgiAdapter;
 	ID3D11Device *device;
 	ID3D11DeviceContext *context;
+};
+
+class DX11Display: public Display {
+public:
+	virtual ~DX11Display();
+	
+	bool Create( ID3D11Device *const device, IDXGIAdapter *const adapter, const int outputId );
+
+	// implementace rozhrani Display
+	virtual bool SetMode( const DisplayMode &mode, Window &window ) override;
+	virtual void SetSystemMode() override;
+	virtual bool GetMode( const int id, DisplayMode &result ) const override;
+	virtual void FindMode( const DisplayMode &mode, DisplayMode &result ) const override;
+	virtual void GetBestMode( DisplayMode &result ) const override;
+	
+private:
+	void EnumDisplayModes();
+	
+private:
+	IDXGIOutput *dxgiOutput;
+	Window *window;
+	Array< DisplayMode > modes;
 };
 
 class DX11RenderTarget {
@@ -55,6 +78,7 @@ public:
 	virtual ~DX11BackBuffer();
 
 	bool Create( ID3D11Device *const device, IDXGIFactory1 *const factory, Window &window );
+	IDXGISwapChain *GetSwapChain();
 
 	// implementace rozhrani DX11RenderTarget
 	virtual ID3D11RenderTargetView *GetRenderTargetView() override;
@@ -63,41 +87,11 @@ public:
 	virtual void Present( const int vsync ) override;
 
 private:
-	IDXGISwapChain *swapChain;
+	IDXGISwapChain *dxgiSwapChain;
 	ID3D11RenderTargetView *renderTargetView;
 	Window *window;
 };
 
-
-
-
-/*
-class DX11RenderOutput: public RenderOutput, DX11RenderTarget {
-public:
-	DX11RenderOutput();
-	~DX11RenderOutput();
-	bool Create( IDXGIFactory1 *const factory, ID3D11Device *const device, Window &window, const int display );
-	void Resize( ID3D11Device *const device );
-
-	// implementace rozhrani
-	virtual ID3D11RenderTargetView *GetRenderTargetView() override;
-	virtual void Present( bool vsync ) override;
-	virtual DisplayMode GetDisplayMode( const int id ) override;
-	virtual int GetDisplayModeId( const int width, const int height, const float refreshRate ) override;
-	virtual void SetDisplayMode( const int id, const bool fullscreen ) override;
-	virtual void SetDisplayMode( const int width, const int height, const float refreshRate, const bool fullscreen ) override;
-	
-private:
-	void EnumDisplayModes( IDXGIOutput *const output );
-
-private:
-	IDXGISwapChain *swapChain;
-	IDXGIOutput *output;
-	ID3D11RenderTargetView *renderTargetView;
-	Window *window;
-	Array< DisplayMode > displayModes;
-};
-*/
 class DX11RenderBuffer: public RenderBuffer, DX11RenderTarget {
 public:
 	DX11RenderBuffer();

@@ -130,6 +130,7 @@ public:
 
 	// vlastnosti grafickeho adapteru
 	virtual int GetMultisampleQuality( const int samplesCount ) const = 0;
+	// virtual int GetOutputCount() const;
 
 	// zmeni velikost back bufferu objektu RenderOutput; velikost se ziska z asociovaneho okna objektu RenderOutput
 	//virtual void ResizBackBuffer( RenderOutput * const output ) = 0;
@@ -182,36 +183,28 @@ public:
 };
 
 /*
-
-ODSTRANIT
-
-RenderOutput reprezentuje vystupni monitor a back buffer zobrazovany na tomto monitoru.
-Neobsahuje depth stencil buffer, protoze depth test se provadi v jine casti deferred renderingu, do back bufferu se uklada jen vysledek operace Resolve.
-Pomoci tridy je mozne menit fullscreen rezim displeje.
+Display pripojeny k vystupu graficke karty, se kterou je asociovan objekt Device
 */
-/*
-class RenderOutput: public RenderTarget {
+class Display: public RenderInterfaceObject {
 public:
-	virtual ~RenderOutput() {}
-
-	virtual void Present( bool vsync ) = 0;
-
-	virtual DisplayMode GetDisplayMode( const int id ) = 0;
-
-	//vrati id rezimu, ktery nejblize odpovida pozadovanym parametrum
-	virtual int GetDisplayModeId( const int width, const int height, const float refreshRate ) = 0;
-
-	// nastavi display mode podle id
-	virtual void SetDisplayMode( const int id, const bool fullscreen ) = 0;
-
-	// nastavi rezim nejblizsi pozadovanym parametrum
-	virtual void SetDisplayMode( const int width, const int height, const float refreshRate, const bool fullscreen ) = 0;
-
-	//virtual int GetBackBufferWidth() const = 0;
-	//virtual int GetBackBufferHeight() const = 0;
+	virtual ~Display() {}
+	
+	// Nastavi rezim co nejvice odpovidajici pozadavku (na desktopu prepne do rezimu cele obrazovky)
+	// U zarizeni, ktera maji jediny mozny rezim obrazovky (mobilni zarizeni...), nedela nic
+	virtual bool SetMode( const DisplayMode &mode, Window &window ) = 0;
+	
+	// Nastavi vychozi rezim pro danou platformu (napr. na windows prepne z celoobrazovkoveho rezimu)
+	virtual void SetSystemMode() = 0;
+	
+	// Ziskani rezimu, pokud rezim s pozadovanym id neexistuje, vrati false
+	virtual bool GetMode( const int id, DisplayMode &result ) const = 0;
+	
+	// Najde rezim, ktery co nejlepe (ovsem ne nutne nejvice) odpovida pozadovanemu rezimu
+	virtual void FindMode( const DisplayMode &mode, DisplayMode &result ) const = 0;
+	
+	// Najde nejlepsi dostupny rezim pro cilove zarizeni
+	virtual void GetBestMode( DisplayMode &result ) const = 0;
 };
-*/
-
 /*
 Reprezentuje back buffer ktery je pri vytvoreni propojen s cilovym oknem.
 Slouzi jako render target a zaroven umoznuje zobrazeni obsahu do klientske oblasti okna.

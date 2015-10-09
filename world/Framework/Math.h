@@ -15,6 +15,11 @@ namespace Math {
 		return fminf( fmaxf( value, min ), max );
 	}
 	
+	//template< typename T>
+	inline int Abs( const int value ) {
+		return abs( value );
+	}
+
 	template< typename T>
 	inline T Max( const T &a, const T &b ) {
 		return a > b ? a : b;

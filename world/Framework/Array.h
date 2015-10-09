@@ -192,7 +192,7 @@ inline T *Array<T>::end() {
 }
 
 template <typename T>
-inline T &Array<T>::operator[]( const int index ) {
+T &Array<T>::operator[]( int index ) {
 	return data[ index ];
 }
 
@@ -221,7 +221,7 @@ void Array<T>::Reserve( const int size ) {
 	if ( size <= 0 ) {
 		return;
 	}
-	int newCapacity = capacity + ( ( size + granularity ) / granularity ) * granularity;
+	const int newCapacity = capacity + ( ( size + granularity ) / granularity ) * granularity;
 	T *newData = new T[ newCapacity ];
 	capacity = newCapacity;
 	for ( int i = 0; i < length; i++ ) {

@@ -1,6 +1,7 @@
 #include "DX11RenderInterface.h"
 #include "..\..\Framework\Debug.h"
 #include "..\..\Platform\Windows\WindowsWindow.h"
+#include "..\..\Framework\Math.h"
 
 const DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM;
 
@@ -20,11 +21,13 @@ DXGI_FORMAT GetDXGIFormat(const Format format) {
 
 DX11Device::DX11Device() {
 	dxgiFactory = nullptr;
+	dxgiAdapter = nullptr;
 	device  = nullptr;
 	context  = nullptr;
 }
 
 DX11Device::~DX11Device() {
+	ReleaseCOM( &dxgiAdapter );
 	ReleaseCOM( &dxgiFactory );
 	ReleaseCOM( &context );
 	ReleaseCOM( &device );
@@ -34,20 +37,22 @@ bool DX11Device::Create( const CreateDX11DeviceParams &params ) {
 	HRESULT hresult = 0;
 
 	// vytvorit DXGIFactory1
-	hresult = CreateDXGIFactory1( __uuidof( IDXGIFactory1 ), ( void** )( &dxgiFactory ) );
+	IDXGIFactory1 *factory = nullptr;
+	hresult = CreateDXGIFactory1( __uuidof( IDXGIFactory1 ), ( void** )( &factory ) );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
 	// pokusit se ziskat pozadovany adapter
 	IDXGIAdapter *adapter = nullptr;
-	hresult = dxgiFactory->EnumAdapters( static_cast< UINT >( params.adapter ), &adapter );
+	hresult = factory->EnumAdapters( static_cast< UINT >( params.adapter ), &adapter );
 
 	// selhani, zkusit ziskat vychozi adapter
 	if ( FAILED( hresult ) ) {
-		hresult = dxgiFactory->EnumAdapters( 0, &adapter );
+		hresult = factory->EnumAdapters( 0, &adapter );
 	}
 	// nebyl nalezen zadny adapter
 	if ( FAILED( hresult ) ) {
+		factory->Release();
 		return false;
 	}
 	// feature levels
@@ -89,15 +94,13 @@ bool DX11Device::Create( const CreateDX11DeviceParams &params ) {
 		&createdFeatureLevel,
 		&context
 	);
-	// adapter neni dale potreba
-	adapter->Release();
-
-	// nepodarilo se vytvorit objekt device
 	if ( FAILED( hresult ) ) {
-		dxgiFactory->Release();
-		dxgiFactory = nullptr;
+		factory->Release();
+		adapter->Release();
 		return false;
 	}
+	this->dxgiFactory = factory;
+	this->dxgiAdapter = adapter;
 	return true;
 }
 
@@ -168,6 +171,7 @@ DepthStencilBuffer *DX11Device::CreateDepthStencilBuffer( const DepthStencilBuff
 TextureSampler *DX11Device::CreateTextureSampler( const TextureSamplerDesc &desc ) {
 	return nullptr;
 }
+
 /*
 void DX11Device::ResizBackBuffer( RenderOutput * const output ) {
 	if ( output == nullptr ) {
@@ -232,17 +236,161 @@ void DX11CommandInterface::ClearRenderTarget( RenderTarget * const renderTarget,
 	context->ClearRenderTargetView( reinterpret_cast< DX11RenderTarget* >( renderTarget )->GetRenderTargetView(), reinterpret_cast< const float* >( &color ) );
 }
 
+// DX11Display
+
+DX11Display::~DX11Display() {
+	dxgiOutput = nullptr;
+	window = nullptr;
+}
+
+bool DX11Display::Create( ID3D11Device *const device, IDXGIAdapter *const adapter, const int outputId ) {
+	HRESULT hresult = 0;
+
+	// ziskat output s pozadovanym id
+	IDXGIOutput *output = nullptr;
+	hresult = adapter->EnumOutputs( static_cast< UINT >( outputId ), &output );
+	if ( FAILED( hresult ) ) {
+		return false;
+	}
+	// Zjistit dostupne rezimy
+	this->dxgiOutput = output;
+	EnumDisplayModes();
+
+	return true;
+}
+
+void DX11Display::EnumDisplayModes() {
+	HRESULT hresult = 0;
+
+	// zjisteni poctu rezimu
+	UINT count = 0;
+	dxgiOutput->GetDisplayModeList( BACK_BUFFER_FORMAT, 0, &count, NULL );
+
+	// zjistit dostupne mody
+	DXGI_MODE_DESC *dxgiModes = new DXGI_MODE_DESC[ count ];
+	dxgiOutput->GetDisplayModeList( BACK_BUFFER_FORMAT, 0, &count, dxgiModes );
+
+	// ulozit vysledek
+	modes.Clear();
+	for ( UINT i = 0; i < count; i++ ) {
+		DisplayMode dm;
+		dm.width = static_cast< int >( dxgiModes[ i ].Width );
+		dm.height = static_cast< int >( dxgiModes[ i ].Height );
+		dm.refreshRateNumerator = static_cast< int >( dxgiModes[ i ].RefreshRate.Numerator );
+		dm.refreshRateDenominator = static_cast< int >( dxgiModes[ i ].RefreshRate.Denominator );
+		modes.Push( dm );
+	}
+	// uvolneni docasnych objektu
+	delete [] dxgiModes;
+}
+
+void DX11Display::SetSystemMode() {
+	// Pri vstupu do fullscreenu je predan ukazatel na window, pokud neni dostupny, jedna se o chybu
+	if ( window == nullptr ) {
+		return;
+	}
+	// Pouzit DXGI swap chain pro prepnuti do windowed rezimu
+	BackBuffer *backBuffer = window->GetBackBuffer();
+	ASSERT_DOWNCAST( backBuffer, DX11BackBuffer );
+	IDXGISwapChain *swapChain = reinterpret_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
+	if ( swapChain == nullptr ) {
+		return;
+	}
+	swapChain->SetFullscreenState( FALSE, dxgiOutput );
+	window = nullptr;
+}
+
+bool DX11Display::SetMode( const DisplayMode &mode, Window &window ) {
+	DisplayMode validMode;
+	FindMode( mode, validMode );
+
+	// ziskat swap chain back bufferu
+	BackBuffer *backBuffer = window.GetBackBuffer();
+	ASSERT_DOWNCAST( backBuffer, DX11BackBuffer );
+	IDXGISwapChain *swapChain = reinterpret_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
+	if ( swapChain == nullptr ) {
+		return false;
+	}
+	// prepnout do rezimu cele obrazovky
+	DXGI_MODE_DESC desc;
+	ZeroMemory( &desc, sizeof( desc ) );
+	desc.Width						= mode.width;
+	desc.Height						= mode.height;
+	desc.RefreshRate.Numerator		= static_cast< UINT >( mode.refreshRateNumerator );
+	desc.RefreshRate.Denominator	= static_cast< UINT >( mode.refreshRateDenominator );
+	desc.Format						= DXGI_FORMAT_UNKNOWN;
+	desc.ScanlineOrdering			= DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+	desc.Scaling					= DXGI_MODE_SCALING_STRETCHED;
+
+	swapChain->ResizeTarget( &desc );
+	swapChain->SetFullscreenState( TRUE, dxgiOutput );
+	swapChain->ResizeTarget( &desc );
+
+	this->window = &window;
+	return true;
+}
+
+bool DX11Display::GetMode( const int id, DisplayMode &result ) const {
+	if ( id < 0 || id >= modes.Length() ) {
+		return false;
+	}
+	result = modes[ id ];
+	return true;
+}
+
+void DX11Display::FindMode( const DisplayMode &mode, DisplayMode &result ) const {
+	if ( modes.Length() == 0 ) {
+		ZeroMemory( &result, sizeof( DisplayMode ) );
+		return;
+	}
+	const DisplayMode *best = &modes[ 0 ];
+	int bestDifference = Math::Abs( best->width - mode.width ) + Math::Abs( best->height - mode.height );
+	int bestId = 0;
+
+	for ( int i = 1; i < modes.Length(); i++ ) {
+		const DisplayMode &mode = modes[ i ];
+		int difference = abs( mode.width - best->width ) + abs( mode.height - best->height );
+
+		// horsi odchylka rozlyseni, porovnat dalsi
+		if ( difference > bestDifference ) {
+			continue;
+		}
+		// stejna odchylka rozlyseni
+		if ( difference == bestDifference ) {
+			// nalezeny mod ma horsi refresh rate, hledat dal
+			float refreshRate = static_cast< float >( mode.refreshRateNumerator ) / static_cast< float >( mode.refreshRateDenominator );
+			float bestRefreshRate = static_cast< float >( best->refreshRateNumerator ) / static_cast< float >( best->refreshRateDenominator );
+			if ( refreshRate < bestRefreshRate ) {
+				continue;
+			}
+			// nalezeny mod ma lepsi refresh rate, ulozit novy mod
+			best = &mode;
+			bestDifference = difference;
+			bestId = i;
+			continue;
+		}
+		// lepsi odchylka rozlyseni, ulozit novy mod
+		best = &mode;
+		bestDifference = difference;
+		bestId = i;
+	}
+	result = *best;
+}
+
+void DX11Display::GetBestMode( DisplayMode &result ) const {
+	// ...
+}
 
 // BEGIN DX11BackBuffer IMPL ***********************************************************
 
 DX11BackBuffer::DX11BackBuffer() {
-	swapChain = nullptr;
+	dxgiSwapChain = nullptr;
 	renderTargetView = nullptr;
 	window = nullptr;
 }
 
 DX11BackBuffer::~DX11BackBuffer() {
-	ReleaseCOM( &swapChain );
+	ReleaseCOM( &dxgiSwapChain );
 	ReleaseCOM( &renderTargetView );
 }
 
@@ -292,7 +440,7 @@ bool DX11BackBuffer::Create( ID3D11Device *const device, IDXGIFactory1 *const fa
 
 	// ulozit vytvorene objekty
 	this->window = &window;
-	this->swapChain = swapChain;
+	this->dxgiSwapChain = swapChain;
 	this->renderTargetView = renderTargetView;
 
 	return true;
@@ -302,9 +450,13 @@ ID3D11RenderTargetView *DX11BackBuffer::GetRenderTargetView() {
 	return renderTargetView;
 }
 
+IDXGISwapChain *DX11BackBuffer::GetSwapChain() {
+	return dxgiSwapChain;
+}
+
 void DX11BackBuffer::Present( const int vsync ) {
-	if ( swapChain != nullptr ) {
-		swapChain->Present( vsync, 0 );
+	if ( dxgiSwapChain != nullptr ) {
+		dxgiSwapChain->Present( vsync, 0 );
 	}
 }
 
