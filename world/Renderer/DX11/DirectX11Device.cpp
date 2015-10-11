@@ -166,6 +166,18 @@ DepthStencilBuffer *DX11Device::CreateDepthStencilBuffer( const DepthStencilBuff
 	return buffer;
 }
 
+Display *DX11Device::CreateDisplay( const int outputId ) {
+	DX11Display *display = new DX11Display();
+	if ( display == nullptr ) {
+		return nullptr;
+	}
+	if ( !display->Create( device, dxgiAdapter, outputId ) ) {
+		delete display;
+		return nullptr;
+	}
+	return display;
+}
+
 // -----------------------------------
 
 TextureSampler *DX11Device::CreateTextureSampler( const TextureSamplerDesc &desc ) {
@@ -289,28 +301,35 @@ void DX11Display::SetSystemMode() {
 	if ( window == nullptr ) {
 		return;
 	}
-	// Pouzit DXGI swap chain pro prepnuti do windowed rezimu
 	BackBuffer *backBuffer = window->GetBackBuffer();
+	if ( backBuffer == nullptr ) {
+		return;
+	}
+	// ziskat ukazatel na swap chain
 	ASSERT_DOWNCAST( backBuffer, DX11BackBuffer );
 	IDXGISwapChain *swapChain = reinterpret_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
 	if ( swapChain == nullptr ) {
 		return;
 	}
-	swapChain->SetFullscreenState( FALSE, dxgiOutput );
+	swapChain->SetFullscreenState( FALSE, NULL );
 	window = nullptr;
 }
 
 bool DX11Display::SetMode( const DisplayMode &mode, Window &window ) {
-	DisplayMode validMode;
-	FindMode( mode, validMode );
-
-	// ziskat swap chain back bufferu
 	BackBuffer *backBuffer = window.GetBackBuffer();
+	if ( backBuffer == nullptr ) {
+		return false;
+	}
+	// ziskat swap chain back bufferu
 	ASSERT_DOWNCAST( backBuffer, DX11BackBuffer );
 	IDXGISwapChain *swapChain = reinterpret_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
 	if ( swapChain == nullptr ) {
 		return false;
 	}
+	// najit odpovidajici rezim
+	DisplayMode validMode;
+	FindMode( mode, validMode );
+
 	// prepnout do rezimu cele obrazovky
 	DXGI_MODE_DESC desc;
 	ZeroMemory( &desc, sizeof( desc ) );
@@ -338,18 +357,18 @@ bool DX11Display::GetMode( const int id, DisplayMode &result ) const {
 	return true;
 }
 
-void DX11Display::FindMode( const DisplayMode &mode, DisplayMode &result ) const {
+void DX11Display::FindMode( const DisplayMode &request, DisplayMode &result ) const {
 	if ( modes.Length() == 0 ) {
 		ZeroMemory( &result, sizeof( DisplayMode ) );
 		return;
 	}
 	const DisplayMode *best = &modes[ 0 ];
-	int bestDifference = Math::Abs( best->width - mode.width ) + Math::Abs( best->height - mode.height );
+	int bestDifference = Math::Abs( request.width - best->width ) + Math::Abs( request.height - best->height );
 	int bestId = 0;
 
 	for ( int i = 1; i < modes.Length(); i++ ) {
 		const DisplayMode &mode = modes[ i ];
-		int difference = abs( mode.width - best->width ) + abs( mode.height - best->height );
+		int difference = Math::Abs( mode.width - request.width ) + Math::Abs( mode.height - request.height );
 
 		// horsi odchylka rozlyseni, porovnat dalsi
 		if ( difference > bestDifference ) {
@@ -357,9 +376,11 @@ void DX11Display::FindMode( const DisplayMode &mode, DisplayMode &result ) const
 		}
 		// stejna odchylka rozlyseni
 		if ( difference == bestDifference ) {
-			// nalezeny mod ma horsi refresh rate, hledat dal
+			// porovnat refresh rate
 			float refreshRate = static_cast< float >( mode.refreshRateNumerator ) / static_cast< float >( mode.refreshRateDenominator );
 			float bestRefreshRate = static_cast< float >( best->refreshRateNumerator ) / static_cast< float >( best->refreshRateDenominator );
+
+			// nalezeny mod ma horsi refresh rate, hledat dal
 			if ( refreshRate < bestRefreshRate ) {
 				continue;
 			}
@@ -378,10 +399,17 @@ void DX11Display::FindMode( const DisplayMode &mode, DisplayMode &result ) const
 }
 
 void DX11Display::GetBestMode( DisplayMode &result ) const {
-	// ...
+	DXGI_OUTPUT_DESC desc;
+	dxgiOutput->GetDesc( &desc );
+	DisplayMode mode;
+	mode.width = static_cast< int >( desc.DesktopCoordinates.right - desc.DesktopCoordinates.left );
+	mode.height = static_cast< int >( desc.DesktopCoordinates.bottom - desc.DesktopCoordinates.top );
+	mode.refreshRateNumerator = 1000;
+	mode.refreshRateDenominator = 1;
+	FindMode( mode, result );
 }
 
-// BEGIN DX11BackBuffer IMPL ***********************************************************
+// DX11BackBuffer
 
 DX11BackBuffer::DX11BackBuffer() {
 	dxgiSwapChain = nullptr;
@@ -423,25 +451,29 @@ bool DX11BackBuffer::Create( ID3D11Device *const device, IDXGIFactory1 *const fa
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-
 	// render target view
-	ID3D11Texture2D *buffer;
+	ID3D11Texture2D *buffer = nullptr;
+	/*
 	swapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &buffer ) );
 	D3D11_TEXTURE2D_DESC bufferDesc;
 	buffer->GetDesc( &bufferDesc );
 	ID3D11RenderTargetView *renderTargetView;
 	hresult = device->CreateRenderTargetView( buffer, NULL, &renderTargetView );
 	buffer->Release();
-
+	
 	if ( FAILED( hresult ) ) {
 		swapChain->Release();
 		return false;
 	}
+	*/
+
+	// vypnuti defaultniho prepinani do rezimu cele obrazovky
+	factory->MakeWindowAssociation( hwnd, DXGI_MWA_NO_ALT_ENTER  );
 
 	// ulozit vytvorene objekty
 	this->window = &window;
 	this->dxgiSwapChain = swapChain;
-	this->renderTargetView = renderTargetView;
+	//this->renderTargetView = renderTargetView;
 
 	return true;
 }

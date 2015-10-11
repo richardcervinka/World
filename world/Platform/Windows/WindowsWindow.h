@@ -6,6 +6,8 @@
 #include <Windows.h>
 #include "..\Window.h"
 
+#include <dxgi1_2.h>
+
 struct CreateWindowsWindowParams {
 	// parametry pro WNDCLASSEX
 	UINT		classStyle;
@@ -51,6 +53,10 @@ public:
 	virtual void SetBackgroundColor( const Color &color ) override;
 	virtual const Color GetBackgroundColor() const override;
 	virtual void SetPosition( const int x, const int y ) override;
+
+	HRESULT hrslt = 0;
+	IDXGIOutput *output;
+	void SetDDD( IDXGIOutput *output ) {this->output = output; };
 	
 protected:
 	// message handlers

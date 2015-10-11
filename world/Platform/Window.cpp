@@ -20,8 +20,12 @@ void Window::SetRenderDevice( Device * const device ) {
 		this->backBuffer = nullptr;
 		return;
 	}
+	BackBuffer *backBuffer = device->CreateBackBuffer( *this );
+	if ( backBuffer == nullptr ) {
+		return;
+	}
 	this->device = device;
-	this->backBuffer = device->CreateBackBuffer( *this );
+	this->backBuffer = backBuffer;
 }
 
 void Window::PresentBackBuffer( const int vsync ) {

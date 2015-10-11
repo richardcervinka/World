@@ -2,6 +2,7 @@
 
 class Window;
 class Device;
+class Display;
 class CommandInterface;
 class CommandList;
 class RenderTarget;
@@ -16,14 +17,14 @@ const int MAX_RENDER_TARGETS = 8;
 const int MAX_MULTISAMPLE_QUALITY = -1;
 const int MAX_TEXTURE_LOD = -1;
 
-// Informace potrebne k vytvoreni objektu CreateDX11DeviceParams
+// Informace potrebne k vytvoreni objektu DX11Device
 struct CreateDX11DeviceParams {
 	int adapter;				// id adapteru, 0 je vychozi adapter
 	int majorFeatureLevels;
 	int minorFeatureLevels;
 };
 
-// Vytvori instanci objektu device implementovanou v DirectX
+// Vytvori device objekt implementovany v DirectX 11
 Device *CreateDX11Device( const CreateDX11DeviceParams &params );
 
 // Buffer formaty graficke karty
@@ -127,6 +128,7 @@ public:
 	virtual RenderBuffer *CreateRenderBuffer( const RenderBufferDesc &desc ) = 0;
 	virtual DepthStencilBuffer *CreateDepthStencilBuffer( const DepthStencilBufferDesc &desc ) = 0;
 	virtual TextureSampler *CreateTextureSampler( const TextureSamplerDesc &desc ) = 0;
+	virtual Display *CreateDisplay( const int outputId ) = 0;
 
 	// vlastnosti grafickeho adapteru
 	virtual int GetMultisampleQuality( const int samplesCount ) const = 0;
@@ -200,7 +202,7 @@ public:
 	virtual bool GetMode( const int id, DisplayMode &result ) const = 0;
 	
 	// Najde rezim, ktery co nejlepe (ovsem ne nutne nejvice) odpovida pozadovanemu rezimu
-	virtual void FindMode( const DisplayMode &mode, DisplayMode &result ) const = 0;
+	virtual void FindMode( const DisplayMode &request, DisplayMode &result ) const = 0;
 	
 	// Najde nejlepsi dostupny rezim pro cilove zarizeni
 	virtual void GetBestMode( DisplayMode &result ) const = 0;

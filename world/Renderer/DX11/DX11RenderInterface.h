@@ -35,6 +35,7 @@ public:
 	virtual RenderBuffer *CreateRenderBuffer( const RenderBufferDesc &desc ) override;
 	virtual DepthStencilBuffer *CreateDepthStencilBuffer( const DepthStencilBufferDesc &desc ) override;
 	virtual TextureSampler *CreateTextureSampler( const TextureSamplerDesc &desc ) override;
+	virtual Display *CreateDisplay( const int outputId ) override;
 	//virtual void ResizBackBuffer( RenderOutput * const output ) override;
 	virtual int GetMultisampleQuality( const int samplesCount ) const override;
 
@@ -55,13 +56,13 @@ public:
 	virtual bool SetMode( const DisplayMode &mode, Window &window ) override;
 	virtual void SetSystemMode() override;
 	virtual bool GetMode( const int id, DisplayMode &result ) const override;
-	virtual void FindMode( const DisplayMode &mode, DisplayMode &result ) const override;
+	virtual void FindMode( const DisplayMode &request, DisplayMode &result ) const override;
 	virtual void GetBestMode( DisplayMode &result ) const override;
 	
 private:
 	void EnumDisplayModes();
 	
-private:
+public:
 	IDXGIOutput *dxgiOutput;
 	Window *window;
 	Array< DisplayMode > modes;

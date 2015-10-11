@@ -99,26 +99,96 @@ LRESULT CALLBACK WindowsWindow::WndProcStatic( HWND hwnd, UINT message, WPARAM w
 	return DefWindowProc( hwnd, message, wparam, lparam );
 }
 
+#include "..\..\Renderer\DX11\DX11RenderInterface.h"
+
 LRESULT WindowsWindow::WndProc( const HWND hwnd, const UINT message, WPARAM wparam, LPARAM lparam ) {
 	switch ( message ) {
 		case WM_CREATE:
 			OnCreate();
+			break;
 			return 0;
 
 		case WM_PAINT:
 			OnPaint();
+			break;
 			return 0;
-			
+
 		case WM_SIZE:
+			/*
+			break;
 			OnSize(
 				static_cast< int >( LOWORD( lparam ) ),
 				static_cast< int >( HIWORD( lparam ) )
 			);
+			*/
+			{
+				BackBuffer *bb = GetBackBuffer();
+				if ( bb ) {
+						IDXGISwapChain *swapChain = reinterpret_cast< DX11BackBuffer* >( bb )->GetSwapChain();
+
+						DXGI_SWAP_CHAIN_DESC desc;
+						swapChain->GetDesc( &desc );
+						UINT uWidth = static_cast< UINT >( LOWORD( lparam ) );
+						UINT uHeight = static_cast< UINT >( HIWORD( lparam ) );
+
+						// nedoslo ke zmene rozlyseni, nedelat nic
+						//if ( uWidth == desc.BufferDesc.Width && uHeight == desc.BufferDesc.Height ) {
+							//return 0;
+						//}
+						// zmenit velikost back bufferu a vytvorit render target view
+						//UnbindRenderTargets();
+						//ReleaseD3DInterface( &backBufferView );
+						hrslt = swapChain->ResizeBuffers( desc.BufferCount, uWidth, uHeight, DXGI_FORMAT_UNKNOWN, desc.Flags );
+
+						if ( FAILED( hrslt ) ) {
+							abort();
+						}
+						//CreateBackBufferView();
+				
+					//sch->ResizeBuffers( 2, )
+
+				}
+			}
+			//break;
 			return 0;
-			
+
+		case WM_KEYDOWN:
+			{
+				BackBuffer *bb = GetBackBuffer();
+				IDXGISwapChain *swapChain = reinterpret_cast< DX11BackBuffer* >( bb )->GetSwapChain();
+
+				DXGI_SWAP_CHAIN_DESC schdesc;
+				swapChain->GetDesc( &schdesc );
+
+				DXGI_MODE_DESC desc;
+				ZeroMemory( &desc, sizeof( desc ) );
+				desc.Width						= 800;
+				desc.Height						= 600;
+				desc.RefreshRate.Numerator		= 60;
+				desc.RefreshRate.Denominator	= 1;
+				desc.Format						= DXGI_FORMAT_UNKNOWN;
+				desc.ScanlineOrdering			= DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+				desc.Scaling					= DXGI_MODE_SCALING_STRETCHED;
+
+				//HRESULT h = swapChain->ResizeBuffers( 2, 1920, 1080, DXGI_FORMAT_UNKNOWN, schdesc.Flags  );
+				//swapChain->ResizeTarget( &desc );
+				static BOOL FS = TRUE;
+				if ( FS == FALSE ) {
+					swapChain->SetFullscreenState( FS, NULL );
+				} else {
+					swapChain->SetFullscreenState( FS, output );
+
+				}
+				//swapChain->SetFullscreenState( FS, output );
+				FS = ( FS == TRUE ? FALSE : TRUE );
+				//swapChain->ResizeTarget( &desc );
+			}
+			break;
+
 		case WM_ERASEBKGND:
+			break;
 			return 0;
-		
+
 		case WM_DESTROY:
 			OnDestroy();
 			return 0;
