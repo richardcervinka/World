@@ -18,12 +18,16 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 	Display *display = device->CreateDisplay( 0 );
 	DisplayMode mode;
-	display->GetBestMode( mode );
+	DisplayMode req;
+	req.width = 1920;
+	req.height = 1080;
+	req.refreshRateNumerator = 60;
+	req.refreshRateDenominator = 1;
+	display->FindMode( req, mode );
 	//display->SetMode( mode, window );
 	//display->SetSystemMode();
 
 	window.SetRenderDevice( device );
-	window.SetDDD( reinterpret_cast< DX11Display* >( display )->dxgiOutput );
 
 	WindowsApplication app;
 	app.Create( hInstance );

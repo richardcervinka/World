@@ -165,7 +165,7 @@
     <ClCompile Include="platform\windows\WindowsFile.cpp" />
     <ClCompile Include="Platform\windows\WindowsWindow.cpp" />
     <ClCompile Include="platform\windows\WinMain.cpp" />
-    <ClCompile Include="Renderer\DX11\DirectX11Device.cpp" />
+    <ClCompile Include="Renderer\DX11\DX11RenderInterface.cpp" />
     <ClCompile Include="renderer\Renderer.cpp" />
     <ClCompile Include="Renderer\RenderInterface.cpp" />
   </ItemGroup>

@@ -105,22 +105,18 @@ LRESULT WindowsWindow::WndProc( const HWND hwnd, const UINT message, WPARAM wpar
 	switch ( message ) {
 		case WM_CREATE:
 			OnCreate();
-			break;
 			return 0;
 
 		case WM_PAINT:
 			OnPaint();
-			break;
 			return 0;
 
 		case WM_SIZE:
-			/*
-			break;
 			OnSize(
 				static_cast< int >( LOWORD( lparam ) ),
 				static_cast< int >( HIWORD( lparam ) )
 			);
-			*/
+			/*
 			{
 				BackBuffer *bb = GetBackBuffer();
 				if ( bb ) {
@@ -128,8 +124,13 @@ LRESULT WindowsWindow::WndProc( const HWND hwnd, const UINT message, WPARAM wpar
 
 						DXGI_SWAP_CHAIN_DESC desc;
 						swapChain->GetDesc( &desc );
-						UINT uWidth = static_cast< UINT >( LOWORD( lparam ) );
-						UINT uHeight = static_cast< UINT >( HIWORD( lparam ) );
+
+						RECT cr;
+						GetClientRect( hwnd, &cr );
+
+						UINT w = cr.right - cr.left;
+						UINT h = cr.bottom - cr.top;
+
 
 						// nedoslo ke zmene rozlyseni, nedelat nic
 						//if ( uWidth == desc.BufferDesc.Width && uHeight == desc.BufferDesc.Height ) {
@@ -138,7 +139,7 @@ LRESULT WindowsWindow::WndProc( const HWND hwnd, const UINT message, WPARAM wpar
 						// zmenit velikost back bufferu a vytvorit render target view
 						//UnbindRenderTargets();
 						//ReleaseD3DInterface( &backBufferView );
-						hrslt = swapChain->ResizeBuffers( desc.BufferCount, uWidth, uHeight, DXGI_FORMAT_UNKNOWN, desc.Flags );
+						hrslt = swapChain->ResizeBuffers( desc.BufferCount, w, h, DXGI_FORMAT_UNKNOWN, desc.Flags );
 
 						if ( FAILED( hrslt ) ) {
 							abort();
@@ -148,11 +149,12 @@ LRESULT WindowsWindow::WndProc( const HWND hwnd, const UINT message, WPARAM wpar
 					//sch->ResizeBuffers( 2, )
 
 				}
-			}
-			//break;
+				
+			}*/
 			return 0;
 
 		case WM_KEYDOWN:
+			/*
 			{
 				BackBuffer *bb = GetBackBuffer();
 				IDXGISwapChain *swapChain = reinterpret_cast< DX11BackBuffer* >( bb )->GetSwapChain();
@@ -162,27 +164,27 @@ LRESULT WindowsWindow::WndProc( const HWND hwnd, const UINT message, WPARAM wpar
 
 				DXGI_MODE_DESC desc;
 				ZeroMemory( &desc, sizeof( desc ) );
-				desc.Width						= 800;
-				desc.Height						= 600;
-				desc.RefreshRate.Numerator		= 60;
-				desc.RefreshRate.Denominator	= 1;
+				desc.Width						= 1920;
+				desc.Height						= 1080;
+				desc.RefreshRate.Numerator		= 60000;
+				desc.RefreshRate.Denominator	= 1000;
 				desc.Format						= DXGI_FORMAT_UNKNOWN;
 				desc.ScanlineOrdering			= DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 				desc.Scaling					= DXGI_MODE_SCALING_STRETCHED;
 
 				//HRESULT h = swapChain->ResizeBuffers( 2, 1920, 1080, DXGI_FORMAT_UNKNOWN, schdesc.Flags  );
-				//swapChain->ResizeTarget( &desc );
 				static BOOL FS = TRUE;
 				if ( FS == FALSE ) {
-					swapChain->SetFullscreenState( FS, NULL );
+					swapChain->SetFullscreenState( FALSE, NULL );
 				} else {
-					swapChain->SetFullscreenState( FS, output );
-
+					swapChain->ResizeTarget( &desc );
+					swapChain->SetFullscreenState( TRUE, output );
+					swapChain->ResizeTarget( &desc );
 				}
 				//swapChain->SetFullscreenState( FS, output );
 				FS = ( FS == TRUE ? FALSE : TRUE );
-				//swapChain->ResizeTarget( &desc );
 			}
+			*/
 			break;
 
 		case WM_ERASEBKGND:
@@ -235,6 +237,12 @@ void WindowsWindow::OnSize( const int cx, const int cy ) {
 	GetWindowRect( hwnd, &rect );
 	width = rect.right - rect.left;
 	height = rect.bottom - rect.top;
+
+	// resize back buffer
+	BackBuffer *backBuffer = GetBackBuffer();
+	if ( backBuffer != nullptr ) {
+		backBuffer->Resize( clientWidth, clientHeight );
+	}
 }
 
 void WindowsWindow::Show() {
@@ -323,7 +331,7 @@ bool WindowsAppWindow::CreateAppWindow( const HINSTANCE hInstance, const int cli
 	params.hCursor			= LoadCursor( NULL, IDC_ARROW );
 	params.menuName			= NULL;
 	params.hIconSm			= 0;
-	params.windowName		= TEXT( "" );
+	params.windowName		= TEXT( "Application Window" );
 	params.windowStyle		= WS_OVERLAPPEDWINDOW;
 	params.windowExStyle	= 0;
 	params.x				= CW_USEDEFAULT;
@@ -345,6 +353,7 @@ bool WindowsAppWindow::CreateAppWindow( const HINSTANCE hInstance, const int cli
 		params.width = dimmension.right - dimmension.left;
 		params.height = dimmension.bottom - dimmension.top;
 	}
+	
 	return WindowsWindow::Create( params );
 }
 

@@ -53,10 +53,6 @@ public:
 	virtual void SetBackgroundColor( const Color &color ) override;
 	virtual const Color GetBackgroundColor() const override;
 	virtual void SetPosition( const int x, const int y ) override;
-
-	HRESULT hrslt = 0;
-	IDXGIOutput *output;
-	void SetDDD( IDXGIOutput *output ) {this->output = output; };
 	
 protected:
 	// message handlers

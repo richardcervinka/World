@@ -215,6 +215,7 @@ class BackBuffer: public RenderTarget {
 public:
 	virtual ~BackBuffer() {}
 	virtual void Present( const int vsync ) = 0;
+	virtual void Resize( const int width, const int height ) = 0;
 };
 
 /*
