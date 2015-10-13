@@ -49,12 +49,12 @@ void Renderer::Initialize( Window &window, const RendererInitialParameters &para
 
 	// device
 	
-	CreateDX11DeviceParams params = { 0 };
+	RenderInterface::CreateDX11DeviceParams params = { 0 };
 	params.majorFeatureLevels = 11;
 	params.minorFeatureLevels = 0;
 	params.adapter = 0;
 
-	device = CreateDX11Device( params );
+	device = RenderInterface::CreateDX11Device( params );
 	if ( device == nullptr ) {
 		return;
 	}
@@ -65,37 +65,37 @@ void Renderer::Initialize( Window &window, const RendererInitialParameters &para
 
 	// G-Buffers
 
-	RenderBufferDesc rbd;
+	RenderInterface::RenderBufferDesc rbd;
 	ZeroMemory( &rbd, sizeof( rbd ) );
 	rbd.width = initialScreenWidth;
 	rbd.height = initialScreenHeight;
 	rbd.samplesCount = 1;
-	rbd.multisampleQuality = MAX_MULTISAMPLE_QUALITY;
+	rbd.multisampleQuality = RenderInterface::MAX_MULTISAMPLE_QUALITY;
 
 	// normal.x, normal.y, normal.z, specular_exp
-	rbd.format = Format::R16G16B16A16_FLOAT;
+	rbd.format = RenderInterface::Format::R16G16B16A16_FLOAT;
 	gbuffers[ 0 ] = device->CreateRenderBuffer( rbd );
 
 	// linear depth
-	rbd.format = Format::R32_FLOAT;
+	rbd.format = RenderInterface::Format::R32_FLOAT;
 	gbuffers[ 1 ] = device->CreateRenderBuffer( rbd );
 
 	// difuse.r, difuse.g, difuse.b
-	rbd.format = Format::R8G8B8A8_UNORM;
+	rbd.format = RenderInterface::Format::R8G8B8A8_UNORM;
 	gbuffers[ 2 ] = device->CreateRenderBuffer( rbd );
 
 	// specular.r, specular.g, specular.b
-	rbd.format = Format::R8G8B8A8_UNORM;
+	rbd.format = RenderInterface::Format::R8G8B8A8_UNORM;
 	gbuffers[ 3 ] = device->CreateRenderBuffer( rbd );
 
 	// depth stencil buffer
 
-	DepthStencilBufferDesc dsd;
+	RenderInterface::DepthStencilBufferDesc dsd;
 	ZeroMemory( &dsd, sizeof( dsd ) );
 	dsd.width = initialScreenWidth;
 	dsd.height = initialScreenHeight;
 	dsd.samplesCount = 1;
-	dsd.multisampleQuality = MAX_MULTISAMPLE_QUALITY;
+	dsd.multisampleQuality = RenderInterface::MAX_MULTISAMPLE_QUALITY;
 	depthStencilBuffer = device->CreateDepthStencilBuffer( dsd );
 	if ( depthStencilBuffer == nullptr ) {
 		return;
@@ -103,32 +103,32 @@ void Renderer::Initialize( Window &window, const RendererInitialParameters &para
 
 	// texture samplers
 
-	TextureSamplerDesc samplerDesc;
+	RenderInterface::TextureSamplerDesc samplerDesc;
 	ZeroMemory( &samplerDesc, sizeof( samplerDesc ) );
 	samplerDesc.minLOD = 0;
-	samplerDesc.maxLOD = MAX_TEXTURE_LOD;
-	samplerDesc.uAddress = TextureAddress::WRAP;
-	samplerDesc.vAddress = TextureAddress::WRAP;
-	samplerDesc.wAddress = TextureAddress::WRAP;
+	samplerDesc.maxLOD = RenderInterface::MAX_TEXTURE_LOD;
+	samplerDesc.uAddress = RenderInterface::TextureAddress::WRAP;
+	samplerDesc.vAddress = RenderInterface::TextureAddress::WRAP;
+	samplerDesc.wAddress = RenderInterface::TextureAddress::WRAP;
 
 	// standardni sampler
 	if ( parameters.maxAnisotropy > 0 ) {
 		samplerDesc.maxAnisotropy = 0;
-		samplerDesc.filter = TextureFilter::LINEAR;
+		samplerDesc.filter = RenderInterface::TextureFilter::LINEAR;
 	} else {
 		samplerDesc.maxAnisotropy = parameters.maxAnisotropy;
-		samplerDesc.filter = TextureFilter::ANISOTROPIC;
+		samplerDesc.filter = RenderInterface::TextureFilter::ANISOTROPIC;
 	}
 	samplers[ 0 ] = device->CreateTextureSampler( samplerDesc );
 
 	// point sampler
 	samplerDesc.maxAnisotropy = 0;
-	samplerDesc.filter = TextureFilter::POINT;
+	samplerDesc.filter = RenderInterface::TextureFilter::POINT;
 	samplers[ 1 ] = device->CreateTextureSampler( samplerDesc );
 
 	// linear sampler
 	samplerDesc.maxAnisotropy = 0;
-	samplerDesc.filter = TextureFilter::LINEAR;
+	samplerDesc.filter = RenderInterface::TextureFilter::LINEAR;
 	samplers[ 2 ] = device->CreateTextureSampler( samplerDesc );
 
 
@@ -640,7 +640,7 @@ void Renderer::EnumDisplayModes() {
 	// ulozit vysledek
 	displayModes.Clear();
 	for ( UINT i = 0; i < count; i++ ) {
-		DisplayMode dm;
+		RenderInterface::DisplayMode dm;
 		dm.width = static_cast< int >( modes[ i ].Width );
 		dm.height = static_cast< int >( modes[ i ].Height );
 		//dm.refreshRate = static_cast< int >( modes[ i ].RefreshRate.Numerator / modes[ i ].RefreshRate.Denominator );
@@ -662,7 +662,7 @@ void Renderer::SetDisplayMode( const int id, const bool fullscreen ) {
 		return;
 	}
 	// BEST_DISPLAY_MODE
-	const DisplayMode &mode = displayModes[ id ];
+	const RenderInterface::DisplayMode &mode = displayModes[ id ];
 
 	DXGI_MODE_DESC desc;
 	desc.Width = mode.width;
@@ -681,10 +681,10 @@ void Renderer::SetDisplayMode( const int id, const bool fullscreen ) {
 	}
 }
 
-DisplayMode Renderer::GetDisplayMode() const {
+RenderInterface::DisplayMode Renderer::GetDisplayMode() const {
 	// nebyl nastaven zadny rezim displeje, vratit nulove hodnoty
 	if ( displayMode >= displayModes.Length() ) {
-		DisplayMode mode;
+		RenderInterface::DisplayMode mode;
 		ZeroMemory( &mode, sizeof( mode ) );
 		return mode;
 	}

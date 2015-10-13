@@ -1,9 +1,14 @@
 #include "DX11RenderInterface.h"
-#include "..\..\Framework\Debug.h"
+#include "..\..\Platform\Application.h"
 #include "..\..\Platform\Windows\WindowsWindow.h"
 #include "..\..\Framework\Math.h"
+#include "..\..\Framework\Debug.h"
 
 const DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+void AbortDXInvalidCall( const HRESULT hresult ) {
+	Application::Abort();
+}
 
 DXGI_FORMAT GetDXGIFormat(const Format format) {
 	switch ( format ) {
@@ -178,22 +183,10 @@ Display *DX11Device::CreateDisplay( const int outputId ) {
 	return display;
 }
 
-// -----------------------------------
-
+// *********************************************************************************
 TextureSampler *DX11Device::CreateTextureSampler( const TextureSamplerDesc &desc ) {
 	return nullptr;
 }
-
-/*
-void DX11Device::ResizBackBuffer( RenderOutput * const output ) {
-	if ( output == nullptr ) {
-		return;
-	}
-	ASSERT_DOWNCAST( output, DX11RenderOutput );
-	DX11RenderOutput *dxOutput = static_cast< DX11RenderOutput* >( output );
-	dxOutput->Resize( device );
-}
-*/
 
 // DX11CommandInterface
 
@@ -240,12 +233,19 @@ void DX11CommandInterface::SetRenderTargets( RenderTarget * const renderTargets,
 		return;
 	}
 	ASSERT_DOWNCAST( depthStencilBuffer, DX11DepthStencilBuffer );
-	context->OMSetRenderTargets( MAX_RENDER_TARGETS, views, static_cast< DX11DepthStencilBuffer* >( depthStencilBuffer )->GetDepthStencilView() );
+	context->OMSetRenderTargets(
+		MAX_RENDER_TARGETS,
+		views,
+		static_cast< DX11DepthStencilBuffer* >( depthStencilBuffer )->GetDepthStencilView()
+	);
 }
 
 void DX11CommandInterface::ClearRenderTarget( RenderTarget * const renderTarget, const Color &color ) {
 	ASSERT_DOWNCAST( renderTarget, DX11RenderTarget );
-	context->ClearRenderTargetView( reinterpret_cast< DX11RenderTarget* >( renderTarget )->GetRenderTargetView(), reinterpret_cast< const float* >( &color ) );
+	context->ClearRenderTargetView(
+		reinterpret_cast< DX11RenderTarget* >( renderTarget )->GetRenderTargetView(),
+		reinterpret_cast< const float* >( &color )
+	);
 }
 
 // DX11Display
@@ -297,7 +297,8 @@ void DX11Display::EnumDisplayModes() {
 }
 
 void DX11Display::SetSystemMode() {
-	// Pri vstupu do fullscreenu je predan ukazatel na window, pokud neni dostupny, jedna se o chybu
+	// Pri vstupu do fullscreenu je predan ukazatel na window,
+	// pokud neni dostupny neni okno ve fullscreen rezimu
 	if ( window == nullptr ) {
 		return;
 	}
@@ -370,16 +371,16 @@ void DX11Display::FindMode( const DisplayMode &request, DisplayMode &result ) co
 		const DisplayMode &mode = modes[ i ];
 		int difference = Math::Abs( mode.width - request.width ) + Math::Abs( mode.height - request.height );
 
-		// horsi odchylka rozlyseni, porovnat dalsi
+		// horsi odchylka rozlyseni, porovnat dalsi rezim
 		if ( difference > bestDifference ) {
 			continue;
 		}
-		// stejna odchylka rozlyseni
+		// stejna odchylka rozlyseni, porovnat refresh rate
 		if ( difference == bestDifference ) {
 			// porovnat refresh rate
 			float refreshRate = static_cast< float >( mode.refreshRateNumerator ) / static_cast< float >( mode.refreshRateDenominator );
 			float bestRefreshRate = static_cast< float >( best->refreshRateNumerator ) / static_cast< float >( best->refreshRateDenominator );
-
+			
 			// nalezeny mod ma horsi refresh rate, hledat dal
 			if ( refreshRate < bestRefreshRate ) {
 				continue;
@@ -390,7 +391,7 @@ void DX11Display::FindMode( const DisplayMode &request, DisplayMode &result ) co
 			bestId = i;
 			continue;
 		}
-		// lepsi odchylka rozlyseni, ulozit novy mod
+		// lepsi odchylka rozlyseni, ulozit mod
 		best = &mode;
 		bestDifference = difference;
 		bestId = i;
@@ -412,12 +413,14 @@ void DX11Display::GetBestMode( DisplayMode &result ) const {
 // DX11BackBuffer
 
 DX11BackBuffer::DX11BackBuffer() {
+	device = nullptr;
 	dxgiSwapChain = nullptr;
 	renderTargetView = nullptr;
 	window = nullptr;
 }
 
 DX11BackBuffer::~DX11BackBuffer() {
+	ReleaseCOM( &device );
 	ReleaseCOM( &dxgiSwapChain );
 	ReleaseCOM( &renderTargetView );
 }
@@ -443,7 +446,7 @@ bool DX11BackBuffer::Create( ID3D11Device *const device, IDXGIFactory1 *const fa
 	desc.OutputWindow						= hwnd;
 	desc.Windowed							= TRUE;
 	desc.SwapEffect							= DXGI_SWAP_EFFECT_DISCARD;
-	desc.BufferDesc.Scaling					= DXGI_MODE_SCALING_UNSPECIFIED;
+	desc.BufferDesc.Scaling					= DXGI_MODE_SCALING_STRETCHED;
 	desc.Flags								= DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
 	IDXGISwapChain *swapChain = nullptr;
@@ -451,13 +454,16 @@ bool DX11BackBuffer::Create( ID3D11Device *const device, IDXGIFactory1 *const fa
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	// render target view
+	// create render target view
 	ID3D11Texture2D *buffer = nullptr;
-	/*
-	swapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &buffer ) );
+	hresult = swapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &buffer ) );
+	if ( FAILED( hresult ) ) {
+		swapChain->Release();
+		return false;
+	}
 	D3D11_TEXTURE2D_DESC bufferDesc;
 	buffer->GetDesc( &bufferDesc );
-	ID3D11RenderTargetView *renderTargetView;
+	ID3D11RenderTargetView *renderTargetView = nullptr;
 	hresult = device->CreateRenderTargetView( buffer, NULL, &renderTargetView );
 	buffer->Release();
 	
@@ -465,15 +471,16 @@ bool DX11BackBuffer::Create( ID3D11Device *const device, IDXGIFactory1 *const fa
 		swapChain->Release();
 		return false;
 	}
-	*/
-
+	
 	// vypnuti defaultniho prepinani do rezimu cele obrazovky
 	factory->MakeWindowAssociation( hwnd, DXGI_MWA_NO_ALT_ENTER  );
 
 	// ulozit vytvorene objekty
+	this->device = device;
+	device->AddRef();
 	this->window = &window;
 	this->dxgiSwapChain = swapChain;
-	//this->renderTargetView = renderTargetView;
+	this->renderTargetView = renderTargetView;
 
 	return true;
 }
@@ -487,50 +494,43 @@ IDXGISwapChain *DX11BackBuffer::GetSwapChain() {
 }
 
 void DX11BackBuffer::Present( const int vsync ) {
-	if ( dxgiSwapChain != nullptr ) {
-		dxgiSwapChain->Present( vsync, 0 );
-	}
+	dxgiSwapChain->Present( vsync, 0 );
 }
 
-// END DX11BackBuffer IMPL   ***********************************************************
-
-
-
-
-// DX11RenderOutput
-/*
-void DX11RenderOutput::Resize( ID3D11Device *const device ) {
-	if ( swapChain == nullptr ) {
-		return;
-	}
+void DX11BackBuffer::Resize() {
 	// zjistit pocet referenci na RenderTargetView
-	ULONG refCount = renderTargetView->AddRef();
+	ULONG refs = renderTargetView->AddRef();
 	renderTargetView->Release();
-
-	// pokud je pocet referenci > 2, neni mozne zmenit velikost back bufferu
-	if ( refCount != 2 ) {
+	
+	// nejsou uvolneny vsechny reference na back buffer
+	if ( refs > 2 ) {
 		return;
 	}
-	// uvolnit reference na back buffer (render target view)
+	// release RTV
 	ReleaseCOM( &renderTargetView );
-
-	// resize buffers
-	int width = window->GetClientWidth();
-	int height = window->GetClientHeight();
-	HRESULT hresult = swapChain->ResizeBuffers( 2, width, height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH );
+	
+	// resize
+	const int width = window->GetClientWidth();
+	const int height = window->GetClientHeight();
+	DXGI_SWAP_CHAIN_DESC swapChainDesc;
+	dxgiSwapChain->GetDesc( &swapChainDesc );
+	dxgiSwapChain->ResizeBuffers( swapChainDesc.BufferCount, width, height, DXGI_FORMAT_UNKNOWN, swapChainDesc.Flags );
+	
+	// create new RTV
+	HRESULT hresult = 0;
+	ID3D11Texture2D *buffer = nullptr;
+	hresult = dxgiSwapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &buffer ) );
 	if ( FAILED( hresult ) ) {
-		return;
+		AbortDXInvalidCall( hresult );
 	}
-	// recreate rtv
-	ID3D11Texture2D *backBuffer;
-	swapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &backBuffer ) );
-	D3D11_TEXTURE2D_DESC backBufferDesc;
-	backBuffer->GetDesc( &backBufferDesc );
-	ID3D11RenderTargetView *renderTargetView;
-	hresult = device->CreateRenderTargetView( backBuffer, NULL, &renderTargetView );
-	backBuffer->Release();
+	D3D11_TEXTURE2D_DESC bufferDesc;
+	buffer->GetDesc( &bufferDesc );
+	hresult = device->CreateRenderTargetView( buffer, NULL, &renderTargetView );
+	buffer->Release();
+	if ( FAILED( hresult ) ) {
+		AbortDXInvalidCall( hresult );
+	}
 }
-*/
 
 // DX11RenderBuffer
 

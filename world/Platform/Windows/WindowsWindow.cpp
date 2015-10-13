@@ -241,7 +241,7 @@ void WindowsWindow::OnSize( const int cx, const int cy ) {
 	// resize back buffer
 	BackBuffer *backBuffer = GetBackBuffer();
 	if ( backBuffer != nullptr ) {
-		backBuffer->Resize( clientWidth, clientHeight );
+		backBuffer->Resize();
 	}
 }
 

@@ -52,12 +52,10 @@ void WindowsApplication::ExitApp() {
 }
 
 void WindowsApplication::AbortApp() {
-	MessageBoxW( NULL, L"Uspecified", L"Critical Error!!", MB_OK | MB_ICONERROR );
 	abort();
 }
 
 void WindowsApplication::AbortApp( const String &errorMessage ) {
-	MessageBoxW( NULL, reinterpret_cast< LPCWSTR >( errorMessage.Raw() ), L"Critical Error!", MB_OK | MB_ICONERROR );
 	abort();
 }
 

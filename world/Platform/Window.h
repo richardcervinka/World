@@ -5,7 +5,7 @@
 #include "..\Renderer\RenderInterface.h"
 
 // Trida window neni urcena k vytvareni uzivatelskeho rozhrani okennich aplikaci.
-// Je to jen zapouzdreni funkcionality potrebne k zobrazeni obsahu BackBufferu v klientske oblasti obecneho okna.
+// Zapouzdruje funkcionalitu potrebnou k zobrazeni obsahu BackBufferu v klientske oblasti okna.
 //
 class Window {
 public:
@@ -28,16 +28,16 @@ public:
 	virtual void Hide() = 0;
 	virtual void SetName( const String &str ) = 0;
 	virtual const String GetName() const = 0;
-	
 	// vyvola prekresleni klientske oblasti okna
 	virtual void Update() = 0;
 	
 	// back buffering
-	virtual void SetRenderDevice( Device * const device );
-	virtual void PresentBackBuffer( const int vsync );
-	BackBuffer *GetBackBuffer();
+	void SetRenderDevice( RenderInterface::Device * const device );
+	void PresentBackBuffer( const int vsync );
+	void ResizeBackBuffer();
+	RenderInterface::BackBuffer *GetBackBuffer();
 	
 private:
-	Device *device;
-	BackBuffer *backBuffer;
+	RenderInterface::Device *device;
+	RenderInterface::BackBuffer *backBuffer;
 };

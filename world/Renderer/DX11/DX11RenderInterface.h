@@ -5,6 +5,8 @@
 #include "..\RenderInterface.h"
 #include "..\..\Framework\Array.h"
 
+using namespace RenderInterface;
+
 // uvolneni COM objektu
 template < typename T >
 inline void ReleaseCOM( T **target ) {
@@ -14,7 +16,11 @@ inline void ReleaseCOM( T **target ) {
 	}
 }
 
-// prevede Format na DXGI_FORMAT
+// Ukonci aplikaci v dusledku chyby volani DirectX
+// Funkce nesmi byt volana pri vytvareni RenderInterface objektu
+void AbortDXInvalidCall( const HRESULT hresult );
+
+// prevede hodnotu typu Format na DXGI_FORMAT
 DXGI_FORMAT GetDXGIFormat( const Format format );
 
 class DX11Device: public Device {
@@ -36,7 +42,6 @@ public:
 	virtual DepthStencilBuffer *CreateDepthStencilBuffer( const DepthStencilBufferDesc &desc ) override;
 	virtual TextureSampler *CreateTextureSampler( const TextureSamplerDesc &desc ) override;
 	virtual Display *CreateDisplay( const int outputId ) override;
-	//virtual void ResizBackBuffer( RenderOutput * const output ) override;
 	virtual int GetMultisampleQuality( const int samplesCount ) const override;
 
 private:
@@ -86,11 +91,17 @@ public:
 
 	// implementace rozhrani BackBuffer
 	virtual void Present( const int vsync ) override;
+	virtual void Resize() override;
+	//virtual int GetWidth() const override;
+	//virtual int GetHeight() const override;
 
 private:
+	ID3D11Device *device;
 	IDXGISwapChain *dxgiSwapChain;
 	ID3D11RenderTargetView *renderTargetView;
 	Window *window;
+	int width;
+	int height;
 };
 
 class DX11RenderBuffer: public RenderBuffer, DX11RenderTarget {

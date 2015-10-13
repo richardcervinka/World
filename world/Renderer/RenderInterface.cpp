@@ -1,7 +1,9 @@
 #include "RenderInterface.h"
 #include "DX11\DX11RenderInterface.h"
 
-Device *CreateDX11Device( const CreateDX11DeviceParams &params ) {
+using namespace RenderInterface;
+
+Device *RenderInterface::CreateDX11Device( const CreateDX11DeviceParams &params ) {
 	DX11Device *device = new DX11Device();
 	if ( device == nullptr ) {
 		return nullptr;
@@ -15,19 +17,23 @@ Device *CreateDX11Device( const CreateDX11DeviceParams &params ) {
 
 // RenderInterfaceObject 
 
-RenderInterfaceObject::RenderInterfaceObject() {
-	references = 1;
-}
+namespace RenderInterface {
 
-RenderInterfaceObject::~RenderInterfaceObject() {}
-
-void RenderInterfaceObject::Release() {
-	references -= 1;
-	if ( references <= 0 ) {
-		delete this;
+	RenderInterfaceObject::RenderInterfaceObject() {
+		references = 1;
 	}
-}
 
-void RenderInterfaceObject::AddRef() {
-	references += 1;
-}
+	RenderInterfaceObject::~RenderInterfaceObject() {}
+
+	void RenderInterfaceObject::Release() {
+		references -= 1;
+		if ( references <= 0 ) {
+			delete this;
+		}
+	}
+
+	void RenderInterfaceObject::AddRef() {
+		references += 1;
+	}
+
+} // namespace RenderInterface

@@ -50,7 +50,7 @@ enum class Rasterizer {
 
 // parametry funkce Initialize()
 struct RendererInitialParameters {
-	DisplayMode displayMode;
+	RenderInterface::DisplayMode displayMode;
 	bool fullscreen;
 	Antialiasing antialiasing;
 	int maxAnisotropy;			// nastaveni kvality filtrovani textur; 0 = linear; > 0 = anisotropy
@@ -66,7 +66,7 @@ public:
 
 	// prepnuti mezi windowed a fullscreen, zmena rozlyseni
 	void SetDisplayMode( const int id, const bool fullscreen );
-	DisplayMode GetDisplayMode() const;
+	RenderInterface::DisplayMode GetDisplayMode() const;
 	//DisplayMode GetBestDisplayMode() const;
 	bool Fullscreen() const;
 	void SwitchFullscreen();
@@ -86,7 +86,7 @@ private:
 		//int refreshRate;
 		//bool vsync;
 		Antialiasing antialiasing;
-		TextureFilter textureSampling;
+		RenderInterface::TextureFilter textureSampling;
 		int anisotropyLevel;
 	};
 
@@ -130,17 +130,17 @@ private:
 	// RenderInterface
 	//////////////////////////////////////////////////////
 
-	Device *device;
-	DepthStencilBuffer *depthStencilBuffer;
-	CommandInterface *immediateCommandInterface;
+	RenderInterface::Device *device;
+	RenderInterface::DepthStencilBuffer *depthStencilBuffer;
+	RenderInterface::CommandInterface *immediateCommandInterface;
 	
 	// G-Bffery deferred rendereru, color, normal
 	enum { GBUFFERS_COUNT = 4 };
-	RenderBuffer *gbuffers[ GBUFFERS_COUNT ];
+	RenderInterface::RenderBuffer *gbuffers[ GBUFFERS_COUNT ];
 
 	// engine poskytuje pevnou sadu texture sampleru, defaultni je mozne modifikovat nastavenim
 	enum { SAMPLERS_COUNT = 3 };
-	TextureSampler *samplers[ SAMPLERS_COUNT ]; // [ default, point, linear ]
+	RenderInterface::TextureSampler *samplers[ SAMPLERS_COUNT ]; // [ default, point, linear ]
 
 	//////////////////////////////////////////////////////
 
@@ -171,7 +171,7 @@ private:
 	Array< ID3D11RasterizerState* > rasterizerStates;
 	Rasterizer rasterizerState;
 
-	Array< DisplayMode > displayModes;
+	Array< RenderInterface::DisplayMode > displayModes;
 	int displayMode;
 };
 
