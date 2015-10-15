@@ -1,7 +1,6 @@
 #include <mutex>
 //#include "Window.h"
 #include "Application.h"
-//#include "System.h"
 
 std::mutex mutex; 
 
@@ -19,12 +18,14 @@ void Application::Run() {
 	
 	// start message loop
 	while ( ProcessPlatformMessages() ) {
-		
-		// render code...
-		
+		Update();
 	}
 	// navrat z message loop, standardni ukonceni aplikace
 	app = nullptr;
+}
+
+void Application::Update() {
+	// overwrite
 }
 
 void Application::Exit() {

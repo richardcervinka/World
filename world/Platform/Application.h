@@ -19,6 +19,9 @@ public:
 	// Spusti aplikaci, vstoupi do smycky zprav.
 	// Navrat z funkce je pouze pri radnem ukonceni aplikace
 	void Run();
+
+	// Metoda Update() je cyklicky volana funkci Run(), predefinovana verze typicky aktualizuje novy snimek
+	virtual void Update();
 	
 	// Standardni zpusob ukonceni aplikace.
 	// Ukonci vsechna vlakna bezici aplikace, uvolni zdroje a ukonci aplikaci
@@ -31,6 +34,7 @@ public:
 	static void Abort( const String &errorMessage );
 	
 private:
+	// Implementace statickych metod
 	virtual void ExitApp() = 0;
 	virtual void AbortApp() = 0;
 	virtual void AbortApp( const String &errorMessage ) = 0;
