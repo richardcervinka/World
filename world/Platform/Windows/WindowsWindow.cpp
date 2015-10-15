@@ -116,79 +116,12 @@ LRESULT WindowsWindow::WndProc( const HWND hwnd, const UINT message, WPARAM wpar
 				static_cast< int >( LOWORD( lparam ) ),
 				static_cast< int >( HIWORD( lparam ) )
 			);
-			/*
-			{
-				BackBuffer *bb = GetBackBuffer();
-				if ( bb ) {
-						IDXGISwapChain *swapChain = reinterpret_cast< DX11BackBuffer* >( bb )->GetSwapChain();
-
-						DXGI_SWAP_CHAIN_DESC desc;
-						swapChain->GetDesc( &desc );
-
-						RECT cr;
-						GetClientRect( hwnd, &cr );
-
-						UINT w = cr.right - cr.left;
-						UINT h = cr.bottom - cr.top;
-
-
-						// nedoslo ke zmene rozlyseni, nedelat nic
-						//if ( uWidth == desc.BufferDesc.Width && uHeight == desc.BufferDesc.Height ) {
-							//return 0;
-						//}
-						// zmenit velikost back bufferu a vytvorit render target view
-						//UnbindRenderTargets();
-						//ReleaseD3DInterface( &backBufferView );
-						hrslt = swapChain->ResizeBuffers( desc.BufferCount, w, h, DXGI_FORMAT_UNKNOWN, desc.Flags );
-
-						if ( FAILED( hrslt ) ) {
-							abort();
-						}
-						//CreateBackBufferView();
-				
-					//sch->ResizeBuffers( 2, )
-
-				}
-				
-			}*/
 			return 0;
 
 		case WM_KEYDOWN:
-			/*
-			{
-				BackBuffer *bb = GetBackBuffer();
-				IDXGISwapChain *swapChain = reinterpret_cast< DX11BackBuffer* >( bb )->GetSwapChain();
-
-				DXGI_SWAP_CHAIN_DESC schdesc;
-				swapChain->GetDesc( &schdesc );
-
-				DXGI_MODE_DESC desc;
-				ZeroMemory( &desc, sizeof( desc ) );
-				desc.Width						= 1920;
-				desc.Height						= 1080;
-				desc.RefreshRate.Numerator		= 60000;
-				desc.RefreshRate.Denominator	= 1000;
-				desc.Format						= DXGI_FORMAT_UNKNOWN;
-				desc.ScanlineOrdering			= DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-				desc.Scaling					= DXGI_MODE_SCALING_STRETCHED;
-
-				//HRESULT h = swapChain->ResizeBuffers( 2, 1920, 1080, DXGI_FORMAT_UNKNOWN, schdesc.Flags  );
-				static BOOL FS = TRUE;
-				if ( FS == FALSE ) {
-					swapChain->SetFullscreenState( FALSE, NULL );
-				} else {
-					swapChain->ResizeTarget( &desc );
-					swapChain->SetFullscreenState( TRUE, output );
-					swapChain->ResizeTarget( &desc );
-				}
-				//swapChain->SetFullscreenState( FS, output );
-				FS = ( FS == TRUE ? FALSE : TRUE );
-			}
-			*/
 			break;
 
 		case WM_ERASEBKGND:
-			break;
 			return 0;
 
 		case WM_DESTROY:
@@ -210,10 +143,8 @@ void WindowsWindow::OnDestroy() {
 }
 
 void WindowsWindow::OnPaint() {
-	bool rendering = false; //---------------------------------------------------------------------------------------------------------------------------------------------------------------DODELAT
-	
 	// ponecha veskere vykreslovani na rendereru
-	if ( rendering ) {
+	if ( IsRenderTarget() ) {
 		ValidateRect( hwnd, NULL );
 		return;
 	}
@@ -237,12 +168,7 @@ void WindowsWindow::OnSize( const int cx, const int cy ) {
 	GetWindowRect( hwnd, &rect );
 	width = rect.right - rect.left;
 	height = rect.bottom - rect.top;
-
-	// resize back buffer
-	BackBuffer *backBuffer = GetBackBuffer();
-	if ( backBuffer != nullptr ) {
-		backBuffer->Resize();
-	}
+	ResizeBackBuffer();
 }
 
 void WindowsWindow::Show() {

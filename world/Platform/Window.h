@@ -36,6 +36,7 @@ public:
 	void PresentBackBuffer( const int vsync );
 	void ResizeBackBuffer();
 	RenderInterface::BackBuffer *GetBackBuffer();
+	bool IsRenderTarget() const;
 	
 private:
 	RenderInterface::Device *device;

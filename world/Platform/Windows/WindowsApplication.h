@@ -16,7 +16,9 @@ private:
 	virtual void AbortApp( const String &errorMessage );
 	virtual bool ProcessPlatformMessages();
 	bool ProcessMessage( const MSG &msg );
-	//void OnRawInput( const WPARAM wParam, const LPARAM lParam );
+	
+	// predbezne zpracovani zprav (pred tim, nez jsou odeslany oknu)
+	void OnInput( const WPARAM wParam, const LPARAM lParam );
 	
 private:
 	HINSTANCE handle;

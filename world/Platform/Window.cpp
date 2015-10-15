@@ -13,19 +13,23 @@ Window::~Window() {
 }
 
 void Window::SetRenderDevice( RenderInterface::Device * const device ) {
-	if ( device == nullptr ) {
-		// unbind render device and delete back buffer
+	// unbind current
+	if ( backBuffer != nullptr ) {
 		backBuffer->Release();
+		backBuffer = nullptr;
 		this->device = nullptr;
-		this->backBuffer = nullptr;
+	}
+	if ( device == nullptr ) {
 		return;
 	}
-	RenderInterface::BackBuffer *backBuffer = device->CreateBackBuffer( *this );
-	if ( backBuffer == nullptr ) {
+	// create new back buffer
+	RenderInterface::BackBuffer *newBackBuffer = device->CreateBackBuffer( *this );
+	if ( newBackBuffer == nullptr ) {
 		return;
 	}
+	// save new state
+	this->backBuffer = newBackBuffer;
 	this->device = device;
-	this->backBuffer = backBuffer;
 }
 
 void Window::PresentBackBuffer( const int vsync ) {
@@ -36,4 +40,14 @@ void Window::PresentBackBuffer( const int vsync ) {
 
 RenderInterface::BackBuffer *Window::GetBackBuffer() {
 	return backBuffer;
+}
+
+void Window::ResizeBackBuffer() {
+	if ( backBuffer != nullptr ) {
+		backBuffer->Resize();
+	}
+}
+
+bool Window::IsRenderTarget() const {
+	return backBuffer != nullptr;
 }

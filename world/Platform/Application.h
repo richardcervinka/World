@@ -36,6 +36,8 @@ private:
 	virtual void AbortApp( const String &errorMessage ) = 0;
 	
 	// Funkce Run() vola tuto funkci dokud vraci true, pokud vrati false, aplikace bude ukoncena
+	// Ukolem funkce je zpracovavat zpravy systemove zpravy. Musi poskytnout take standardni zpracovani zprav.
+	// Napr. v systemu Windows muze funkce zachytit zpravu WM_KEYDOWN, musi ji vsak dale poslat oknu.
 	virtual bool ProcessPlatformMessages() = 0;
 	
 private:

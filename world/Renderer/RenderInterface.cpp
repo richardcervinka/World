@@ -17,23 +17,20 @@ Device *RenderInterface::CreateDX11Device( const CreateDX11DeviceParams &params 
 
 // RenderInterfaceObject 
 
-namespace RenderInterface {
+RenderInterfaceObject::RenderInterfaceObject() {
+	references = 1;
+}
 
-	RenderInterfaceObject::RenderInterfaceObject() {
-		references = 1;
+RenderInterfaceObject::~RenderInterfaceObject() {}
+
+void RenderInterfaceObject::Release() {
+	references -= 1;
+	if ( references <= 0 ) {
+		delete this;
 	}
+}
 
-	RenderInterfaceObject::~RenderInterfaceObject() {}
+void RenderInterfaceObject::AddRef() {
+	references += 1;
+}
 
-	void RenderInterfaceObject::Release() {
-		references -= 1;
-		if ( references <= 0 ) {
-			delete this;
-		}
-	}
-
-	void RenderInterfaceObject::AddRef() {
-		references += 1;
-	}
-
-} // namespace RenderInterface
