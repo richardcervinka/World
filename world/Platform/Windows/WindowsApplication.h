@@ -8,13 +8,15 @@ public:
 	WindowsApplication();
 	virtual ~WindowsApplication();
 	
-	bool Create( const HINSTANCE hInstance );
+	virtual bool Create( const HINSTANCE hInstance );
 	
 private:
-	virtual void ExitApp();
-	virtual void AbortApp();
-	virtual void AbortApp( const String &errorMessage );
-	virtual bool ProcessPlatformMessages();
+	virtual void ExitApp() override;
+	virtual void AbortApp() override;
+	virtual void AbortApp( const String &errorMessage ) override;
+	virtual bool ProcessPlatformMessages() override;
+	
+	// zpracuje zpravu windows, pokud vrati true, zprava nebude odeslana cilovemu oknu
 	bool ProcessMessage( const MSG &msg );
 	
 	// predbezne zpracovani zprav (pred tim, nez jsou odeslany oknu)

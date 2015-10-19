@@ -15,25 +15,10 @@
 Renderer::Renderer() {
 	ZeroMemory( &parameters, sizeof( parameters ) );
 	parameters.antialiasing = Antialiasing::DISABLED;
-	window = nullptr;
-	device_ = nullptr;
-	deviceContext_ = nullptr;
-	swapChain = nullptr;
 	depthStencilBuffer = nullptr;
-	depthStencilView = nullptr;
-	textureSampler = nullptr;
-	backBufferView = nullptr;
-
-	//depthStencilStates.SetDynamic();
-	//depthStencilStates.Realloc( 8 );
 	depthStencilState = DepthStencil::DEFAULT;
-	//blendStates.SetDynamic();
-	//blendStates.Realloc( 8 );
 	blendState = Blending::DEFAULT;
-	//rasterizerStates.SetDynamic();
-	//rasterizerStates.Realloc( 8 );
 	rasterizerState = Rasterizer::DEFAULT;
-	//displayModes.SetDynamic();
 	displayMode = 0;
 	fullscreen = false;
 }
@@ -41,7 +26,7 @@ Renderer::Renderer() {
 Renderer::~Renderer() {
 }
 
-void Renderer::Initialize( Window &window, const RendererInitialParameters &parameters ) {
+void Renderer::Initialize( const RendererInitialParameters &parameters ) {
 
 	// inicializace probiha vzdy s nasledujicim rozlysenim
 	const int initialScreenWidth = 1024;
@@ -49,12 +34,12 @@ void Renderer::Initialize( Window &window, const RendererInitialParameters &para
 
 	// device
 	
-	RenderInterface::CreateDX11DeviceParams params = { 0 };
+	RenderInterface::DX11CreateDeviceParams params = { 0 };
 	params.majorFeatureLevels = 11;
 	params.minorFeatureLevels = 0;
 	params.adapter = 0;
 
-	device = RenderInterface::CreateDX11Device( params );
+	device = RenderInterface::DX11CreateDevice( params );
 	if ( device == nullptr ) {
 		return;
 	}
@@ -165,90 +150,6 @@ void Renderer::Initialize( Window &window, const RendererInitialParameters &para
 	// * CreateGBuffers( parameters.displayMode.width, parameters.displayMode.height );
 	SetViewport();
 }
-/*
-void Renderer::CreateDeviceAndSwapChain( const RendererInitialParameters &parameters ) {
-	DXGI_SWAP_CHAIN_DESC desc;
-	ZeroMemory( &desc, sizeof( desc ) );
-	desc.BufferCount = 2;
-	desc.BufferDesc.Width = parameters.displayMode.width;
-	desc.BufferDesc.Height = parameters.displayMode.height;
-	desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	desc.BufferDesc.RefreshRate.Numerator = 60;
-	desc.BufferDesc.RefreshRate.Denominator = 1;
-	desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	desc.SampleDesc.Count = 1;
-	desc.SampleDesc.Quality = 0;
-	desc.OutputWindow = window->GetHandle();
-	desc.Windowed = parameters.fullscreen ? TRUE : FALSE;
-	desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-
-#ifdef _DEBUG
-	UINT flags = D3D11_CREATE_DEVICE_DEBUG;
-#else
-	UINT flags = 0
-#endif
-	const D3D_FEATURE_LEVEL featureLevels[] = { D3D_FEATURE_LEVEL_11_0 };
-	D3D_FEATURE_LEVEL createdFeatureLevel;
-	HRESULT hresult = D3D11CreateDeviceAndSwapChain(
-		NULL,
-		D3D_DRIVER_TYPE_HARDWARE,
-		NULL,
-		flags,
-		featureLevels,
-		ARRAYSIZE( featureLevels ),
-		D3D11_SDK_VERSION,
-		&desc,
-		&swapChain,
-		&device_,
-		&createdFeatureLevel,
-		&deviceContext
-	);
-	if ( FAILED( hresult ) ) {
-		return;
-	}
-	// vypnuti defaultniho prepinani do rezimu cele obrazovky
-	IDXGIFactory *dxgiFactory;
-	hresult = CreateDXGIFactory( __uuidof( IDXGIFactory ), ( void** )( &dxgiFactory ) );
-	if ( FAILED( hresult ) ) {
-		return;
-	}
-	dxgiFactory->MakeWindowAssociation( window->GetHandle(), DXGI_MWA_NO_ALT_ENTER  );
-	dxgiFactory->Release();
-}
-*/
-
-void Renderer::CreateBackBufferView() {
-	/*
-	if ( backBufferView != nullptr ) {
-		backBufferView->Release();
-		backBufferView = nullptr;
-	}
-	ID3D11Texture2D *backBuffer;
-	swapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &backBuffer ) );
-	D3D11_TEXTURE2D_DESC backBufferDesc;
-	backBuffer->GetDesc( &backBufferDesc );
-	device_->CreateRenderTargetView( backBuffer, NULL, &backBufferView );
-	backBuffer->Release();
-	*/
-}
-
-void Renderer::ResizeBackBuffer( const int width, const int height ) {
-	return;
-	DXGI_SWAP_CHAIN_DESC desc;
-	swapChain->GetDesc( &desc );
-	UINT uWidth = static_cast< UINT >( width );
-	UINT uHeight = static_cast< UINT >( height );
-
-	// nedoslo ke zmene rozlyseni, nedelat nic
-	if ( uWidth == desc.BufferDesc.Width && uHeight == desc.BufferDesc.Height ) {
-		return;
-	}
-	// zmenit velikost back bufferu a vytvorit render target view
-	UnbindRenderTargets();
-	//ReleaseD3DInterface( &backBufferView );
-	swapChain->ResizeBuffers( desc.BufferCount, uWidth, uHeight, DXGI_FORMAT_UNKNOWN, desc.Flags );
-	CreateBackBufferView();
-}
 
 void Renderer::SetViewport() {
 	/*
@@ -293,6 +194,7 @@ void Renderer::ResizeGBuffers( const int width, const int height ) {
 }
 
 void Renderer::CreateRenderTarget( const int width, const int height, const DXGI_FORMAT format, const Antialiasing antialiasing, RenderTarget &target ) {
+	/*
 	return;
 	D3D11_TEXTURE2D_DESC textureDesc;
 	textureDesc.Width = static_cast< UINT >( width );
@@ -338,6 +240,7 @@ void Renderer::CreateRenderTarget( const int width, const int height, const DXGI
 		target.renderTargetView = nullptr;
 		return;
 	}
+	*/
 }
 
 int Renderer::GetSamplesCount( const Antialiasing antialiasing ) const {
@@ -358,6 +261,7 @@ int Renderer::GetSamplesCount( const Antialiasing antialiasing ) const {
 }
 
 void Renderer::CreateDepthStencilBuffer() {
+	/*
 	return;
 	HRESULT hresult = 0;
 
@@ -398,6 +302,7 @@ void Renderer::CreateDepthStencilBuffer() {
 		//ReleaseD3DInterface( &depthStencilBuffer );
 		return;
 	}
+	*/
 }
 
 void Renderer::CreateDepthStencilStates() {
@@ -565,6 +470,7 @@ void Renderer::CreateRasterizerStates() {
 }
 
 void Renderer::CreateTextureSamplers() {
+	/*
 	HRESULT hresult = 0;
 	D3D11_SAMPLER_DESC desc;
 
@@ -584,6 +490,7 @@ void Renderer::CreateTextureSamplers() {
 	}
 	// set sampler states
 	deviceContext_->PSSetSamplers( 0, 1, &textureSampler );
+	*/
 }
 
 void Renderer::UnbindShaderResources() {
@@ -592,11 +499,10 @@ void Renderer::UnbindShaderResources() {
 }
 
 void Renderer::UnbindRenderTargets() {
-	deviceContext_->OMSetRenderTargets( 0, NULL, NULL );
+	//deviceContext_->OMSetRenderTargets( 0, NULL, NULL );
 }
-
+/*
 void Renderer::Resize() {
-	/*
 	return;
 	if ( !window ) {
 		return;
@@ -604,133 +510,9 @@ void Renderer::Resize() {
 	int width = window->GetClientWidth();
 	int height = window->GetClientHeight();
 	ResizeBackBuffer( width, height );
-
-	*/
-}
-
-void Renderer::EnumDisplayModes() {
-	IDXGIFactory *dxgiFactory;
-	HRESULT hresult = CreateDXGIFactory( __uuidof( IDXGIFactory ), ( void** )( &dxgiFactory ) );
-	if ( FAILED( hresult ) ) {
-		return;
-	}
-	// vychozi adapter
-	IDXGIAdapter *adapter = nullptr;
-	hresult = dxgiFactory->EnumAdapters( 0, &adapter );
-	if ( FAILED( hresult ) ) {
-		dxgiFactory->Release();
-		return;
-	}
-	// primarni monitor
-	IDXGIOutput *output = nullptr;
-	adapter->EnumOutputs( 0, &output );
-	if ( FAILED( hresult ) ) {
-		adapter->Release();
-		dxgiFactory->Release();
-		return;
-	}
-	// zjisteni poctu rezimu displeje
-	UINT count = 0;
-	output->GetDisplayModeList( DXGI_FORMAT_R8G8B8A8_UNORM, 0, &count, NULL );
-
-	// ziskat vsechny rezimy displeje
-	DXGI_MODE_DESC *modes = new DXGI_MODE_DESC[ count ];
-	output->GetDisplayModeList( DXGI_FORMAT_R8G8B8A8_UNORM, 0, &count, modes );
-
-	// ulozit vysledek
-	displayModes.Clear();
-	for ( UINT i = 0; i < count; i++ ) {
-		RenderInterface::DisplayMode dm;
-		dm.width = static_cast< int >( modes[ i ].Width );
-		dm.height = static_cast< int >( modes[ i ].Height );
-		//dm.refreshRate = static_cast< int >( modes[ i ].RefreshRate.Numerator / modes[ i ].RefreshRate.Denominator );
-		displayModes.Push( dm );
-	}
-	// uvolneni objektu
-	delete [] modes;
-	output->Release();
-	adapter->Release();
-	dxgiFactory->Release();
-}
-
-void Renderer::SetDisplayMode( const int id, const bool fullscreen ) {
-	return;
-	if ( !swapChain || !window ) {
-		return;
-	}
-	if ( id <= displayModes.Length() ) {
-		return;
-	}
-	// BEST_DISPLAY_MODE
-	const RenderInterface::DisplayMode &mode = displayModes[ id ];
-
-	DXGI_MODE_DESC desc;
-	desc.Width = mode.width;
-	desc.Height = mode.height;
-	//desc.RefreshRate.Numerator = mode.refreshRate;
-	desc.RefreshRate.Denominator = 1;
-	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	desc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-	desc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-	swapChain->ResizeTarget( &desc );
-	displayMode = id;
-
-	if ( this->fullscreen != fullscreen ) {
-		swapChain->SetFullscreenState( static_cast< BOOL >( fullscreen ), NULL );
-		this->fullscreen = fullscreen;
-	}
-}
-
-RenderInterface::DisplayMode Renderer::GetDisplayMode() const {
-	// nebyl nastaven zadny rezim displeje, vratit nulove hodnoty
-	if ( displayMode >= displayModes.Length() ) {
-		RenderInterface::DisplayMode mode;
-		ZeroMemory( &mode, sizeof( mode ) );
-		return mode;
-	}
-	return displayModes[ displayMode ];
-}
-
-/*
-DisplayMode Renderer::GetBestDisplayMode() const {
 }
 */
-
-bool Renderer::Fullscreen() const {
-	return fullscreen;
-}
-
-void Renderer::SwitchFullscreen() {
-}
-
-
-
-
-
-
-
-
-
-
-
-
 /*
-#include "VertexBuffer.h"
-#include "Matrix.h"
-#include "Camera.h"
-#include "System.h"
-#include "Core.h"
-#include "Light.h"
-#include "Debug.h"
-#include "Mesh.h"
-#include "Texture.h"
-#include "Wrapper.h"
-#include "Input.h"
-#include "containers\Array.h"
-*/
-
-
-/* **************************************************
 
 // mapuje globalni konstanty definovane v shaderu
 struct GlobalShaderConstants {

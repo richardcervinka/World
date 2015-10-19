@@ -3,7 +3,7 @@
 
 using namespace RenderInterface;
 
-Device *RenderInterface::CreateDX11Device( const CreateDX11DeviceParams &params ) {
+Device *RenderInterface::DX11CreateDevice( const DX11CreateDeviceParams &params ) {
 	DX11Device *device = new DX11Device();
 	if ( device == nullptr ) {
 		return nullptr;
@@ -15,22 +15,22 @@ Device *RenderInterface::CreateDX11Device( const CreateDX11DeviceParams &params 
 	return device;
 }
 
-// RenderInterfaceObject 
+// DeviceObject 
 
-RenderInterfaceObject::RenderInterfaceObject() {
+DeviceObject::DeviceObject() {
 	references = 1;
 }
 
-RenderInterfaceObject::~RenderInterfaceObject() {}
+DeviceObject::~DeviceObject() {}
 
-void RenderInterfaceObject::Release() {
+void DeviceObject::Release() {
 	references -= 1;
 	if ( references <= 0 ) {
 		delete this;
 	}
 }
 
-void RenderInterfaceObject::AddRef() {
+void DeviceObject::AddRef() {
 	references += 1;
 }
 

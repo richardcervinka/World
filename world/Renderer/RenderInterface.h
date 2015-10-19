@@ -11,6 +11,8 @@ namespace RenderInterface {
 	class Display;
 	class CommandInterface;
 	class CommandList;
+	class RenderTargetObject;
+	class ShaderResourceObject;
 	class RenderTarget;
 		class RenderBuffer;
 		class BackBuffer;
@@ -23,14 +25,14 @@ namespace RenderInterface {
 	const int MAX_TEXTURE_LOD = -1;
 	
 	// Informace potrebne k vytvoreni objektu DX11Device
-	struct CreateDX11DeviceParams {
+	struct DX11CreateDeviceParams {
 		int adapter;				// id adapteru, 0 je vychozi adapter
 		int majorFeatureLevels;
 		int minorFeatureLevels;
 	};
 	
 	// Vytvori device objekt implementovany v DirectX 11
-	Device *CreateDX11Device( const CreateDX11DeviceParams &params );
+	Device *DX11CreateDevice( const DX11CreateDeviceParams &params );
 	
 	// Buffer formaty graficke karty
 	enum class Format {
@@ -104,16 +106,17 @@ namespace RenderInterface {
 	const ShaderStage GEOMETRY_SHADER_STAGE	= 0x0004;
 	
 	/*
-	Zakladni trida pro vsechny render interface objekty.
+	Zakladni trida pro vsechny objekty vytvarene tridou Device.
+	Objekt Device je factory vsech device objektu, device objekty se uvolnuji metodou Release()
 	*/
-	class RenderInterfaceObject {
+	class DeviceObject {
 	public:
-		RenderInterfaceObject();
-		virtual ~RenderInterfaceObject() = 0;
+		DeviceObject();
+		virtual ~DeviceObject() = 0;
 	
 		// Pokud je pocet referenci 0, uvolni objekt z pameti a nesmi byt dale pouzivan!
 		void Release();
-	
+
 		void AddRef();
 		
 		// Vraci true, pokud je objekt pripraveny k pouziti, tj. je radne inicializovany a neni v zadnem chybovem stavu
@@ -124,13 +127,13 @@ namespace RenderInterface {
 	};
 	
 	/*
-	Device se pouziva k vytvareni vsech RenderInterfaceObject objektu
+	Reprezentuje grafickou kartu, vytvari veskere zdroje.
 	*/
-	class Device: public RenderInterfaceObject {
+	class Device: public DeviceObject {
 	public:
 		virtual ~Device() {}
 	
-		// vytvareni render objektu
+		// vytvareni device objektu
 		virtual CommandInterface *CreateCommandInterface() = 0;
 		virtual BackBuffer *CreateBackBuffer( Window &window ) = 0;
 		virtual RenderBuffer *CreateRenderBuffer( const RenderBufferDesc &desc ) = 0;
@@ -138,15 +141,19 @@ namespace RenderInterface {
 		virtual TextureSampler *CreateTextureSampler( const TextureSamplerDesc &desc ) = 0;
 		virtual Display *CreateDisplay( const int outputId ) = 0;
 	
-		// vlastnosti grafickeho adapteru
+		// vrati max quality pro pozadovany pocet msaa level.
+		// Ne vsechny karty a ne vsechna api museji podporovat tuto vlastnost, pak musi funkce vracet 1.
+		// Pokud neni msaa level podporovan, funkce vraci 0;
 		virtual int GetMultisampleQuality( const int samplesCount ) const = 0;
+
+		// Vraci pocet zobrazovacich zarizeni pripojenych na vystup graficke karty
 		// virtual int GetOutputCount() const;
 	};
 	
 	/*
 	CommandInterface slouzi ke generovani commandu graficke karty
 	*/
-	class CommandInterface: public RenderInterfaceObject {
+	class CommandInterface: public DeviceObject {
 	public:
 		virtual ~CommandInterface() {}
 	
@@ -160,9 +167,9 @@ namespace RenderInterface {
 		virtual void End() = 0;
 	
 		// Nastavi cil vykreslovani
-		virtual void SetRenderTargets( RenderTarget * const renderTargets, const int count, DepthStencilBuffer * const depthStencilBuffer ) = 0;
+		virtual void SetRenderTargets( RenderTargetObject * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) = 0;
 	
-		virtual void ClearRenderTarget( RenderTarget * const renderTarget, const Color &color ) = 0;
+		virtual void ClearRenderTarget( RenderTargetObject * const renderTarget, const Color &color ) = 0;
 	
 		//virtual void ClearRenderTarget();
 		//virtual void ClearDepthStencil();
@@ -172,18 +179,18 @@ namespace RenderInterface {
 	};
 	
 	/*
-	CommandList slouzi k jednorazovemu zaznemenani commandu a jejich pozdejsimu prehrani.
+	Slouzi k zaznemenani commandu a jejich jednorazovemu prehrani. Po prehrani je obsah command listu vyprazdnen.
 	*/
-	class CommandList: public RenderInterfaceObject {
+	class CommandList: public DeviceObject {
 	public:
 		//virtual ~CommandList();
 		//virtual void ExecuteCommandBatch( CommandBatch *batch );
 	};
 	
 	/*
-	Display pripojeny k vystupu graficke karty, se kterou je asociovan objekt Device
+	Monitor pripojeny k vystupu graficke karty (Device)
 	*/
-	class Display: public RenderInterfaceObject {
+	class Display: public DeviceObject {
 	public:
 		virtual ~Display() {}
 		
@@ -203,38 +210,63 @@ namespace RenderInterface {
 		// Najde nejlepsi dostupny rezim pro cilove zarizeni
 		virtual void GetBestMode( DisplayMode &result ) const = 0;
 	};
-	
+
 	/*
-	Zakladni trida pro BackBuffer a RenderBuffer
+	Objekt Device pouziva ShaderResourceObject k bindovani zdroje do pipeline stage (napr. k nabindovani texury do pixel shaderu)
+	Tento objekt neni vytvaren objektem Device, proto nededi z tridy DeviceObject.
+	Tento mechanismus odstranuje nutnost vicenasobne dedicnosti.
 	*/
-	class RenderTarget: public RenderInterfaceObject {
+	class ShaderResourceObject {
 	public:
-		virtual ~RenderTarget() = 0 {}
-		
-		//virtual int GetWidth() const = 0;
-		//virtual int GetHeight() const = 0;
+		virtual ~ShaderResourceObject() = default;
 	};
-	
+
 	/*
-	BackBuffer slouzi jako render target a zaroven umoznuje zobrazeni sveho obsahu do klientske oblasti okna.
-	BackBuffer je asociovan s oknem pri svem vytvoreni
+	Objekt Device pouziva RenderTargetObject k bindovani zdroje jako render target.
+	Tento objekt neni vytvaren objektem Device, proto nededi z tridy DeviceObject.
+	Tento mechanismus odstranuje nutnost vicenasobne dedicnosti.
 	*/
-	class BackBuffer: public RenderTarget {
+	class RenderTargetObject {
 	public:
-		virtual ~BackBuffer() {}
+		virtual ~RenderTargetObject() = default;
+	};
+
+	/*
+	Slouzi jako render target a zaroven umoznuje zobrazeni obsahu do klientske oblasti okna.
+	Objekt je asociovan s oknem pri svem vytvoreni pomoci Device.
+	*/
+	class BackBuffer: public DeviceObject {
+	public:
+		virtual ~BackBuffer() = default;
+
 		virtual void Present( const int vsync ) = 0;
 		virtual void Resize() = 0;
+		virtual RenderTargetObject *GetRenderTargetObject() = 0;
 		//virtual int GetWidth() const = 0;
 		//virtual int GetHeight() const = 0;
 	};
 	
+	/*
+	Zakladni trida pro vsechny texture buffery (vcetne depth stencil bufferu a render bufferu)
+	*/
+	class TextureBuffer: public DeviceObject {
+	public:
+		virtual ~TextureBuffer() = default;
+
+		virtual int GetDimmension() const = 0;
+		virtual const Format GetFormat() const = 0;
+		virtual ShaderResourceObject *GetShaderResourceObject() = 0; 
+	};
+
 	/*
 	RenderBuffer Umoznuje cteni i zapis pomoci GPU, pristup pres CPU neni povolen. Podporuje multisampling.
 	*/
-	class RenderBuffer: public RenderTarget {
+	class RenderBuffer: public TextureBuffer {
 	public:
-		virtual ~RenderBuffer() {}
+		virtual ~RenderBuffer() = default;
+
 		virtual RenderBufferDesc GetDesc() const = 0;
+		virtual RenderTargetObject *GetRenderTargetObject() = 0;
 		// GetSamplesCount()
 		// GetWidth()
 		// GetHeight()
@@ -244,16 +276,18 @@ namespace RenderInterface {
 	/*
 	DepthStencilBuffer
 	*/
-	class DepthStencilBuffer: public RenderInterfaceObject {
+	class DepthStencilBuffer: public TextureBuffer {
 	public:
 		virtual ~DepthStencilBuffer() {}
 		virtual DepthStencilBufferDesc GetDesc() const = 0;
 	};
 	
+	//**************************************************
+
 	/*
 	TextureSampler
 	*/
-	class TextureSampler: public RenderInterfaceObject {
+	class TextureSampler: public DeviceObject {
 	public:
 		virtual ~TextureSampler() {};
 		virtual TextureSamplerDesc GetDesc() const = 0;
@@ -270,7 +304,7 @@ namespace RenderInterface {
 		RasterizeStateDescription rasterizeStateDesc;
 	};
 	
-	class PipelineState: public RenderInterfaceObject {
+	class PipelineState: public DeviceObject {
 	public:
 	
 	private:
@@ -279,7 +313,7 @@ namespace RenderInterface {
 	/*
 	Zakladni trida pro vsechny buffer objekty, jako jsou Textury apod.
 	*/
-	class Buffer: public RenderInterfaceObject {
+	class Buffer: public DeviceObject {
 	public:
 		// int GetWidth() const;
 		// int GetHeight() const;

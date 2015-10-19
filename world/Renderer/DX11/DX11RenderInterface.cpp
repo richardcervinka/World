@@ -38,7 +38,7 @@ DX11Device::~DX11Device() {
 	ReleaseCOM( &device );
 }
 
-bool DX11Device::Create( const CreateDX11DeviceParams &params ) {
+bool DX11Device::Create( const DX11CreateDeviceParams &params ) {
 	HRESULT hresult = 0;
 
 	// vytvorit DXGIFactory1
@@ -128,7 +128,7 @@ CommandInterface *DX11Device::CreateCommandInterface() {
 	if ( commandInterface == nullptr ) {
 		return nullptr;
 	}
-	if ( !commandInterface->Create( context ) ) {
+	if ( !commandInterface->Create() ) {
 		delete commandInterface;
 		return nullptr;
 	}
@@ -198,10 +198,7 @@ DX11CommandInterface::~DX11CommandInterface() {
 	ReleaseCOM( &context );
 }
 
-bool DX11CommandInterface::Create( ID3D11DeviceContext *context ) {
-	if ( context == nullptr ) {
-		return false;
-	}
+bool DX11CommandInterface::Create() {
 	return true;
 }
 
@@ -219,14 +216,12 @@ void DX11CommandInterface::End() {
 	// Neimplementovan command list, dodelat!
 }
 
-void DX11CommandInterface::SetRenderTargets( RenderTarget * const renderTargets, const int count, DepthStencilBuffer * const depthStencilBuffer ) {
-	ASSERT_DOWNCAST( renderTargets, DX11RenderTarget );
-	DX11RenderTarget *dxRenderTargets = reinterpret_cast< DX11RenderTarget* >( renderTargets );
+void DX11CommandInterface::SetRenderTargets( RenderTargetObject * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) {
 	ID3D11RenderTargetView *views[ MAX_RENDER_TARGETS ] = { NULL };
-
 	int bindCount = min( count, MAX_RENDER_TARGETS );
 	for ( int i = 0; i < bindCount; i++ ) {
-		views[ i ] = dxRenderTargets[ i ].GetRenderTargetView();
+		ASSERT_DOWNCAST( renderTargets[ i ], DX11RenderTargetObject );
+		views[ i ] = static_cast< DX11RenderTargetObject* >( renderTargets[ i ] )->view;
 	}
 	if ( depthStencilBuffer == nullptr ) {
 		context->OMSetRenderTargets( MAX_RENDER_TARGETS, views, NULL );
@@ -240,11 +235,11 @@ void DX11CommandInterface::SetRenderTargets( RenderTarget * const renderTargets,
 	);
 }
 
-void DX11CommandInterface::ClearRenderTarget( RenderTarget * const renderTarget, const Color &color ) {
-	ASSERT_DOWNCAST( renderTarget, DX11RenderTarget );
+void DX11CommandInterface::ClearRenderTarget( RenderTargetObject * const renderTarget, const Color &color ) {
+	ASSERT_DOWNCAST( renderTarget, DX11RenderTargetObject );
 	context->ClearRenderTargetView(
-		reinterpret_cast< DX11RenderTarget* >( renderTarget )->GetRenderTargetView(),
-		reinterpret_cast< const float* >( &color )
+		static_cast< DX11RenderTargetObject* >( renderTarget )->view,
+		reinterpret_cast< const FLOAT* >( &color )
 	);
 }
 
@@ -308,7 +303,7 @@ void DX11Display::SetSystemMode() {
 	}
 	// ziskat ukazatel na swap chain
 	ASSERT_DOWNCAST( backBuffer, DX11BackBuffer );
-	IDXGISwapChain *swapChain = reinterpret_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
+	IDXGISwapChain *swapChain = static_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
 	if ( swapChain == nullptr ) {
 		return;
 	}
@@ -323,7 +318,7 @@ bool DX11Display::SetMode( const DisplayMode &mode, Window &window ) {
 	}
 	// ziskat swap chain back bufferu
 	ASSERT_DOWNCAST( backBuffer, DX11BackBuffer );
-	IDXGISwapChain *swapChain = reinterpret_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
+	IDXGISwapChain *swapChain = static_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
 	if ( swapChain == nullptr ) {
 		return false;
 	}
@@ -415,14 +410,14 @@ void DX11Display::GetBestMode( DisplayMode &result ) const {
 DX11BackBuffer::DX11BackBuffer() {
 	device = nullptr;
 	dxgiSwapChain = nullptr;
-	renderTargetView = nullptr;
+	renderTargetObject.view = nullptr;
 	window = nullptr;
 }
 
 DX11BackBuffer::~DX11BackBuffer() {
 	ReleaseCOM( &device );
 	ReleaseCOM( &dxgiSwapChain );
-	ReleaseCOM( &renderTargetView );
+	ReleaseCOM( &renderTargetObject.view );
 }
 
 bool DX11BackBuffer::Create( ID3D11Device *const device, IDXGIFactory1 *const factory, Window &window ) {
@@ -480,13 +475,13 @@ bool DX11BackBuffer::Create( ID3D11Device *const device, IDXGIFactory1 *const fa
 	device->AddRef();
 	this->window = &window;
 	this->dxgiSwapChain = swapChain;
-	this->renderTargetView = renderTargetView;
+	this->renderTargetObject.view = renderTargetView;
 
 	return true;
 }
 
-ID3D11RenderTargetView *DX11BackBuffer::GetRenderTargetView() {
-	return renderTargetView;
+RenderTargetObject *DX11BackBuffer::GetRenderTargetObject() {
+	return &renderTargetObject;
 }
 
 IDXGISwapChain *DX11BackBuffer::GetSwapChain() {
@@ -499,15 +494,15 @@ void DX11BackBuffer::Present( const int vsync ) {
 
 void DX11BackBuffer::Resize() {
 	// zjistit pocet referenci na RenderTargetView
-	ULONG refs = renderTargetView->AddRef();
-	renderTargetView->Release();
+	ULONG refs = renderTargetObject.view->AddRef();
+	renderTargetObject.view->Release();
 	
 	// nejsou uvolneny vsechny reference na back buffer
 	if ( refs > 2 ) {
 		return;
 	}
 	// release RTV
-	ReleaseCOM( &renderTargetView );
+	ReleaseCOM( &renderTargetObject.view );
 	
 	// resize
 	const int width = window->GetClientWidth();
@@ -525,7 +520,7 @@ void DX11BackBuffer::Resize() {
 	}
 	D3D11_TEXTURE2D_DESC bufferDesc;
 	buffer->GetDesc( &bufferDesc );
-	hresult = device->CreateRenderTargetView( buffer, NULL, &renderTargetView );
+	hresult = device->CreateRenderTargetView( buffer, NULL, &renderTargetObject.view );
 	buffer->Release();
 	if ( FAILED( hresult ) ) {
 		AbortDXInvalidCall( hresult );
@@ -536,15 +531,15 @@ void DX11BackBuffer::Resize() {
 
 DX11RenderBuffer::DX11RenderBuffer() {
 	texture = nullptr;
-	renderTargetView = nullptr;
-	shaderResourceView = nullptr;
+	renderTargetObject.view = nullptr;
+	shaderResourceObject.view = nullptr;
 	ZeroMemory( &desc, sizeof( desc ) );
 }
 
 DX11RenderBuffer::~DX11RenderBuffer() {
 	ReleaseCOM( &texture );
-	ReleaseCOM( &renderTargetView );
-	ReleaseCOM( &shaderResourceView );
+	ReleaseCOM( &renderTargetObject.view );
+	ReleaseCOM( &shaderResourceObject.view );
 }
 
 bool DX11RenderBuffer::Create( DX11Device *const device, const RenderBufferDesc &desc ) {
@@ -597,8 +592,8 @@ bool DX11RenderBuffer::Create( DX11Device *const device, const RenderBufferDesc 
 	}
 	// ulozit vytvorene objekty
 	this->texture = texture;
-	this->renderTargetView = rtv;
-	this->shaderResourceView = srv;
+	this->renderTargetObject.view = rtv;
+	this->shaderResourceObject.view = srv;
 	this->desc = desc;
 
 	return true;
@@ -608,8 +603,20 @@ RenderBufferDesc DX11RenderBuffer::GetDesc() const {
 	return desc;
 }
 
-ID3D11RenderTargetView *DX11RenderBuffer::GetRenderTargetView() {
-	return renderTargetView;
+RenderTargetObject *DX11RenderBuffer::GetRenderTargetObject() {
+	return &renderTargetObject;
+}
+
+ShaderResourceObject *DX11RenderBuffer::GetShaderResourceObject() {
+	return &shaderResourceObject;
+}
+
+int DX11RenderBuffer::GetDimmension() const {
+	return 2;
+}
+
+const Format DX11RenderBuffer::GetFormat() const {
+	return desc.format;
 }
 
 // DX11DepthStencilBuffer

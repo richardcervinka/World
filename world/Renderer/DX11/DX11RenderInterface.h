@@ -29,7 +29,7 @@ public:
 	virtual ~DX11Device();
 
 	// Funkci Create() vola pouze funkce CreateDX11Device()
-	bool Create( const CreateDX11DeviceParams &params );
+	bool Create( const DX11CreateDeviceParams &params );
 
 	// pristupove funkce k rozhrani DirectX11
 	ID3D11DeviceContext *GetContext();
@@ -73,12 +73,21 @@ public:
 	Array< DisplayMode > modes;
 };
 
-class DX11RenderTarget {
+// Messenger pattern only
+//
+class DX11ShaderResourceObject: public ShaderResourceObject {
 public:
-	virtual ID3D11RenderTargetView *GetRenderTargetView() = 0;
+	ID3D11ShaderResourceView *view = nullptr;
 };
 
-class DX11BackBuffer: public BackBuffer, public DX11RenderTarget {
+// Messenger pattern only
+//
+class DX11RenderTargetObject: public RenderTargetObject {
+public:
+	ID3D11RenderTargetView *view = nullptr;
+};
+
+class DX11BackBuffer: public BackBuffer {
 public:
 	DX11BackBuffer();
 	virtual ~DX11BackBuffer();
@@ -86,36 +95,40 @@ public:
 	bool Create( ID3D11Device *const device, IDXGIFactory1 *const factory, Window &window );
 	IDXGISwapChain *GetSwapChain();
 
-	// implementace rozhrani DX11RenderTarget
-	virtual ID3D11RenderTargetView *GetRenderTargetView() override;
-
 	// implementace rozhrani BackBuffer
+	virtual RenderTargetObject *GetRenderTargetObject() override;
 	virtual void Present( const int vsync ) override;
 	virtual void Resize() override;
-	//virtual int GetWidth() const override;
-	//virtual int GetHeight() const override;
 
 private:
 	ID3D11Device *device;
 	IDXGISwapChain *dxgiSwapChain;
-	ID3D11RenderTargetView *renderTargetView;
+	DX11RenderTargetObject renderTargetObject;
 	Window *window;
 	int width;
 	int height;
 };
 
-class DX11RenderBuffer: public RenderBuffer, DX11RenderTarget {
+class DX11RenderBuffer: public RenderBuffer {
 public:
 	DX11RenderBuffer();
 	~DX11RenderBuffer();
 	bool Create( DX11Device *const device, const RenderBufferDesc &desc );
+
+	// implementace rozhrani RenderBuffer
 	virtual RenderBufferDesc GetDesc() const override;
-	virtual ID3D11RenderTargetView *GetRenderTargetView() override;
+	virtual RenderTargetObject *GetRenderTargetObject() override;
+
+	// implementace rozhrani TextureBuffer
+	virtual int GetDimmension() const override;
+	virtual const Format GetFormat() const override;
+	virtual ShaderResourceObject *GetShaderResourceObject() override;
 
 private:
 	ID3D11Texture2D *texture;
-	ID3D11RenderTargetView *renderTargetView;
-	ID3D11ShaderResourceView *shaderResourceView;
+	DX11RenderTargetObject renderTargetObject;
+	DX11ShaderResourceObject shaderResourceObject;
+	//ID3D11ShaderResourceView *shaderResourceView;
 	RenderBufferDesc desc;
 };
 
@@ -127,6 +140,11 @@ public:
 	virtual DepthStencilBufferDesc GetDesc() const override;
 	ID3D11DepthStencilView *GetDepthStencilView();
 
+	// implementace rozhrani TextureBuffer
+	virtual int GetDimmension() const override { return 0; }
+	virtual const Format GetFormat() const override { return Format::UNKNOWN; }
+	virtual ShaderResourceObject *GetShaderResourceObject() override { return new DX11ShaderResourceObject(); }//---------------------------------------------------------------------------
+
 private:
 	ID3D11Texture2D *texture;
 	ID3D11DepthStencilView *view;
@@ -137,14 +155,14 @@ class DX11CommandInterface: public CommandInterface {
 public:
 	DX11CommandInterface();
 	~DX11CommandInterface();
-	bool Create( ID3D11DeviceContext *context );
+	bool Create();
 
 	// implementace rozhrani
 	virtual void Begin( Device * const device ) override;
 	virtual void Begin( CommandList * const commandList ) override;
 	virtual void End() override;
-	virtual void SetRenderTargets( RenderTarget * const renderTargets, const int count, DepthStencilBuffer * const depthStencilBuffer ) override;
-	virtual void ClearRenderTarget( RenderTarget * const renderTarget, const Color &color ) override;
+	virtual void SetRenderTargets( RenderTargetObject * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) override;
+	virtual void ClearRenderTarget( RenderTargetObject * const renderTarget, const Color &color ) override;
 
 private:
 	ID3D11DeviceContext *context;

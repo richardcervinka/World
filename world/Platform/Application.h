@@ -2,10 +2,7 @@
 
 #include "..\Framework\String.h"
 
-//class Window;
-
-// Objekt aplikace se stara o inicializaci, vytvoreni hlavniho okna a spusteni smycky zprav.
-// odvozene tridy pro cilovou platformu musi implementovat vlastni zpusob vytvoreni objektu (napr. metoda Create() )
+// Klient by nemel vytvaret vice nez jeden objekt Application
 //
 class Application {
 public:
@@ -16,32 +13,30 @@ public:
 	Application( const Application& ) = delete;
 	Application &operator=( const Application& ) = delete;
 	
-	// Spusti aplikaci, vstoupi do smycky zprav.
-	// Navrat z funkce je pouze pri radnem ukonceni aplikace
+	// Vstip do smycky zprav. Navrat je pouze pri radnem ukonceni aplikace
 	void Run();
-
-	// Metoda Update() je cyklicky volana funkci Run(), predefinovana verze typicky aktualizuje novy snimek
-	virtual void Update();
+	
+	// Metoda Update() je cyklicky volana funkci Run(), predefinovana verze by mela aktualizovat novy snimek
+	//virtual void Update();
 	
 	// Standardni zpusob ukonceni aplikace.
-	// Ukonci vsechna vlakna bezici aplikace, uvolni zdroje a ukonci aplikaci
 	static void Exit();
 	
-	// Ukonceni bezici aplikace pri vyskytu kriticke chyby
+	// Ukonceni aplikace pri vyskytu kriticke chyby
 	static void Abort();
 	
-	// Ukonceni bezici aplikace pri vyskytu kriticke chyby
+	// Ukonceni aplikace pri vyskytu kriticke chyby
 	static void Abort( const String &errorMessage );
 	
 private:
-	// Implementace statickych metod
+	// Implementace statickych metod, static members volaji primo tyto non-static members
 	virtual void ExitApp() = 0;
 	virtual void AbortApp() = 0;
 	virtual void AbortApp( const String &errorMessage ) = 0;
 	
-	// Funkce Run() vola tuto funkci dokud vraci true, pokud vrati false, aplikace bude ukoncena
-	// Ukolem funkce je zpracovavat zpravy systemove zpravy. Musi poskytnout take standardni zpracovani zprav.
-	// Napr. v systemu Windows muze funkce zachytit zpravu WM_KEYDOWN, musi ji vsak dale poslat oknu.
+	// Funkce je volana funkci Run() dokud vraci hodnotu true, pokud vrati false, aplikace je standardnim zpusobem ukoncena.
+	// Ukolem funkce je zpracovavat systemove zpravy.
+	// Ve Windows muze napr. zachytit zpravu WM_KEYDOWN, musi ji vsak poslat take oknu pomoci DispatchMessage().
 	virtual bool ProcessPlatformMessages() = 0;
 	
 private:

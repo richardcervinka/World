@@ -61,18 +61,8 @@ public:
 	Renderer();
 	~Renderer();
 
-	// inicializace a propojeni s oknem
-	void Initialize( Window &window, const RendererInitialParameters &parameters );
-
-	// prepnuti mezi windowed a fullscreen, zmena rozlyseni
-	void SetDisplayMode( const int id, const bool fullscreen );
-	RenderInterface::DisplayMode GetDisplayMode() const;
-	//DisplayMode GetBestDisplayMode() const;
-	bool Fullscreen() const;
-	void SwitchFullscreen();
-
-	// funkci Resize vola okno pri zmene velikosti
-	void Resize();
+	// inicializace
+	void Initialize( const RendererInitialParameters &parameters );
 
 private:
 	struct RenderTarget {
@@ -144,24 +134,9 @@ private:
 
 	//////////////////////////////////////////////////////
 
-	WinWindow *window;
 	Parameters parameters;
 	bool fullscreen;
 	DeviceFeatures deviceFeatures;
-
-	// directx objekty
-	ID3D11Device *device_;
-	ID3D11DeviceContext *deviceContext_;
-	IDXGISwapChain *swapChain;
-
-	ID3D11RenderTargetView *backBufferView;
-	int backBufferWidth;
-	int backBufferHeight;
-
-	ID3D11Texture2D *depthStencilBuffer_;
-	ID3D11DepthStencilView *depthStencilView;
-	ID3D11SamplerState *textureSampler;
-	//ID3D11SamplerState *textureSamplerLinear;
 
 	// directx states
 	Array< ID3D11DepthStencilState* > depthStencilStates;
