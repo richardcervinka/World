@@ -11,11 +11,14 @@ namespace RenderInterface {
 	class Display;
 	class CommandInterface;
 	class CommandList;
-	class RenderTargetObject;
-	class ShaderResourceObject;
-	class RenderTarget;
-		class RenderBuffer;
-		class BackBuffer;
+	class RenderTargetDescriptor;
+	class TextureDescriptor;
+	class TextureBuffer;
+	class TextureBuffer1D;
+	class TextureBuffer1DArray;
+	class TextureBuffer2D;
+	class TextureBuffer2DArray;
+	class BackBuffer;
 	class DepthStencilBuffer;
 	class TextureSampler;
 	
@@ -89,6 +92,16 @@ namespace RenderInterface {
 		CLAMP
 	};
 	
+	/*
+	Rozmery textury, pokud neni rozmer definovan, je jeho hodnota 1
+	Rozmer nemuze mit nikdy nulovou velikost
+	*/
+	struct TextureDimmensions {
+		int width;
+		int height;
+		int depth;
+	};
+	
 	struct TextureSamplerDesc {
 		TextureFilter filter;
 		TextureAddress uAddress;
@@ -101,9 +114,9 @@ namespace RenderInterface {
 	
 	// Identifikace shader stag, hodnoty lze kombinovat operatorem OR
 	typedef unsigned int ShaderStage;
-	const ShaderStage VERTEX_SHADER_STAGE	= 0x0001;
-	const ShaderStage PIXEL_SHADER_STAGE	= 0x0002;
-	const ShaderStage GEOMETRY_SHADER_STAGE	= 0x0004;
+	const ShaderStage VERTEX_SHADER_STAGE = 0x0001;
+	const ShaderStage PIXEL_SHADER_STAGE = 0x0002;
+	const ShaderStage GEOMETRY_SHADER_STAGE = 0x0004;
 	
 	/*
 	Zakladni trida pro vsechny objekty vytvarene tridou Device.
@@ -113,10 +126,15 @@ namespace RenderInterface {
 	public:
 		DeviceObject();
 		virtual ~DeviceObject() = 0;
-	
+		
+		// neni mozne vytvaret kopie device objektu, jediny, kdo vytvari device objekty je objekt Device
+		DeviceObject( const DeviceObject& ) = delete;
+		DeviceObject &operator=( const DeviceObject& ) = delete;
+		
 		// Pokud je pocet referenci 0, uvolni objekt z pameti a nesmi byt dale pouzivan!
 		void Release();
-
+		
+		// inkrementuje pocitadlo referenci, objekt neni uvolnen z pameti, dokud je pocet referenci vetsi nez 0
 		void AddRef();
 		
 		// Vraci true, pokud je objekt pripraveny k pouziti, tj. je radne inicializovany a neni v zadnem chybovem stavu
@@ -131,8 +149,6 @@ namespace RenderInterface {
 	*/
 	class Device: public DeviceObject {
 	public:
-		virtual ~Device() {}
-	
 		// vytvareni device objektu
 		virtual CommandInterface *CreateCommandInterface() = 0;
 		virtual BackBuffer *CreateBackBuffer( Window &window ) = 0;
@@ -140,7 +156,7 @@ namespace RenderInterface {
 		virtual DepthStencilBuffer *CreateDepthStencilBuffer( const DepthStencilBufferDesc &desc ) = 0;
 		virtual TextureSampler *CreateTextureSampler( const TextureSamplerDesc &desc ) = 0;
 		virtual Display *CreateDisplay( const int outputId ) = 0;
-	
+		
 		// vrati max quality pro pozadovany pocet msaa level.
 		// Ne vsechny karty a ne vsechna api museji podporovat tuto vlastnost, pak musi funkce vracet 1.
 		// Pokud neni msaa level podporovan, funkce vraci 0;
@@ -155,8 +171,6 @@ namespace RenderInterface {
 	*/
 	class CommandInterface: public DeviceObject {
 	public:
-		virtual ~CommandInterface() {}
-	
 		// zahajeni posilani commanu primo do grafickeho zarizeni
 		virtual void Begin( Device * const device ) = 0;
 	
@@ -166,15 +180,17 @@ namespace RenderInterface {
 		// ukonceni sekvence commandu
 		virtual void End() = 0;
 	
-		// Nastavi cil vykreslovani
-		virtual void SetRenderTargets( RenderTargetObject * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) = 0;
-	
-		virtual void ClearRenderTarget( RenderTargetObject * const renderTarget, const Color &color ) = 0;
-	
-		//virtual void ClearRenderTarget();
-		//virtual void ClearDepthStencil();
+		// Nastavi multiple render targets plus nepovinne depth stencil buffer (muze byt nullptr)
+		virtual void SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) = 0;
+		
+		// Vyplni render target barvou
+		virtual void ClearRenderTarget( RenderTargetDescriptor * const renderTarget, const Color &color ) = 0;
+		
+		//virtual void ClearDepthStencilBuffer( DepthStencilBuffer * const target );
+		
+		// Nastavi objekt Device do vychoziho stavu
 		//void ClearState();
-		//void SetRenderTarget( RenderBuffer )
+		
 		//void SetPipelineState()
 	};
 	
@@ -183,7 +199,6 @@ namespace RenderInterface {
 	*/
 	class CommandList: public DeviceObject {
 	public:
-		//virtual ~CommandList();
 		//virtual void ExecuteCommandBatch( CommandBatch *batch );
 	};
 	
@@ -192,8 +207,6 @@ namespace RenderInterface {
 	*/
 	class Display: public DeviceObject {
 	public:
-		virtual ~Display() {}
-		
 		// Nastavi rezim co nejvice odpovidajici pozadavku (na desktopu prepne do rezimu cele obrazovky)
 		// U zarizeni, ktera maji jediny mozny rezim obrazovky (mobilni zarizeni...), nedela nic
 		virtual bool SetMode( const DisplayMode &mode, Window &window ) = 0;
@@ -212,65 +225,80 @@ namespace RenderInterface {
 	};
 
 	/*
-	Objekt Device pouziva ShaderResourceObject k bindovani zdroje do pipeline stage (napr. k nabindovani texury do pixel shaderu)
-	Tento objekt neni vytvaren objektem Device, proto nededi z tridy DeviceObject.
-	Tento mechanismus odstranuje nutnost vicenasobne dedicnosti.
+	TextureDescriptor slouzi k bindovani textury do pipeline stage
 	*/
-	class ShaderResourceObject {
-	public:
-		virtual ~ShaderResourceObject() = default;
-	};
-
-	/*
-	Objekt Device pouziva RenderTargetObject k bindovani zdroje jako render target.
-	Tento objekt neni vytvaren objektem Device, proto nededi z tridy DeviceObject.
-	Tento mechanismus odstranuje nutnost vicenasobne dedicnosti.
-	*/
-	class RenderTargetObject {
-	public:
-		virtual ~RenderTargetObject() = default;
-	};
-
-	/*
-	Slouzi jako render target a zaroven umoznuje zobrazeni obsahu do klientske oblasti okna.
-	Objekt je asociovan s oknem pri svem vytvoreni pomoci Device.
-	*/
-	class BackBuffer: public DeviceObject {
-	public:
-		virtual ~BackBuffer() = default;
-
-		virtual void Present( const int vsync ) = 0;
-		virtual void Resize() = 0;
-		virtual RenderTargetObject *GetRenderTargetObject() = 0;
-		//virtual int GetWidth() const = 0;
-		//virtual int GetHeight() const = 0;
-	};
+	class TextureDescriptor: public DeviceObject {};
 	
 	/*
-	Zakladni trida pro vsechny texture buffery (vcetne depth stencil bufferu a render bufferu)
+	RenderTargetDescriptor k bindovani textury jako render target.
+	*/
+	class RenderTargetDescriptor: public DeviceObject {};
+	
+	/*
+	Zakladni trida pro vsechny texture buffery (vcetne depth stencil bufferu)
 	*/
 	class TextureBuffer: public DeviceObject {
 	public:
-		virtual ~TextureBuffer() = default;
-
-		virtual int GetDimmension() const = 0;
 		virtual const Format GetFormat() const = 0;
-		virtual ShaderResourceObject *GetShaderResourceObject() = 0; 
+		
+		// dimenze textury (2 pro TextureBuffer2D apod.) 
+		virtual int GetDimmension() const = 0;
+		
+		// rozmery textury
+		virtual TextureDimmensions GetDimmensions() const = 0;
+		
+		// AccessFlags
 	};
-
+	
 	/*
-	RenderBuffer Umoznuje cteni i zapis pomoci GPU, pristup pres CPU neni povolen. Podporuje multisampling.
+	1D textura
 	*/
-	class RenderBuffer: public TextureBuffer {
+	class TextureBuffer1D: public TextureBuffer {
 	public:
-		virtual ~RenderBuffer() = default;
-
-		virtual RenderBufferDesc GetDesc() const = 0;
-		virtual RenderTargetObject *GetRenderTargetObject() = 0;
-		// GetSamplesCount()
-		// GetWidth()
-		// GetHeight()
-		// GetFormat()
+		virtual int GetWidth() const = 0;
+	};
+	
+	/*
+	Pole 1D textur stejne velikosti
+	*/
+	class TextureBuffer1DArray: public TextureBuffer {
+	public:
+		virtual int GetWidth() const = 0;
+		
+		// velikost pole, vraci hodnoty od 1, pole nemuze mit nulovou velikost
+		virtual int GetArraySize() const = 0;
+	};
+	
+	/*
+	2D textura
+	*/
+	class TextureBuffer2D: public TextureBuffer {
+	public:
+		virtual int GetWidth() const = 0;
+		virtual int GetHeight() const = 0;
+	};
+	
+	/*
+	Pole 2D textur stejne velikosti
+	*/
+	class TextureBuffer2DArray: public TextureBuffer {
+	public:
+		virtual int GetWidth() const = 0;
+		virtual int GetHeight() const = 0;
+		
+		// velikost pole, vraci hodnoty od 1, pole nemuze mit nulovou velikost
+		virtual int GetArraySize() const = 0;
+	};
+	
+	/*
+	Umoznuje zobrazeni obsahu back bufferu do klientske oblasti okna. Objekt je asociovan s oknem pri svem vytvoreni.
+	*/
+	class BackBuffer: public DeviceObject {
+	public:
+		virtual void Present( const int vsync ) = 0;
+		virtual void Resize() = 0;
+		//virtual int GetWidth() const = 0;
+		//virtual int GetHeight() const = 0;
 	};
 	
 	/*

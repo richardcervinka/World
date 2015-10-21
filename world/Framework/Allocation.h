@@ -45,7 +45,7 @@ public:
 //
 class FixedAllocator: public Allocator {
 public:
-	explicit FixedAllocator( const unsigned long size, const unsigned long chunkSize = DEFAULT_ALLOCATOR_CHUNK_SIZE );
+	explicit FixedAllocator( const unsigned long blockSizeParam, const unsigned long chunkSizeParam = DEFAULT_ALLOCATOR_CHUNK_SIZE );
 	~FixedAllocator();
 	
 	// vrati ukazatel na blok pameti
@@ -79,8 +79,8 @@ private:
 private:
 	Chunk *chunks;
 	Block *free;
-	unsigned long size;
-	unsigned long chunkSize;
+	const unsigned long size;
+	const unsigned long chunkSize;
 	unsigned long allocated;
 };
 

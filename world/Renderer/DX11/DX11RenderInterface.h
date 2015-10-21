@@ -5,6 +5,21 @@
 #include "..\RenderInterface.h"
 #include "..\..\Framework\Array.h"
 
+class DX11Device;
+class DX11Display;
+class DX11CommandInterface;
+class DX11CommandList;
+class DX11RenderTargetDescriptor;
+class DX11TextureDescriptor;
+class DX11TextureBuffer;
+class DX11TextureBuffer1D;
+class DX11TextureBuffer1DArray;
+class DX11TextureBuffer2D;
+class DX11TextureBuffer2DArray;
+class DX11BackBuffer;
+class DX11DepthStencilBuffer;
+class DX11TextureSampler;
+
 using namespace RenderInterface;
 
 // uvolneni COM objektu
@@ -16,8 +31,10 @@ inline void ReleaseCOM( T **target ) {
 	}
 }
 
-// Ukonci aplikaci v dusledku chyby volani DirectX
-// Funkce nesmi byt volana pri vytvareni RenderInterface objektu
+/*
+Ukonci aplikaci v dusledku chyby volani DirectX
+Funkce nesmi byt volana pri vytvareni RenderInterface objektu
+*/
 void AbortDXInvalidCall( const HRESULT hresult );
 
 // prevede hodnotu typu Format na DXGI_FORMAT
@@ -73,19 +90,26 @@ public:
 	Array< DisplayMode > modes;
 };
 
-// Messenger pattern only
-//
-class DX11ShaderResourceObject: public ShaderResourceObject {
+class DX11TextureDescriptor: public TextureDescriptor {
 public:
-	ID3D11ShaderResourceView *view = nullptr;
+	DX11TextureDescriptor();
+	virtual ~DX11TextureDescriptor();
+	bool Create( ID3D11Device * const device, DX11TextureBuffer1D * const buffer );
+	bool Create( ID3D11Device * const device, DX11TextureBuffer1DArray * const buffer );
+	bool Create( ID3D11Device * const device, DX11TextureBuffer2D * const buffer );
+	bool Create( ID3D11Device * const device, DX11TextureBuffer2DArray * const buffer );
+	ID3D11ShaderResourceView *GetView();
+	
+private:
+	ID3D11ShaderResourceView *view;
 };
 
-// Messenger pattern only
-//
-class DX11RenderTargetObject: public RenderTargetObject {
-public:
-	ID3D11RenderTargetView *view = nullptr;
-};
+
+
+
+
+
+
 
 class DX11BackBuffer: public BackBuffer {
 public:

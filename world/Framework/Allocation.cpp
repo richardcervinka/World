@@ -100,13 +100,13 @@ void operator delete[]( void *ptr ) noexcept {
 
 // FixedAllocator
 
-FixedAllocator::FixedAllocator( const unsigned long size, const unsigned long chunkSize ) {
-	allocated = 0;
-	chunks = nullptr;
-	free = nullptr;
-	this->size = ( size + 15 ) & ( ~0x0f ); // 16 byte alignment
-	this->chunkSize = chunkSize;
-}
+FixedAllocator::FixedAllocator( const unsigned long blockSizeParam, const unsigned long chunkSizeParam ):
+	chunks( nullptr ),
+	free( nullptr ),
+	size( ( blockSizeParam + 15 ) & ( ~0x0f ) ), // 16 byte alignment
+	chunkSize( chunkSizeParam ),
+	allocated( 0 )
+{}
 
 FixedAllocator::~FixedAllocator() {
 	// Chyba, je alokovana nejaka pamet!
