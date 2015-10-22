@@ -1,6 +1,7 @@
 #include <cwchar>
 #include <cstring>
 #include <cctype>
+#include <utility>
 #include "String.h"
 #include "Math.h"
 #include "Types.h"
@@ -20,11 +21,41 @@ String::String( const char16_t * const strUTF16 ): String() {
 String::String( const String &str ): String() {
 	Alloc( str.capacity );
 	length = str.length;
-	memcpy( string, str.string, 2 * ( length + 1 ) );
+	memcpy( string, str.string, sizeof( char16_t ) * ( length + 1 ) );
 }
 
 String::String( const String &str, const int index, const int size ): String() {
 	Set( str, index, size );
+}
+
+String::String( String &&str ) {
+	Move( std::move( str ) );
+}
+
+String &String::operator=( String &&str ) {
+	// uvolnit pamet
+	delete [] stringLong;
+	stringLong = nullptr;
+	Move( std::move( str ) );
+	return *this;
+}
+
+void String::Move( String &&str ) {
+	// zkopirovat short string
+	if ( str.string == str.stringShort ) {
+		length = str.length;
+		capacity = SHORT_LENGTH;
+		stringLong = nullptr;
+		string = stringShort;
+		memcpy( string, str.string, sizeof( char16_t ) * ( length + 1 ) );
+		return;
+	}
+	// move long string
+	length = str.length;
+	capacity = str.capacity;
+	stringLong = str.stringLong;
+	str.stringLong = nullptr;
+	string = stringLong;
 }
 
 String::~String() {
@@ -32,9 +63,12 @@ String::~String() {
 }
 
 String &String::operator=( const String &str ) {
+	if ( &str == this ) {
+		return *this;
+	}
 	Realloc( str.capacity );
 	length = str.length;
-	memcpy( string, str.string, 2 * ( length + 1 ) );
+	memcpy( string, str.string, sizeof( char16_t ) * ( length + 1 ) );
 	return *this;
 }
 

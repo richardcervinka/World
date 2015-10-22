@@ -2,15 +2,31 @@
 
 #include "Types.h"
 
-// Pouziva UCS-2 kodovani; reprezentuje BMP mnozinu UTF-16,
-// poku je potreba prevest String na char16_t, neni nutne provadet zadnou konverzi.
-// Vzdy pouzivat literar u (string = u"hello");
-// Pretypovani z UTF-8 je mozne jen prostrednictvim funkce FromUTF8()
-//
+/*
+String
+
+Duvody vlastni implementace:
+- Rozsiruje funkcionalitu std::string v ramci jedne tridy
+- Optimalizace pro male retezce (retezce do velikosti SHORT_LENGTH nealokuji dynamickou pamet)
+- Podpora internich alokatoru
+- Jednotny typ retezcu (std::string vs std::wstring vs std::u16string vs std::u32string)
+- Jednotny format (ANSI vs UNICODE vs UCS-2)
+- Jednotne kodovani (raw vs UTF8 vs UTF16 vs UTF32)
+- Podpora interni serializace
+
+Argumenty:
+- Proc ne std::string nebo std::wstring? Ani jeden typ nedefinuje znakovou sadu ani kodovani
+- Proc ne std::u16string? Engine pouziva, misto UTF16, kodovani s pevnou sirkou znaku (UCS-2)
+
+Trida String pouziva UCS-2 kodovani (reprezentuje BMP mnozinu UTF-16).
+Trida nepovoluje implicitni pretypovani z jineho typu nez char16_t.
+Kdyz je potreba prevest String na char16_t, nemusi se provadet zadna konverze.
+Je nutne vzdy pouzivat literar 'u' (pr.: String string = u"hello");
+*/
 class String {
 public:
 	enum {
-		SHORT_LENGTH = 64,
+		SHORT_LENGTH = 128,
 		MAX_LENGTH = INT_MAX
 	};
 	
@@ -25,6 +41,10 @@ public:
 	// prirazeni
 	String &operator=( const String &str );
 	String &operator=( const char16_t * const strUTF16 );
+	
+	// move operations
+	String( String &&str );
+	String &operator=( String &&str );
 	
 	// Inicializuje retezec rozsahem retezce str, pri neplatnych parametrech zkrati retezec na nulovou delku
 	void Set( const String &str, const int index, const int size );
@@ -112,6 +132,10 @@ public:
 	static void Join( const String * const strings[], const int count, String separator, String &result );
 	static void Join( const String strings[], const int count, String separator, String &result );
 	
+private:
+	// implementace move operaci
+	void Move( String &&str );
+
 private:
 	int length;
 	int capacity;
