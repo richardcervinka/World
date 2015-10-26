@@ -1,3 +1,4 @@
+#include <memory>
 #include "DX11RenderInterface.h"
 #include "..\..\Platform\Application.h"
 #include "..\..\Platform\Windows\WindowsWindow.h"
@@ -12,12 +13,16 @@ void AbortDXInvalidCall( const HRESULT hresult ) {
 
 DXGI_FORMAT GetDXGIFormat(const Format format) {
 	switch ( format ) {
+	case Format::UNKNOWN:				return DXGI_FORMAT_UNKNOWN;
 	case Format::R8G8B8A8_UNORM:		return DXGI_FORMAT_R8G8B8A8_UNORM;
+	case Format::R8G8B8A8_SNORM:		return DXGI_FORMAT_R8G8B8A8_SNORM;
 	case Format::R16G16B16A16_FLOAT:	return DXGI_FORMAT_R16G16B16A16_FLOAT;
 	case Format::R16G16_FLOAT:			return DXGI_FORMAT_R16G16_FLOAT;
 	case Format::R8_UNORM:				return DXGI_FORMAT_R8_UNORM;
 	case Format::R16_FLOAT:				return DXGI_FORMAT_R16_FLOAT;
 	case Format::R32_FLOAT:				return DXGI_FORMAT_R32_FLOAT;
+	case Format::BC1:					return DXGI_FORMAT_BC1_UNORM;
+	case Format::BC3:					return DXGI_FORMAT_BC3_UNORM;
 	}
 	return DXGI_FORMAT_UNKNOWN;
 }
@@ -145,18 +150,6 @@ BackBuffer *DX11Device::CreateBackBuffer( Window &window ) {
 		return nullptr;
 	}
 	return backBuffer;
-}
-
-RenderBuffer *DX11Device::CreateRenderBuffer( const RenderBufferDesc &desc ) {
-	DX11RenderBuffer *buffer = new DX11RenderBuffer();
-	if ( buffer == nullptr ) {
-		return nullptr;
-	}
-	if ( !buffer->Create( this, desc ) ) {
-		delete buffer;
-		return nullptr;
-	}
-	return buffer;
 }
 
 DepthStencilBuffer *DX11Device::CreateDepthStencilBuffer( const DepthStencilBufferDesc &desc ) {
@@ -405,96 +398,21 @@ void DX11Display::GetBestMode( DisplayMode &result ) const {
 	FindMode( mode, result );
 }
 
-// DX11TextureDescriptor
-
-DX11TextureDescriptor::DX11TextureDescriptor() {
-	view = nullptr;
-}
-DX11TextureDescriptor::~DX11TextureDescriptor() {
-	ReleaseCOM( &view );
-}
-
-bool DX11TextureDescriptor::Create( ID3D11Device * const device, DX11TextureBuffer1D * const buffer ) {
-	ID3D11Texture1D *texture = buffer->GetD3D11Texture();
-	D3D11_TEXTURE1D_DESC textureDesc;
-	texture->GetDesc( &textureDesc );
-	
-	D3D11_SHADER_RESOURCE_VIEW_DES viewDesc;
-	viewDesc.Format = textureDesc.Format;
-	viewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-	viewDesc.Texture1D.MostDetailedMip = textureDesc.MipLevels - 1;
-	viewDesc.Texture2D.MipLevels = -1;
-	
-	device->CreateRenderTargetView( texture, NULL, &view );
-	return view != nullptr;
-}
-
-bool DX11TextureDescriptor::Create( ID3D11Device * const device, DX11TextureBuffer1DArray * const buffer ) {
-	ID3D11Texture1D *texture = buffer->GetD3D11Texture();
-	D3D11_TEXTURE1D_DESC textureDesc;
-	texture->GetDesc( &textureDesc );
-	
-	D3D11_SHADER_RESOURCE_VIEW_DES viewDesc;
-	viewDesc.Format = textureDesc.Format;
-	viewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
-	viewDesc.Texture1D.MostDetailedMip = textureDesc.MipLevels - 1;
-	viewDesc.Texture1D.MipLevels = -1;
-	viewDesc.Texture1D.FirstArraySlice = 0;
-	viewDesc.Texture1D.ArraySize = textureDesc.ArraySize;
-	
-	device->CreateRenderTargetView( texture, NULL, &view );
-	return view != nullptr;
-}
-
-bool DX11TextureDescriptor::Create( ID3D11Device * const device, DX11TextureBuffer2D * const buffer ) {
-	ID3D11Texture2D *texture = buffer->GetD3D11Texture();
-	D3D11_TEXTURE2D_DESC textureDesc;
-	texture->GetDesc( &textureDesc );
-	
-	D3D11_SHADER_RESOURCE_VIEW_DES viewDesc;
-	viewDesc.Format = textureDesc.Format;
-	viewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-	viewDesc.Texture2D.MostDetailedMip = textureDesc.MipLevels - 1;
-	viewDesc.Texture2D.MipLevels = -1;
-	
-	device->CreateRenderTargetView( texture, NULL, &view );
-	return view != nullptr;
-}
-
-bool DX11TextureDescriptor::Create( ID3D11Device * const device, DX11TextureBuffer2DArray * const buffer ) {
-	ID3D11Texture2D *texture = buffer->GetD3D11Texture();
-	D3D11_TEXTURE2D_DESC textureDesc;
-	texture->GetDesc( &textureDesc );
-	
-	D3D11_SHADER_RESOURCE_VIEW_DES viewDesc;
-	viewDesc.Format = textureDesc.Format;
-	viewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
-	viewDesc.Texture2D.MostDetailedMip = textureDesc.MipLevels - 1;
-	viewDesc.Texture2D.MipLevels = -1;
-	viewDesc.Texture2D.FirstArraySlice = 0;
-	viewDesc.Texture2D.ArraySize = textureDesc.ArraySize;
-	
-	device->CreateRenderTargetView( texture, NULL, &view );
-	return view != nullptr;
-}
-
-ID3D11ShaderResourceView *ID3D11ShaderResourceView::GetView() {
-	return view;
-}
-
 // DX11BackBuffer
 
 DX11BackBuffer::DX11BackBuffer() {
-	device = nullptr;
+	renderTargetView = nullptr;
 	dxgiSwapChain = nullptr;
-	renderTargetObject.view = nullptr;
-	window = nullptr;
+	device = null;
+	window = null;
+	width = 0;
+	height = 0;
 }
 
 DX11BackBuffer::~DX11BackBuffer() {
-	ReleaseCOM( &device );
+	ReleaseCOM( &renderTargetView );
 	ReleaseCOM( &dxgiSwapChain );
-	ReleaseCOM( &renderTargetObject.view );
+	ReleaseCOM( &device );
 }
 
 bool DX11BackBuffer::Create( ID3D11Device *const device, IDXGIFactory1 *const factory, Window &window ) {
@@ -503,7 +421,7 @@ bool DX11BackBuffer::Create( ID3D11Device *const device, IDXGIFactory1 *const fa
 	ASSERT_DOWNCAST( &window, WindowsWindow );
 	HWND hwnd = static_cast< WindowsWindow* >( &window )->GetHandle();
 	
-	// create swap chain
+	// swap chain
 
 	DXGI_SWAP_CHAIN_DESC desc = { 0 };
 	desc.BufferCount						= 2;
@@ -526,18 +444,16 @@ bool DX11BackBuffer::Create( ID3D11Device *const device, IDXGIFactory1 *const fa
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	// create render target view
-	ID3D11Texture2D *buffer = nullptr;
-	hresult = swapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &buffer ) );
+	// render target view
+	ID3D11Texture2D *texture = nullptr;
+	hresult = swapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &texture ) );
 	if ( FAILED( hresult ) ) {
 		swapChain->Release();
 		return false;
 	}
-	D3D11_TEXTURE2D_DESC bufferDesc;
-	buffer->GetDesc( &bufferDesc );
 	ID3D11RenderTargetView *renderTargetView = nullptr;
-	hresult = device->CreateRenderTargetView( buffer, NULL, &renderTargetView );
-	buffer->Release();
+	hresult = device->CreateRenderTargetView( texture, NULL, &renderTargetView );
+	texture->Release();
 	
 	if ( FAILED( hresult ) ) {
 		swapChain->Release();
@@ -547,18 +463,18 @@ bool DX11BackBuffer::Create( ID3D11Device *const device, IDXGIFactory1 *const fa
 	// vypnuti defaultniho prepinani do rezimu cele obrazovky
 	factory->MakeWindowAssociation( hwnd, DXGI_MWA_NO_ALT_ENTER  );
 
-	// ulozit vytvorene objekty
+	// ulozit objekty
 	this->device = device;
 	device->AddRef();
 	this->window = &window;
 	this->dxgiSwapChain = swapChain;
-	this->renderTargetObject.view = renderTargetView;
+	this->renderTargetView = renderTargetView;
 
 	return true;
 }
 
-RenderTargetObject *DX11BackBuffer::GetRenderTargetObject() {
-	return &renderTargetObject;
+ID3D11RenderTargetView *DX11BackBuffer::GetView() {
+	return renderTargetView;
 }
 
 IDXGISwapChain *DX11BackBuffer::GetSwapChain() {
@@ -571,15 +487,15 @@ void DX11BackBuffer::Present( const int vsync ) {
 
 void DX11BackBuffer::Resize() {
 	// zjistit pocet referenci na RenderTargetView
-	ULONG refs = renderTargetObject.view->AddRef();
-	renderTargetObject.view->Release();
+	ULONG refs = renderTargetView->AddRef();
+	renderTargetView->Release();
 	
 	// nejsou uvolneny vsechny reference na back buffer
 	if ( refs > 2 ) {
 		return;
 	}
 	// release RTV
-	ReleaseCOM( &renderTargetObject.view );
+	ReleaseCOM( &renderTargetView );
 	
 	// resize
 	const int width = window->GetClientWidth();
@@ -590,19 +506,195 @@ void DX11BackBuffer::Resize() {
 	
 	// create new RTV
 	HRESULT hresult = 0;
-	ID3D11Texture2D *buffer = nullptr;
-	hresult = dxgiSwapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &buffer ) );
+	ID3D11Texture2D *texture = nullptr;
+	hresult = dxgiSwapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &texture ) );
 	if ( FAILED( hresult ) ) {
 		AbortDXInvalidCall( hresult );
 	}
-	D3D11_TEXTURE2D_DESC bufferDesc;
-	buffer->GetDesc( &bufferDesc );
-	hresult = device->CreateRenderTargetView( buffer, NULL, &renderTargetObject.view );
-	buffer->Release();
+	hresult = device->CreateRenderTargetView( texture, NULL, &renderTargetView );
+	texture->Release();
 	if ( FAILED( hresult ) ) {
 		AbortDXInvalidCall( hresult );
 	}
 }
+
+// DX11TextureBuffer
+
+bool DX11TextureBuffer::Create( ID3D11Device * const device, const TextureBufferDesc &desc, const TextureSubresourceData * const initialData[] ) {
+	// usage
+	D3D11_USAGE usage = D3D11_USAGE_STAGING;
+	if ( desc.gpuAccess == GPUAccess::READ_WRITE ) {
+		if ( desc.cpuAccess == CPUAccess::NONE ) {
+			usage = D3D11_USAGE_DEFAULT;
+		} else {
+			usage = D3D11_USAGE_STAGING;
+		}
+	} else if ( desc.gpuAccess == GPUAccess::READ ) {
+		if ( desc.cpuAccess == CPUAccess::NONE ) {
+			usage = D3D11_USAGE_IMMUTABLE;
+		} else if ( desc.cpuAccess == CPUAccess::WRITE ) {
+			usage = D3D11_USAGE_DYNAMIC;
+		} else {
+			usage = D3D11_USAGE_STAGING;
+		}
+	}
+	// CPU access
+	UINT CPUAccessFlags = 0;
+	if ( static_cast< int >( desc.cpuAccess ) & static_cast< int >( CPUAccess::READ ) ) {
+		CPUAccessFlags |= D3D11_CPU_ACCESS_READ;
+	}
+	if ( static_cast< int >( desc.cpuAccess ) & static_cast< int >( CPUAccess::WRITE ) ) {
+		CPUAccessFlags |= D3D11_CPU_ACCESS_WRITE;
+	}
+
+	// priznak pouziti textury jako render target
+	UINT renderTargetBindFlag = ( desc.renderTarget ? D3D11_BIND_RENDER_TARGET : 0 );
+	
+	// subresource data
+	std::unique_ptr< D3D11_SUBRESOURCE_DATA[] > sd;
+	sd.reset( new D3D11_SUBRESOURCE_DATA[ 3 ] );
+	const int subresourcesCount = desc.arraySize * desc.mipLevels;
+	for ( int i = 0; i < subresourcesCount; i++ ) {
+		sd[ i ].pSysMem = initialData[ i ];
+		sd[ i ].SysMemPitch = 0;
+		sd[ i ].SysMemSlicePitch = 0;
+	}
+
+	// 1D
+	if ( desc.type == TextureBufferType::TEXTURE_1D || desc.type == TextureBufferType::TEXTURE_1D_ARRAY ) {
+		D3D11_TEXTURE1D_DESC td;
+		td.Width 				= desc.dimmensions.width;
+		td.MipLevels 			= desc.mipLevels;
+		td.ArraySize			= desc.arraySize;
+		td.Format				= GetDXGIFormat( desc.format );
+		td.Usage				= usage;
+		td.BindFlags			= D3D11_BIND_SHADER_RESOURCE | renderTargetBindFlag;
+		td.CPUAccessFlags		= CPUAccessFlags;
+		td.MiscFlags			= 0;
+		
+		ID3D11Texture1D *texture = nullptr;
+		HRESULT hresult = device->CreateTexture1D( &td, sd.get(), &texture );
+		
+		return true;
+	}
+	// 2D
+	if ( desc.type == TextureBufferType::TEXTURE_2D || desc.type == TextureBufferType::TEXTURE_2D_ARRAY ) {
+		D3D11_TEXTURE2D_DESC td;
+		td.Width 				= desc.dimmensions.width;
+		td.Height				= desc.dimmensions.height;
+		td.MipLevels 			= desc.mipLevels;
+		td.ArraySize			= desc.arraySize;
+		td.Format				= GetDXGIFormat( desc.format );
+		td.SampleDesc.Count 	= desc.samplesCount;
+		td.SampleDesc.Quality 	= desc.samplesQuality;
+		td.Usage				= usage;
+		td.BindFlags			= D3D11_BIND_SHADER_RESOURCE | renderTargetBindFlag;
+		td.CPUAccessFlags		= CPUAccessFlags;
+		td.MiscFlags			= 0;
+		
+		// subresource data parameters
+		sd.pSysMem = initialData;
+		sd.SysMemPitch = td.Width * PIXELBYTEWIDTH___;
+		sd.SysMemSlicePitch = 0;
+		
+		ID3D11Texture2D *texture = nullptr;
+		HRESULT hresult = device->CreateTexture2D( &td, psd, &texture );
+		
+		return true;
+	}
+	// 3D
+	if ( desc.type == TextureBufferType::TEXTURE_3D ) {
+		D3D11_TEXTURE3D_DESC td;
+		td.Width 				= desc.dimmensions.width;
+		td.Height				= desc.dimmensions.height;
+		td.Depth				= desc.dimmensions.depth;
+		td.MipLevels 			= desc.mipLevels;
+		td.Format				= GetDXGIFormat( desc.format );
+		td.Usage				= usage;
+		td.BindFlags			= D3D11_BIND_SHADER_RESOURCE | renderTargetBindFlag;
+		td.CPUAccessFlags		= CPUAccessFlags;
+		td.MiscFlags			= 0;
+		
+		// subresource data parameters
+		sd.pSysMem = initialData;
+		sd.SysMemPitch = td.Width * PIXELBYTEWIDTH___;
+		sd.SysMemSlicePitch = td.Width * td.Height * PIXELBYTEWIDTH___;
+
+		ID3D11Texture3D *texture = nullptr;
+		HRESULT hresult = device->CreateTexture3D( &td, psd, &texture );
+		
+		return true;
+	}
+	// cube
+	if ( desc.type == TextureBufferType::TEXTURE_CUBE ) {
+		return false;
+	}
+	return false;
+}
+
+
+
+
+
+// DX11TextureDescriptor
+
+DX11TextureDescriptor::DX11TextureDescriptor() {
+	view = nullptr;
+}
+DX11TextureDescriptor::~DX11TextureDescriptor() {
+	ReleaseCOM( &view );
+}
+
+bool DX11TextureDescriptor::Create( ID3D11Device * const device, DX11TextureBuffer1D * const buffer ) {
+	ID3D11Texture1D *texture = buffer->GetD3D11Texture();
+	D3D11_TEXTURE1D_DESC textureDesc;
+	texture->GetDesc( &textureDesc );
+	
+	D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc;
+	viewDesc.Format = textureDesc.Format;
+	
+	if ( buffer->GetArraySize() == 1 ) {
+		viewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE1D;
+		viewDesc.Texture1D.MostDetailedMip = textureDesc.MipLevels - 1;
+		viewDesc.Texture1D.MipLevels = -1;
+	} else {
+		viewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE1DARRAY;
+		viewDesc.Texture1DArray.MostDetailedMip = textureDesc.MipLevels - 1;
+		viewDesc.Texture1DArray.MipLevels = -1;
+		viewDesc.Texture1DArray.FirstArraySlice = 0;
+		viewDesc.Texture1DArray.ArraySize = textureDesc.ArraySize;
+	}
+	device->CreateShaderResourceView( texture, viewDesc, &view );
+	return view != nullptr;
+}
+
+bool DX11TextureDescriptor::Create( ID3D11Device * const device, DX11TextureBuffer2D * const buffer ) {
+	ID3D11Texture2D *texture = buffer->GetD3D11Texture();
+	D3D11_TEXTURE2D_DESC textureDesc;
+	texture->GetDesc( &textureDesc );
+	
+	D3D11_SHADER_RESOURCE_VIEW_DES viewDesc;
+	viewDesc.Format = textureDesc.Format;
+	
+	if ( buffer->GetArraySize() == 1 ) {
+		viewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		viewDesc.Texture2D.MostDetailedMip = textureDesc.MipLevels - 1;
+		viewDesc.Texture2D.MipLevels = -1;
+	} else {
+		viewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+		viewDesc.Texture2D.MostDetailedMip = textureDesc.MipLevels - 1;
+		viewDesc.Texture2D.MipLevels = -1;
+		viewDesc.Texture2D.FirstArraySlice = 0;
+		viewDesc.Texture2D.ArraySize = textureDesc.ArraySize;
+	}
+	device->CreateShaderResourceView( texture, viewDesc, &view );
+	return view != nullptr;
+}
+
+ID3D11ShaderResourceView *ID3D11ShaderResourceView::GetView() {
+	return view;
+}
+
 /*
 // DX11RenderBuffer
 

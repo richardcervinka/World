@@ -134,7 +134,7 @@ public:
 	
 private:
 	// implementace move operaci
-	void Move( String &&str );
+	void Move( String &str );
 
 private:
 	int length;

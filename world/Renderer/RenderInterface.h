@@ -37,7 +37,7 @@ namespace RenderInterface {
 	// Vytvori device objekt implementovany v DirectX 11
 	Device *DX11CreateDevice( const DX11CreateDeviceParams &params );
 	
-	// Buffer formaty graficke karty
+	// Buffer formaty
 	enum class Format {
 		UNKNOWN = 0,
 		R8G8B8A8_UNORM,
@@ -46,7 +46,9 @@ namespace RenderInterface {
 		R16G16_FLOAT,
 		R8_UNORM,
 		R16_FLOAT,
-		R32_FLOAT
+		R32_FLOAT,
+		BC1,
+		BC3
 	};
 	
 	// Rezim displeje
@@ -57,19 +59,29 @@ namespace RenderInterface {
 		int refreshRateDenominator;
 	};
 	
-	struct RenderBufferDesc {
-		Format format;
+	struct DepthStencilBufferDesc {
 		int width;
 		int height;
 		int samplesCount;
 		int multisampleQuality;
 	};
 	
-	struct DepthStencilBufferDesc {
-		int width;
-		int height;
-		int samplesCount;
-		int multisampleQuality;
+	/*
+	Pristupova prava CPU do bufferu
+	*/
+	enum class CPUAccess {
+		NONE = 0,
+		READ = 0x0001,
+		WRITE = 0x0002,
+		READ_WRITE = READ | WRITE
+	};
+
+	/*
+	Pristupova prava GPU do bufferu
+	*/
+	enum class GPUAccess {
+		READ,
+		READ_WRITE
 	};
 	
 	// Rezimy filtrovani textur
@@ -100,6 +112,34 @@ namespace RenderInterface {
 		int width;
 		int height;
 		int depth;
+	};
+	
+	// Podporovane typy texture bufferu
+	enum class TextureBufferType {
+		TEXTURE_1D,
+		TEXTURE_1D_ARRAY,
+		TEXTURE_2D,
+		TEXTURE_2D_ARRAY,
+		TEXTURE_3D,
+		TEXTURE_CUBE
+	};
+
+	struct TextureBufferDesc {
+		TextureBufferType type;
+		Format format;
+		TextureDimmensions dimmensions;
+		GPUAccess gpuAccess;
+		CPUAccess cpuAccess;
+		int arraySize;
+		int samplesCount;
+		int samplesQuality;
+		int mipLevels;
+		bool renderTarget;
+	};
+
+	struct TextureSubresourceData {
+		void *data;
+		TextureDimmensions dimmensions;
 	};
 	
 	struct TextureSamplerDesc {
@@ -151,11 +191,13 @@ namespace RenderInterface {
 	public:
 		// vytvareni device objektu
 		virtual CommandInterface *CreateCommandInterface() = 0;
+		virtual Display *CreateDisplay( const int outputId ) = 0;
 		virtual BackBuffer *CreateBackBuffer( Window &window ) = 0;
-		virtual RenderBuffer *CreateRenderBuffer( const RenderBufferDesc &desc ) = 0;
+		virtual TextureBuffer *CreateTextureBuffer( const TextureBufferDesc &desc ) = 0;
+		
+		//**************************
 		virtual DepthStencilBuffer *CreateDepthStencilBuffer( const DepthStencilBufferDesc &desc ) = 0;
 		virtual TextureSampler *CreateTextureSampler( const TextureSamplerDesc &desc ) = 0;
-		virtual Display *CreateDisplay( const int outputId ) = 0;
 		
 		// vrati max quality pro pozadovany pocet msaa level.
 		// Ne vsechny karty a ne vsechna api museji podporovat tuto vlastnost, pak musi funkce vracet 1.
@@ -179,9 +221,11 @@ namespace RenderInterface {
 	
 		// ukonceni sekvence commandu
 		virtual void End() = 0;
-	
+		
 		// Nastavi multiple render targets plus nepovinne depth stencil buffer (muze byt nullptr)
 		virtual void SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) = 0;
+		
+		//virtual void SetBackBuffer( BackBuffer * const backBuffer, DepthStencilBuffer * const depthStencilBuffer ) = 0;
 		
 		// Vyplni render target barvou
 		virtual void ClearRenderTarget( RenderTargetDescriptor * const renderTarget, const Color &color ) = 0;
@@ -235,59 +279,30 @@ namespace RenderInterface {
 	class RenderTargetDescriptor: public DeviceObject {};
 	
 	/*
-	Zakladni trida pro vsechny texture buffery (vcetne depth stencil bufferu)
+	Texture buffer je obecne blok pameti pro ukladani dat textur.
 	*/
 	class TextureBuffer: public DeviceObject {
 	public:
 		virtual const Format GetFormat() const = 0;
 		
-		// dimenze textury (2 pro TextureBuffer2D apod.) 
+		virtual TextureBufferType GetType() const = 0;
+		
+		// dimenze textury (napr. vraci hodnotu 2 pro 2D textury) 
 		virtual int GetDimmension() const = 0;
 		
 		// rozmery textury
 		virtual TextureDimmensions GetDimmensions() const = 0;
 		
+		// velikost pole, hodnota >= 1
+		virtual int GetArraySize() const = 0;
+		
+		// pocet samplu, hodnota >= 1
+		virtual int GetSamplesCount() const = 0;
+		
+		// kvalita multisampling algoritmu, hodnota >= 1
+		virtual int GetSamplesQuality() const = 0;
+		
 		// AccessFlags
-	};
-	
-	/*
-	1D textura
-	*/
-	class TextureBuffer1D: public TextureBuffer {
-	public:
-		virtual int GetWidth() const = 0;
-	};
-	
-	/*
-	Pole 1D textur stejne velikosti
-	*/
-	class TextureBuffer1DArray: public TextureBuffer {
-	public:
-		virtual int GetWidth() const = 0;
-		
-		// velikost pole, vraci hodnoty od 1, pole nemuze mit nulovou velikost
-		virtual int GetArraySize() const = 0;
-	};
-	
-	/*
-	2D textura
-	*/
-	class TextureBuffer2D: public TextureBuffer {
-	public:
-		virtual int GetWidth() const = 0;
-		virtual int GetHeight() const = 0;
-	};
-	
-	/*
-	Pole 2D textur stejne velikosti
-	*/
-	class TextureBuffer2DArray: public TextureBuffer {
-	public:
-		virtual int GetWidth() const = 0;
-		virtual int GetHeight() const = 0;
-		
-		// velikost pole, vraci hodnoty od 1, pole nemuze mit nulovou velikost
-		virtual int GetArraySize() const = 0;
 	};
 	
 	/*

@@ -1,7 +1,6 @@
 #include <cwchar>
 #include <cstring>
 #include <cctype>
-#include <utility>
 #include "String.h"
 #include "Math.h"
 #include "Types.h"
@@ -29,18 +28,18 @@ String::String( const String &str, const int index, const int size ): String() {
 }
 
 String::String( String &&str ) {
-	Move( std::move( str ) );
+	Move( str );
 }
 
 String &String::operator=( String &&str ) {
 	// uvolnit pamet
 	delete [] stringLong;
 	stringLong = nullptr;
-	Move( std::move( str ) );
+	Move( str );
 	return *this;
 }
 
-void String::Move( String &&str ) {
+void String::Move( String &str ) {
 	// zkopirovat short string
 	if ( str.string == str.stringShort ) {
 		length = str.length;
