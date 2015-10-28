@@ -37,7 +37,7 @@ namespace RenderInterface {
 	// Vytvori device objekt implementovany v DirectX 11
 	Device *DX11CreateDevice( const DX11CreateDeviceParams &params );
 	
-	// Buffer formaty
+	// Format dat ulozenych v bufferu
 	enum class Format {
 		UNKNOWN = 0,
 		R8G8B8A8_UNORM,
@@ -50,6 +50,19 @@ namespace RenderInterface {
 		BC1,
 		BC3
 	};
+	
+	/*
+	Formaty, ktere maji ruzny pocet bitu na jednotlive kanaly vraceji hodnotu channels = 1
+	pr. D24_UNORM_S8_UINT: channels = 1, channelBits = 32
+	*/
+	struct FormatDesc {
+		Format format;
+		int channelCount;	// pocet kanalu na pixel
+		int channelBits;	// pocet bitu na kanal
+		int pointPitch; 	// slouzi k vypoctu row pitch; rowPitch = pointPitch * textureWidth
+	};
+	
+	const FormatDesc GetFormatDesc( const Format &format );
 	
 	// Rezim displeje
 	struct DisplayMode {
@@ -68,23 +81,22 @@ namespace RenderInterface {
 	
 	/*
 	Pristupova prava CPU do bufferu
+	Hodnoty je mozne prevest na uint a pracovat s nimi jako s priznaky (flags)
 	*/
 	enum class CPUAccess {
-		NONE = 0,
-		READ = 0x0001,
-		WRITE = 0x0002,
+		NONE = 0x00,
+		READ = 0x01,
+		WRITE = 0x02,
 		READ_WRITE = READ | WRITE
 	};
-
-	/*
-	Pristupova prava GPU do bufferu
-	*/
+	
+	// Pristupova prava GPU do bufferu
 	enum class GPUAccess {
 		READ,
 		READ_WRITE
 	};
 	
-	// Rezimy filtrovani textur
+	// Filtrovani textur
 	enum class TextureFilter {
 		POINT,
 		POIN_MIP_LINEAR,
@@ -97,49 +109,44 @@ namespace RenderInterface {
 		ANISOTROPIC
 	};
 	
-	// Rezimy adresovani textur
+	// Adresovani textur
 	enum class TextureAddress {
-		WRAP = 0,
+		WRAP,
 		MIRROR,
 		CLAMP
 	};
 	
-	/*
-	Rozmery textury, pokud neni rozmer definovan, je jeho hodnota 1
-	Rozmer nemuze mit nikdy nulovou velikost
-	*/
+	// Rozmery texture bufferu. Pokud neni rozmer definovan, je jeho hodnota 1.
 	struct TextureDimmensions {
 		int width;
 		int height;
 		int depth;
 	};
 	
-	// Podporovane typy texture bufferu
+	// Typ texture bufferu
 	enum class TextureBufferType {
 		TEXTURE_1D,
 		TEXTURE_1D_ARRAY,
 		TEXTURE_2D,
 		TEXTURE_2D_ARRAY,
-		TEXTURE_3D,
-		TEXTURE_CUBE
+		TEXTURE_3D
 	};
-
+	
+	/*
+	Parametry funkce Device::CreateTextureBuffer()
+	Generovani mipmap pri vytvareni texture bufferu je zakazane, pocet mip urovni musi byt znamy pred vytvorenim objektu.
+	*/
 	struct TextureBufferDesc {
-		TextureBufferType type;
 		Format format;
-		TextureDimmensions dimmensions;
 		GPUAccess gpuAccess;
 		CPUAccess cpuAccess;
+		TextureBufferType type;
+		TextureDimmensions dimmensions;
 		int arraySize;
+		int mipLevels;
 		int samplesCount;
 		int samplesQuality;
-		int mipLevels;
 		bool renderTarget;
-	};
-
-	struct TextureSubresourceData {
-		void *data;
-		TextureDimmensions dimmensions;
 	};
 	
 	struct TextureSamplerDesc {
@@ -193,7 +200,7 @@ namespace RenderInterface {
 		virtual CommandInterface *CreateCommandInterface() = 0;
 		virtual Display *CreateDisplay( const int outputId ) = 0;
 		virtual BackBuffer *CreateBackBuffer( Window &window ) = 0;
-		virtual TextureBuffer *CreateTextureBuffer( const TextureBufferDesc &desc ) = 0;
+		virtual TextureBuffer *CreateTextureBuffer( const TextureBufferDesc &desc, const void * const initialData[] ) = 0;
 		
 		//**************************
 		virtual DepthStencilBuffer *CreateDepthStencilBuffer( const DepthStencilBufferDesc &desc ) = 0;
@@ -223,12 +230,12 @@ namespace RenderInterface {
 		virtual void End() = 0;
 		
 		// Nastavi multiple render targets plus nepovinne depth stencil buffer (muze byt nullptr)
-		virtual void SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) = 0;
+		//virtual void SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) = 0;
 		
 		//virtual void SetBackBuffer( BackBuffer * const backBuffer, DepthStencilBuffer * const depthStencilBuffer ) = 0;
 		
 		// Vyplni render target barvou
-		virtual void ClearRenderTarget( RenderTargetDescriptor * const renderTarget, const Color &color ) = 0;
+		//virtual void ClearRenderTarget( RenderTargetDescriptor * const renderTarget, const Color &color ) = 0;
 		
 		//virtual void ClearDepthStencilBuffer( DepthStencilBuffer * const target );
 		
@@ -267,16 +274,6 @@ namespace RenderInterface {
 		// Najde nejlepsi dostupny rezim pro cilove zarizeni
 		virtual void GetBestMode( DisplayMode &result ) const = 0;
 	};
-
-	/*
-	TextureDescriptor slouzi k bindovani textury do pipeline stage
-	*/
-	class TextureDescriptor: public DeviceObject {};
-	
-	/*
-	RenderTargetDescriptor k bindovani textury jako render target.
-	*/
-	class RenderTargetDescriptor: public DeviceObject {};
 	
 	/*
 	Texture buffer je obecne blok pameti pro ukladani dat textur.
@@ -304,6 +301,16 @@ namespace RenderInterface {
 		
 		// AccessFlags
 	};
+
+	/*
+	TextureDescriptor slouzi k bindovani textury do pipeline stage
+	*/
+	class TextureDescriptor: public DeviceObject {};
+	
+	/*
+	RenderTargetDescriptor k bindovani textury jako render target.
+	*/
+	class RenderTargetDescriptor: public DeviceObject {};
 	
 	/*
 	Umoznuje zobrazeni obsahu back bufferu do klientske oblasti okna. Objekt je asociovan s oknem pri svem vytvoreni.
@@ -319,7 +326,7 @@ namespace RenderInterface {
 	/*
 	DepthStencilBuffer
 	*/
-	class DepthStencilBuffer: public TextureBuffer {
+	class DepthStencilBuffer: public DeviceObject {
 	public:
 		virtual ~DepthStencilBuffer() {}
 		virtual DepthStencilBufferDesc GetDesc() const = 0;

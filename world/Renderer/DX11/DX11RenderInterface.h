@@ -33,11 +33,11 @@ inline void ReleaseCOM( T **target ) {
 
 /*
 Ukonci aplikaci v dusledku chyby volani DirectX
-Funkce nesmi byt volana pri vytvareni RenderInterface objektu
+Funkce nesmi byt volana pri vytvareni RenderDevice objektu
 */
 void AbortDXInvalidCall( const HRESULT hresult );
 
-// prevede hodnotu typu Format na DXGI_FORMAT
+// prevede typ Format na DXGI_FORMAT
 DXGI_FORMAT GetDXGIFormat( const Format format );
 
 class DX11Device: public Device {
@@ -52,11 +52,11 @@ public:
 	ID3D11DeviceContext *GetContext();
 	ID3D11Device *GetDevice();
 
-	// implementace rozhrani
+	// implementace rozhrani Device
 	virtual CommandInterface *CreateCommandInterface() override;
 	virtual Display *CreateDisplay( const int outputId ) override;
 	virtual BackBuffer *CreateBackBuffer( Window &window ) override;
-	virtual TextureBuffer *CreateTextureBuffer( const TextureBufferDesc &desc ) override;
+	virtual TextureBuffer *CreateTextureBuffer( const TextureBufferDesc &desc, const void * const initialData[] ) override;
 	//CreateUnorderedAccesTextureBuffer
 	
 	//******************
@@ -127,30 +127,18 @@ public:
 	virtual void Begin( Device * const device ) override;
 	virtual void Begin( CommandList * const commandList ) override;
 	virtual void End() override;
-	virtual void SetRenderTargets( RenderTargetObject * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) override;
-	virtual void ClearRenderTarget( RenderTargetObject * const renderTarget, const Color &color ) override;
+	//virtual void SetRenderTargets( RenderTargetObject * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) override;
+	//virtual void ClearRenderTarget( RenderTargetObject * const renderTarget, const Color &color ) override;
 
 private:
 	ID3D11DeviceContext *context;
-};
-
-class DX11TextureDescriptor: public TextureDescriptor {
-public:
-	DX11TextureDescriptor();
-	virtual ~DX11TextureDescriptor();
-	bool Create( ID3D11Device * const device, DX11TextureBuffer1D * const buffer );
-	bool Create( ID3D11Device * const device, DX11TextureBuffer2D * const buffer );
-	ID3D11ShaderResourceView *GetView();
-	
-private:
-	ID3D11ShaderResourceView *view;
 };
 
 class DX11TextureBuffer: public TextureBuffer {
 public:
 	DX11TextureBuffer();
 	~DX11TextureBuffer();
-	bool Create( ID3D11Device * const device, const TextureBufferDesc &desc, const TextureSubresourceData * const initialData[] );
+	bool Create( ID3D11Device * const device, const TextureBufferDesc &desc, const void * const initialData[] );
 	
 	// implementace rozhrani TextureBuffer
 	virtual const Format GetFormat() const override;
@@ -160,11 +148,26 @@ public:
 	virtual int GetArraySize() const override;
 	virtual int GetSamplesCount() const override;
 	virtual int GetSamplesQuality() const override;
+
+	// DirectX 11 getters
+	ID3D11Resource *GetTextureResource();
 	
 private:
 	TextureBufferDesc desc;
 	ID3D11Resource *texture;
 };
+
+class DX11TextureDescriptor: public TextureDescriptor {
+public:
+	DX11TextureDescriptor();
+	virtual ~DX11TextureDescriptor();
+	bool Create( ID3D11Device * const device, DX11TextureBuffer * const buffer );
+	ID3D11ShaderResourceView *GetView();
+
+private:
+	ID3D11ShaderResourceView *view;
+};
+
 
 
 //******************
@@ -181,9 +184,8 @@ public:
 	ID3D11DepthStencilView *GetDepthStencilView();
 
 	// implementace rozhrani TextureBuffer
-	virtual int GetDimmension() const override { return 0; }
-	virtual const Format GetFormat() const override { return Format::UNKNOWN; }
-	virtual ShaderResourceObject *GetShaderResourceObject() override { return new DX11ShaderResourceObject(); }//---------------------------------------------------------------------------
+	//virtual int GetDimmension() const override { return 0; }
+	//virtual const Format GetFormat() const override { return Format::UNKNOWN; }
 
 private:
 	ID3D11Texture2D *texture;
