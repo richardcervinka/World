@@ -899,6 +899,7 @@ ID3D11RenderTargetView *DX11RenderTargetDescriptor::GetView() {
 // DX11DepthStencilBuffer
 
 DX11DepthStencilBuffer::DX11DepthStencilBuffer() {
+	device = nullptr;
 	texture = nullptr;
 	view = nullptr;
 	ZeroMemory( &desc, sizeof( desc ) );
@@ -907,6 +908,7 @@ DX11DepthStencilBuffer::DX11DepthStencilBuffer() {
 DX11DepthStencilBuffer::~DX11DepthStencilBuffer() {
 	ReleaseCOM( &view );
 	ReleaseCOM( &texture );
+	ReleaseCOM( &device );
 }
 
 bool DX11DepthStencilBuffer::Create( ID3D11Device *device, const DepthStencilBufferDesc &desc ) {
@@ -941,6 +943,8 @@ bool DX11DepthStencilBuffer::Create( ID3D11Device *device, const DepthStencilBuf
 		return false;
 	}
 	// ulozit objekty
+	this->device = device;
+	device->AddRef();
 	this->texture = texture;
 	this->view = view;
 	this->desc = desc;
@@ -949,7 +953,12 @@ bool DX11DepthStencilBuffer::Create( ID3D11Device *device, const DepthStencilBuf
 }
 
 void DX11DepthStencilBuffer::Resize( const int width, const int height ) {
-	// ...
+	ReleaseCOM( &view );
+	ReleaseCOM( &texture );
+	desc.width = width;
+	desc.height = height;
+	Create( device, desc );
+
 }
 
 ID3D11DepthStencilView *DX11DepthStencilBuffer::GetView() {

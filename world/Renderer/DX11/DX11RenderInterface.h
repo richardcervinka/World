@@ -180,34 +180,27 @@ private:
 	int height;
 };
 
-
-
-//******************
-
-
-
+// DX11DepthStencilBuffer
 
 class DX11DepthStencilBuffer: public DepthStencilBuffer {
 public:
 	DX11DepthStencilBuffer();
 	~DX11DepthStencilBuffer();
 	bool Create( ID3D11Device *device, const DepthStencilBufferDesc &desc );
-	//virtual DepthStencilBufferDesc GetDesc() const override;
-	ID3D11DepthStencilView *GetView();
 
+	// implementace DepthStencilBuffer
 	virtual void Resize( const int width, const int height ) override;
 
-	// implementace rozhrani TextureBuffer
-	//virtual int GetDimmension() const override { return 0; }
-	//virtual const Format GetFormat() const override { return Format::UNKNOWN; }
+	ID3D11DepthStencilView *GetView();
 
 private:
+	ID3D11Device *device;
 	ID3D11Texture2D *texture;
 	ID3D11DepthStencilView *view;
 	DepthStencilBufferDesc desc;
 };
 
-
+//******************
 
 class DX11TextureSampler: public TextureSampler {
 public:

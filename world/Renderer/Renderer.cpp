@@ -6,6 +6,11 @@
 #include "RenderInterface.h"
 #include "Renderer.h"
 
+Renderer::Renderer() {
+	device = nullptr;
+	immediateCommandInterface = nullptr;
+}
+
 bool Renderer::Initialize( const RendererInitialParams &parameters ) {
 
 	// device
@@ -52,14 +57,6 @@ void Renderer::ResizeBuffers( Window &window, const int width, const int height 
 // TENTO KOD JE POZUSTATEK Z PROTOTYPU, POTREBA KOMPLETRNE PREPSAT !
 //
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-Renderer::Renderer() {
-	ZeroMemory( &parameters, sizeof( parameters ) );
-	parameters.antialiasing = Antialiasing::DISABLED;
-	depthStencilState = DepthStencil::DEFAULT;
-	blendState = Blending::DEFAULT;
-	rasterizerState = Rasterizer::DEFAULT;
-}
 
 Renderer::~Renderer() {
 }

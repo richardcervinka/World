@@ -64,7 +64,7 @@ namespace RenderInterface {
 	
 	const FormatDesc GetFormatDesc( const Format &format );
 	
-	// Rezim displeje
+	// Fullscreen rezim displeje
 	struct DisplayMode {
 		int width;
 		int height;
@@ -204,9 +204,9 @@ namespace RenderInterface {
 		virtual Display *CreateDisplay( const int outputId ) = 0;
 		virtual BackBuffer *CreateBackBuffer( Window &window ) = 0;
 		virtual TextureBuffer *CreateTextureBuffer( const TextureBufferDesc &desc, const void * const initialData[] ) = 0;
-		
-		//**************************
 		virtual DepthStencilBuffer *CreateDepthStencilBuffer( const DepthStencilBufferDesc &desc ) = 0;
+
+		//**************************
 		virtual TextureSampler *CreateTextureSampler( const TextureSamplerDesc &desc ) = 0;
 		/*
 		vrati max quality pro pozadovany pocet msaa level.
