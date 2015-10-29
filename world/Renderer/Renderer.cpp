@@ -2,9 +2,50 @@
 #include <dxgi.h>
 #include "..\framework\Core.h"
 #include "..\platform\Window.h"
-#include "RenderInterface.h"
 #include "..\platform\File.h"
+#include "RenderInterface.h"
 #include "Renderer.h"
+
+bool Renderer::Initialize( const RendererInitialParams &parameters ) {
+
+	// device
+	
+	RenderInterface::DX11CreateDeviceParams deviceParams;
+	ZeroMemory( &deviceParams, sizeof( deviceParams ) );
+	deviceParams.majorFeatureLevels = 11;
+	deviceParams.minorFeatureLevels = 0;
+	deviceParams.adapter = 0;
+
+	RenderInterface::Device *device = RenderInterface::DX11CreateDevice( deviceParams );
+	if ( device == nullptr ) {
+		return false;
+	}
+
+	// immediate command interface
+
+	RenderInterface::CommandInterface *immediateCommandInterface = device->CreateCommandInterface();
+	if ( immediateCommandInterface == nullptr ) {
+		return false;
+	}
+
+	// G-Buffers
+
+	// ...
+
+	return true;
+}
+
+RenderInterface::BackBuffer *Renderer::CreateWindowBackBuffer( Window &window ) {
+	RenderInterface::BackBuffer *backBuffer = device->CreateBackBuffer( window );
+	return backBuffer;
+}
+
+void Renderer::ResizeBuffers( Window &window, const int width, const int height ) {
+	window.ResizeBackBuffer();
+
+	// resize g-buffers and create render target descriptors
+	// ...
+}
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //
@@ -15,18 +56,15 @@
 Renderer::Renderer() {
 	ZeroMemory( &parameters, sizeof( parameters ) );
 	parameters.antialiasing = Antialiasing::DISABLED;
-	depthStencilBuffer = nullptr;
 	depthStencilState = DepthStencil::DEFAULT;
 	blendState = Blending::DEFAULT;
 	rasterizerState = Rasterizer::DEFAULT;
-	displayMode = 0;
-	fullscreen = false;
 }
 
 Renderer::~Renderer() {
 }
-
-void Renderer::Initialize( const RendererInitialParameters &parameters ) {
+/*
+void Renderer::Initialize( const RendererInitialParams &parameters ) {
 
 	// inicializace probiha vzdy s nasledujicim rozlysenim
 	const int initialScreenWidth = 1024;
@@ -118,13 +156,11 @@ void Renderer::Initialize( const RendererInitialParameters &parameters ) {
 
 
 	//**************************************************************************
-	/*
 	CommandInterface *commandInterface = device->CreateCommandInterface();
 	static RenderOutput *renderOutput = device->CreateRenderOutput( window, 0 );
 	// renderOutput->SetDisplayMode( 800, 600, 60.0f, false );
 
 	// device->ResizeRenderOutputBuffer( RenderOutput &renderOutput, const int width, const int height )
-	*/
 	return;
 
 	//DeviceContext *deviceContext = device->CreateContext();
@@ -150,7 +186,7 @@ void Renderer::Initialize( const RendererInitialParameters &parameters ) {
 	// * CreateGBuffers( parameters.displayMode.width, parameters.displayMode.height );
 	SetViewport();
 }
-
+*/
 void Renderer::SetViewport() {
 	/*
 	D3D11_VIEWPORT viewport;

@@ -49,7 +49,7 @@ enum class Rasterizer {
 };
 
 // parametry funkce Initialize()
-struct RendererInitialParameters {
+struct RendererInitialParams {
 	RenderInterface::DisplayMode displayMode;
 	bool fullscreen;
 	Antialiasing antialiasing;
@@ -61,8 +61,16 @@ public:
 	Renderer();
 	~Renderer();
 
-	// inicializace
-	void Initialize( const RendererInitialParameters &parameters );
+	// Inicializace, je nutne volat pred prvnim pouzitim rendereru.
+	bool Initialize( const RendererInitialParams &parameters );
+
+	// vytvori back buffer pro okno predane v parametru
+	RenderInterface::BackBuffer *CreateWindowBackBuffer( Window &window );
+	/*
+	Zmeni velikost vsech G-Bufferu, depth stencil bufferu a back bufferu.
+	Tuto funkci je nutne volat vzdy pri zmene velikosti okna.
+	*/
+	void ResizeBuffers( Window &window, const int width, const int height );
 
 private:
 	struct RenderTarget {
@@ -80,7 +88,7 @@ private:
 		int anisotropyLevel;
 	};
 
-	// vlastnosti graficke karty
+	// parametry graficke karty
 	struct DeviceFeatures {
 		int msaaQuality[ 4 ]; // [ 2x, 4x, 8x, 16x ]
 	};
@@ -121,21 +129,29 @@ private:
 	//////////////////////////////////////////////////////
 
 	RenderInterface::Device *device;
-	RenderInterface::DepthStencilBuffer *depthStencilBuffer;
 	RenderInterface::CommandInterface *immediateCommandInterface;
 	
 	// G-Bffery deferred rendereru, color, normal
-	enum { GBUFFERS_COUNT = 4 };
-	RenderInterface::RenderBuffer *gbuffers[ GBUFFERS_COUNT ];
+	enum {
+		GBUFFER_DIFUSE,
+		GBUFFER_NORMAL,
+		GBUFFER_SPECULAR,
+		GBUFFERS_COUNT
+	};
+	//RenderInterface:: *gbuffers[ GBUFFERS_COUNT ];
 
 	// engine poskytuje pevnou sadu texture sampleru, defaultni je mozne modifikovat nastavenim
-	enum { SAMPLERS_COUNT = 3 };
+	enum {
+		SAMPLER_DEFAULT,
+		SAMPLER_POINT,
+		SAMPLER_LINEAR,
+		SAMPLERS_COUNT
+	};
 	RenderInterface::TextureSampler *samplers[ SAMPLERS_COUNT ]; // [ default, point, linear ]
 
 	//////////////////////////////////////////////////////
 
 	Parameters parameters;
-	bool fullscreen;
 	DeviceFeatures deviceFeatures;
 
 	// directx states
@@ -145,9 +161,6 @@ private:
 	Blending blendState;
 	Array< ID3D11RasterizerState* > rasterizerStates;
 	Rasterizer rasterizerState;
-
-	Array< RenderInterface::DisplayMode > displayModes;
-	int displayMode;
 };
 
 

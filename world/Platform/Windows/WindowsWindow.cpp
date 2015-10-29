@@ -168,7 +168,7 @@ void WindowsWindow::OnSize( const int cx, const int cy ) {
 	GetWindowRect( hwnd, &rect );
 	width = rect.right - rect.left;
 	height = rect.bottom - rect.top;
-	ResizeBackBuffer();
+	OnResized( clientWidth, clientHeight );
 }
 
 void WindowsWindow::Show() {

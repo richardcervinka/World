@@ -125,10 +125,13 @@ namespace RenderInterface {
 	
 	// Typ texture bufferu
 	enum class TextureBufferType {
+		UNDEFINED,
 		TEXTURE_1D,
 		TEXTURE_1D_ARRAY,
 		TEXTURE_2D,
 		TEXTURE_2D_ARRAY,
+		TEXTURE_2D_MS,
+		TEXTURE_2D_MS_ARRAY,
 		TEXTURE_3D
 	};
 	
@@ -205,10 +208,11 @@ namespace RenderInterface {
 		//**************************
 		virtual DepthStencilBuffer *CreateDepthStencilBuffer( const DepthStencilBufferDesc &desc ) = 0;
 		virtual TextureSampler *CreateTextureSampler( const TextureSamplerDesc &desc ) = 0;
-		
-		// vrati max quality pro pozadovany pocet msaa level.
-		// Ne vsechny karty a ne vsechna api museji podporovat tuto vlastnost, pak musi funkce vracet 1.
-		// Pokud neni msaa level podporovan, funkce vraci 0;
+		/*
+		vrati max quality pro pozadovany pocet msaa level.
+		Ne vsechny karty a ne vsechna api museji podporovat tuto vlastnost, pak musi funkce vracet 1.
+		Pokud neni msaa level podporovan, funkce vraci 0;
+		*/
 		virtual int GetMultisampleQuality( const int samplesCount ) const = 0;
 
 		// Vraci pocet zobrazovacich zarizeni pripojenych na vystup graficke karty
@@ -230,19 +234,30 @@ namespace RenderInterface {
 		virtual void End() = 0;
 		
 		// Nastavi multiple render targets plus nepovinne depth stencil buffer (muze byt nullptr)
-		//virtual void SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) = 0;
-		
-		//virtual void SetBackBuffer( BackBuffer * const backBuffer, DepthStencilBuffer * const depthStencilBuffer ) = 0;
+		virtual void SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) = 0;
+
+		// Nastavi back buffer jako aktualni render target. Neni mozne pouzivat back buffery jako multiple render targets.
+		virtual void SetBackBuffer( BackBuffer * const backBuffer, DepthStencilBuffer * const depthStencilBuffer ) = 0;
 		
 		// Vyplni render target barvou
-		//virtual void ClearRenderTarget( RenderTargetDescriptor * const renderTarget, const Color &color ) = 0;
-		
-		//virtual void ClearDepthStencilBuffer( DepthStencilBuffer * const target );
-		
+		virtual void ClearRenderTarget( RenderTargetDescriptor * const renderTarget, const Color &color ) = 0;
+
+		// nastavi depth i stencil buffer na pozadovanou hodnotu
+		virtual void ClearDepthStencilBuffer( DepthStencilBuffer * const buffer, const float depth, const Uint8 stencil ) = 0;
+
+		// nastavi depth buffer na hodnotu depth
+		virtual void ClearDepthBuffer( DepthStencilBuffer * const buffer, const float depth ) = 0;
+
+		// nastavi stencil buffer na hodnotu stencil
+		virtual void ClearStencilBuffer( DepthStencilBuffer * const buffer, const Uint8 stencil ) = 0;
+
 		// Nastavi objekt Device do vychoziho stavu
-		//void ClearState();
-		
-		//void SetPipelineState()
+		virtual void ClearState() = 0;
+
+		// Odesle obsah command bufferu do GPU
+		virtual void Flush() = 0;
+
+		//virtual void SetPipelineState()
 	};
 	
 	/*
@@ -280,38 +295,42 @@ namespace RenderInterface {
 	*/
 	class TextureBuffer: public DeviceObject {
 	public:
-		virtual const Format GetFormat() const = 0;
-		
-		virtual TextureBufferType GetType() const = 0;
-		
-		// dimenze textury (napr. vraci hodnotu 2 pro 2D textury) 
-		virtual int GetDimmension() const = 0;
-		
-		// rozmery textury
-		virtual TextureDimmensions GetDimmensions() const = 0;
-		
-		// velikost pole, hodnota >= 1
-		virtual int GetArraySize() const = 0;
-		
-		// pocet samplu, hodnota >= 1
-		virtual int GetSamplesCount() const = 0;
-		
-		// kvalita multisampling algoritmu, hodnota >= 1
-		virtual int GetSamplesQuality() const = 0;
-		
-		// AccessFlags
+		TextureBuffer();
+
+		// TextureBufferDesc members getters
+		const Format GetFormat() const;
+		TextureBufferType GetType() const;
+		int GetDimmension() const;
+		TextureDimmensions GetDimmensions() const;
+		int GetArraySize() const;
+		int GetSamplesCount() const;
+		int GetSamplesQuality() const;
+		bool RenderTargetUsable() const;
+
+	protected:
+		void SetDesc( const TextureBufferDesc &desc );
+
+	private:
+		TextureBufferDesc desc;
 	};
 
 	/*
 	TextureDescriptor slouzi k bindovani textury do pipeline stage
 	*/
-	class TextureDescriptor: public DeviceObject {};
+	class TextureDescriptor: public DeviceObject {
+	public:
+		virtual TextureBuffer *GetBuffer() = 0;
+	};
 	
 	/*
-	RenderTargetDescriptor k bindovani textury jako render target.
+	Umoznuje nabindovat texturu jako render target.
+	Pouze nasledujici textury muzou byt pouzity jako render target: TEXTURE_1D, TEXTURE_2D, TEXTURE_2D_MS
 	*/
-	class RenderTargetDescriptor: public DeviceObject {};
-	
+	class RenderTargetDescriptor: public DeviceObject {
+	public:
+		virtual TextureBuffer *GetBuffer() = 0;
+	};
+
 	/*
 	Umoznuje zobrazeni obsahu back bufferu do klientske oblasti okna. Objekt je asociovan s oknem pri svem vytvoreni.
 	*/
@@ -328,8 +347,7 @@ namespace RenderInterface {
 	*/
 	class DepthStencilBuffer: public DeviceObject {
 	public:
-		virtual ~DepthStencilBuffer() {}
-		virtual DepthStencilBufferDesc GetDesc() const = 0;
+		virtual void Resize( const int width, const int height ) = 0;
 	};
 	
 	//**************************************************

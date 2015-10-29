@@ -130,9 +130,6 @@ int DX11Device::GetMultisampleQuality( const int samplesCount) const {
 
 CommandInterface *DX11Device::CreateCommandInterface() {
 	DX11CommandInterface *commandInterface = new DX11CommandInterface();
-	if ( commandInterface == nullptr ) {
-		return nullptr;
-	}
 	if ( !commandInterface->Create() ) {
 		delete commandInterface;
 		return nullptr;
@@ -142,9 +139,6 @@ CommandInterface *DX11Device::CreateCommandInterface() {
 
 BackBuffer *DX11Device::CreateBackBuffer( Window &window ) {
 	DX11BackBuffer *backBuffer = new DX11BackBuffer();
-	if ( backBuffer == nullptr ) {
-		return nullptr;
-	}
 	if ( !backBuffer->Create( device, dxgiFactory, window ) ) {
 		delete backBuffer;
 		return nullptr;
@@ -154,9 +148,6 @@ BackBuffer *DX11Device::CreateBackBuffer( Window &window ) {
 
 DepthStencilBuffer *DX11Device::CreateDepthStencilBuffer( const DepthStencilBufferDesc &desc ) {
 	DX11DepthStencilBuffer *buffer = new DX11DepthStencilBuffer();
-	if ( buffer == nullptr ) {
-		return nullptr;
-	}
 	if ( !buffer->Create( device, desc ) ) {
 		delete buffer;
 		return nullptr;
@@ -164,11 +155,16 @@ DepthStencilBuffer *DX11Device::CreateDepthStencilBuffer( const DepthStencilBuff
 	return buffer;
 }
 
+TextureBuffer *DX11Device::CreateTextureBuffer( const TextureBufferDesc &desc, const void * const initialData[] ) {
+	DX11TextureBuffer *buffer = new DX11TextureBuffer();
+	if ( !buffer->Create( device, desc, initialData ) ) {
+		delete buffer;
+	}
+	return buffer;
+}
+
 Display *DX11Device::CreateDisplay( const int outputId ) {
 	DX11Display *display = new DX11Display();
-	if ( display == nullptr ) {
-		return nullptr;
-	}
 	if ( !display->Create( device, dxgiAdapter, outputId ) ) {
 		delete display;
 		return nullptr;
@@ -206,36 +202,86 @@ void DX11CommandInterface::Begin( CommandList * const commandList ) {
 
 void DX11CommandInterface::End() {
 	context = nullptr;
-	// Neimplementovan command list, dodelat!
-}
-/*
-void DX11CommandInterface::SetRenderTargets( RenderTargetObject * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) {
-	ID3D11RenderTargetView *views[ MAX_RENDER_TARGETS ] = { NULL };
-	int bindCount = min( count, MAX_RENDER_TARGETS );
-	for ( int i = 0; i < bindCount; i++ ) {
-		ASSERT_DOWNCAST( renderTargets[ i ], DX11RenderTargetObject );
-		views[ i ] = static_cast< DX11RenderTargetObject* >( renderTargets[ i ] )->view;
-	}
-	if ( depthStencilBuffer == nullptr ) {
-		context->OMSetRenderTargets( MAX_RENDER_TARGETS, views, NULL );
-		return;
-	}
-	ASSERT_DOWNCAST( depthStencilBuffer, DX11DepthStencilBuffer );
-	context->OMSetRenderTargets(
-		MAX_RENDER_TARGETS,
-		views,
-		static_cast< DX11DepthStencilBuffer* >( depthStencilBuffer )->GetDepthStencilView()
-	);
+
+	// UNIMPLEMENTED command list!
 }
 
-void DX11CommandInterface::ClearRenderTarget( RenderTargetObject * const renderTarget, const Color &color ) {
-	ASSERT_DOWNCAST( renderTarget, DX11RenderTargetObject );
+void DX11CommandInterface::SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) {
+	if ( count > MAX_RENDER_TARGETS ) {
+		return;
+	}
+	ID3D11RenderTargetView *renderTargetViews[ MAX_RENDER_TARGETS ] = { NULL };
+	for ( int i = 0; i < count; i++ ) {
+		ASSERT_DOWNCAST( renderTargets[ i ], DX11RenderTargetDescriptor );
+		renderTargetViews[ i ] = static_cast< DX11RenderTargetDescriptor* >( renderTargets[ i ] )->GetView();
+	}
+	ID3D11DepthStencilView *depthStencilView = NULL;
+	if ( depthStencilBuffer != nullptr ) {
+		ASSERT_DOWNCAST( depthStencilBuffer, DX11DepthStencilBuffer );
+		depthStencilView = static_cast< DX11DepthStencilBuffer* >( depthStencilBuffer )->GetView();
+	}
+	context->OMSetRenderTargets( MAX_RENDER_TARGETS, renderTargetViews, depthStencilView );
+}
+
+void DX11CommandInterface::SetBackBuffer( BackBuffer * const backBuffer, DepthStencilBuffer * const depthStencilBuffer ) {
+	ID3D11RenderTargetView *renderTargetViews[ MAX_RENDER_TARGETS ] = { NULL };
+	ASSERT_DOWNCAST( backBuffer, DX11BackBuffer );
+	renderTargetViews[ 0 ] = static_cast< DX11BackBuffer* >( backBuffer )->GetView();
+
+	ID3D11DepthStencilView *depthStencilView = NULL;
+	if ( depthStencilBuffer != nullptr ) {
+		ASSERT_DOWNCAST( depthStencilBuffer, DX11DepthStencilBuffer );
+		depthStencilView = static_cast< DX11DepthStencilBuffer* >( depthStencilBuffer )->GetView();
+	}
+	context->OMSetRenderTargets( MAX_RENDER_TARGETS, renderTargetViews, depthStencilView );
+}
+
+void DX11CommandInterface::ClearRenderTarget( RenderTargetDescriptor * const renderTarget, const Color &color ) {
+	ASSERT_DOWNCAST( renderTarget, DX11RenderTargetDescriptor );
 	context->ClearRenderTargetView(
-		static_cast< DX11RenderTargetObject* >( renderTarget )->view,
+		static_cast< DX11RenderTargetDescriptor* >( renderTarget )->GetView(),
 		reinterpret_cast< const FLOAT* >( &color )
 	);
 }
-*/
+
+void DX11CommandInterface::ClearDepthStencilBuffer( DepthStencilBuffer * const buffer, const float depth, const Uint8 stencil ) {
+	ASSERT_DOWNCAST( buffer, DX11DepthStencilBuffer );
+	context->ClearDepthStencilView(
+		static_cast< DX11DepthStencilBuffer* >( buffer )->GetView(),
+		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
+		static_cast< FLOAT >( depth ),
+		static_cast< UINT8 >( stencil )
+	);
+}
+
+void DX11CommandInterface::ClearDepthBuffer( DepthStencilBuffer * const buffer, const float depth ) {
+	ASSERT_DOWNCAST( buffer, DX11DepthStencilBuffer );
+	context->ClearDepthStencilView(
+		static_cast< DX11DepthStencilBuffer* >( buffer )->GetView(),
+		D3D11_CLEAR_DEPTH,
+		static_cast< FLOAT >( depth ),
+		0
+	);
+}
+
+void DX11CommandInterface::ClearStencilBuffer( DepthStencilBuffer * const buffer, const Uint8 stencil ) {
+	ASSERT_DOWNCAST( buffer, DX11DepthStencilBuffer );
+	context->ClearDepthStencilView(
+		static_cast< DX11DepthStencilBuffer* >( buffer )->GetView(),
+		D3D11_CLEAR_STENCIL,
+		0,
+		static_cast< UINT8 >( stencil )
+	);
+}
+
+void DX11CommandInterface::ClearState() {
+	context->ClearState();
+}
+
+void DX11CommandInterface::Flush() {
+	context->Flush();
+}
+
 // DX11Display
 
 DX11Display::~DX11Display() {
@@ -444,7 +490,9 @@ bool DX11BackBuffer::Create( ID3D11Device *const device, IDXGIFactory1 *const fa
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
+
 	// render target view
+	
 	ID3D11Texture2D *texture = nullptr;
 	hresult = swapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &texture ) );
 	if ( FAILED( hresult ) ) {
@@ -471,18 +519,6 @@ bool DX11BackBuffer::Create( ID3D11Device *const device, IDXGIFactory1 *const fa
 	this->renderTargetView = renderTargetView;
 
 	return true;
-}
-
-ID3D11RenderTargetView *DX11BackBuffer::GetView() {
-	return renderTargetView;
-}
-
-IDXGISwapChain *DX11BackBuffer::GetSwapChain() {
-	return dxgiSwapChain;
-}
-
-void DX11BackBuffer::Present( const int vsync ) {
-	dxgiSwapChain->Present( vsync, 0 );
 }
 
 void DX11BackBuffer::Resize() {
@@ -518,21 +554,28 @@ void DX11BackBuffer::Resize() {
 	}
 }
 
+void DX11BackBuffer::Present( const int vsync ) {
+	dxgiSwapChain->Present( vsync, 0 );
+}
+
+ID3D11RenderTargetView *DX11BackBuffer::GetView() {
+	return renderTargetView;
+}
+
+IDXGISwapChain *DX11BackBuffer::GetSwapChain() {
+	return dxgiSwapChain;
+}
+
 // DX11TextureBuffer
 
-/*
-	PRESUNOUT DO DEVICE::CREATETEXTUREBUFFER
-	// kontrola parametru
-	if ( dimmensions.width < 1 || dimmensions.height < 1 || dimmensions.depth < 1 ) {
-		return false;
-	}
-	TextureDimmensions dimmensions;
-	int arraySize;
-	int samplesCount;
-	int samplesQuality;
-	int mipLevels;
+DX11TextureBuffer::DX11TextureBuffer() {
+	texture = nullptr;
+}
 
-*/
+DX11TextureBuffer::~DX11TextureBuffer() {
+	ReleaseCOM( &texture );
+}
+
 bool DX11TextureBuffer::Create( ID3D11Device * const device, const TextureBufferDesc &desc, const void * const initialData[] ) {
 	// usage
 	D3D11_USAGE usage = D3D11_USAGE_STAGING;
@@ -555,8 +598,9 @@ bool DX11TextureBuffer::Create( ID3D11Device * const device, const TextureBuffer
 	// pouzit texturu jako render target?
 	UINT renderTargetBindFlag = ( desc.renderTarget ? D3D11_BIND_RENDER_TARGET : 0 );
 
-	// initialize subresources
 	std::unique_ptr< D3D11_SUBRESOURCE_DATA[] > subresources( nullptr );
+	
+	// initialize subresources
 	if ( initialData != nullptr ) {
 		subresources.reset( new D3D11_SUBRESOURCE_DATA[ desc.arraySize * desc.mipLevels ] );
 		FormatDesc formatDesc = GetFormatDesc( desc.format );
@@ -587,8 +631,10 @@ bool DX11TextureBuffer::Create( ID3D11Device * const device, const TextureBuffer
 		}
 	}
 
-	// 1D texture
-	if ( desc.type == TextureBufferType::TEXTURE_1D || desc.type == TextureBufferType::TEXTURE_1D_ARRAY ) {
+	// 1D textures
+	if ( desc.type == TextureBufferType::TEXTURE_1D ||
+		 desc.type == TextureBufferType::TEXTURE_1D_ARRAY
+	) {
 		D3D11_TEXTURE1D_DESC textureDesc;
 		textureDesc.Width 				= desc.dimmensions.width;
 		textureDesc.MipLevels 			= desc.mipLevels;
@@ -605,12 +651,16 @@ bool DX11TextureBuffer::Create( ID3D11Device * const device, const TextureBuffer
 			return false;
 		}
 		this->texture = texture;
-		this->desc = desc;
+		SetDesc( desc );
 		return true;
 	}
 
-	// 2D texture
-	if ( desc.type == TextureBufferType::TEXTURE_2D || desc.type == TextureBufferType::TEXTURE_2D_ARRAY ) {
+	// 2D textures
+	if ( desc.type == TextureBufferType::TEXTURE_2D ||
+		 desc.type == TextureBufferType::TEXTURE_2D_ARRAY  ||
+		 desc.type == TextureBufferType::TEXTURE_2D_MS ||
+		 desc.type == TextureBufferType::TEXTURE_2D_MS_ARRAY
+	) {
 		D3D11_TEXTURE2D_DESC textureDesc;
 		textureDesc.Width 				= desc.dimmensions.width;
 		textureDesc.Height				= desc.dimmensions.height;
@@ -630,7 +680,7 @@ bool DX11TextureBuffer::Create( ID3D11Device * const device, const TextureBuffer
 			return false;
 		}
 		this->texture = texture;
-		this->desc = desc;
+		SetDesc( desc );
 		return true;
 	}
 
@@ -653,17 +703,22 @@ bool DX11TextureBuffer::Create( ID3D11Device * const device, const TextureBuffer
 			return false;
 		}
 		this->texture = texture;
-		this->desc = desc;
+		SetDesc( desc );
 		return true;
 	}
 
 	return false;
 }
 
+ID3D11Resource *DX11TextureBuffer::GetTextureResource() {
+	return texture;
+}
+
 // DX11TextureDescriptor
 
 DX11TextureDescriptor::DX11TextureDescriptor() {
 	view = nullptr;
+	buffer = nullptr;
 }
 DX11TextureDescriptor::~DX11TextureDescriptor() {
 	ReleaseCOM( &view );
@@ -674,24 +729,25 @@ bool DX11TextureDescriptor::Create( ID3D11Device * const device, DX11TextureBuff
 	TextureBufferType type = buffer->GetType();
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc;
+	ZeroMemory( &viewDesc, sizeof( viewDesc ) );
 	
+	// 1D
 	if ( type == TextureBufferType::TEXTURE_1D ) {
 		ID3D11Texture1D *texture = static_cast< ID3D11Texture1D* >( resource );
 		D3D11_TEXTURE1D_DESC textureDesc;
 		texture->GetDesc( &textureDesc );
 
-		D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc;
 		viewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE1D;
 		viewDesc.Format = textureDesc.Format;
 		viewDesc.Texture1D.MostDetailedMip = textureDesc.MipLevels - 1;
 		viewDesc.Texture1D.MipLevels = -1;
 
+	// 1D_ARRAY
 	} else if ( type == TextureBufferType::TEXTURE_1D_ARRAY ) {
 		ID3D11Texture1D *texture = static_cast< ID3D11Texture1D* >( resource );
 		D3D11_TEXTURE1D_DESC textureDesc;
 		texture->GetDesc( &textureDesc );
 
-		D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc;
 		viewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE1DARRAY;
 		viewDesc.Format = textureDesc.Format;
 		viewDesc.Texture1DArray.MostDetailedMip = textureDesc.MipLevels - 1;
@@ -699,23 +755,23 @@ bool DX11TextureDescriptor::Create( ID3D11Device * const device, DX11TextureBuff
 		viewDesc.Texture1DArray.FirstArraySlice = 0;
 		viewDesc.Texture1DArray.ArraySize = textureDesc.ArraySize;
 
+	// 2D
 	} else if ( type == TextureBufferType::TEXTURE_2D ) {
 		ID3D11Texture2D *texture = static_cast< ID3D11Texture2D* >( resource );
 		D3D11_TEXTURE2D_DESC textureDesc;
 		texture->GetDesc( &textureDesc );
 
-		D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc;
 		viewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 		viewDesc.Format = textureDesc.Format;
 		viewDesc.Texture2D.MostDetailedMip = textureDesc.MipLevels - 1;
 		viewDesc.Texture2D.MipLevels = -1;
 
+	// 2D_ARRAY
 	} else if ( type == TextureBufferType::TEXTURE_2D_ARRAY ) {
 		ID3D11Texture2D *texture = static_cast< ID3D11Texture2D* >( resource );
 		D3D11_TEXTURE2D_DESC textureDesc;
 		texture->GetDesc( &textureDesc );
 
-		D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc;
 		viewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
 		viewDesc.Format = textureDesc.Format;
 		viewDesc.Texture2DArray.MostDetailedMip = textureDesc.MipLevels - 1;
@@ -723,77 +779,122 @@ bool DX11TextureDescriptor::Create( ID3D11Device * const device, DX11TextureBuff
 		viewDesc.Texture2DArray.FirstArraySlice = 0;
 		viewDesc.Texture2DArray.ArraySize = textureDesc.ArraySize;
 
-	} else {
+	// 2D_MS
+	} else if ( type == TextureBufferType::TEXTURE_2D_MS ) {
+		ID3D11Texture2D *texture = static_cast< ID3D11Texture2D* >( resource );
+		D3D11_TEXTURE2D_DESC textureDesc;
+		texture->GetDesc( &textureDesc );
+
+		viewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DMS;
+		viewDesc.Format = textureDesc.Format;
+
+	// 2D_MS_ARRAY
+	} else if ( type == TextureBufferType::TEXTURE_2D_MS_ARRAY ) {
+		ID3D11Texture2D *texture = static_cast< ID3D11Texture2D* >( resource );
+		D3D11_TEXTURE2D_DESC textureDesc;
+		texture->GetDesc( &textureDesc );
+
+		viewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DMSARRAY;
+		viewDesc.Format = textureDesc.Format;
+		viewDesc.Texture2DMSArray.FirstArraySlice = 0;
+		viewDesc.Texture2DMSArray.ArraySize = textureDesc.ArraySize;
+
+	// 3D
+	} else if ( type == TextureBufferType::TEXTURE_3D ) {
+		ID3D11Texture3D *texture = static_cast< ID3D11Texture3D* >( resource );
+		D3D11_TEXTURE3D_DESC textureDesc;
+		texture->GetDesc( &textureDesc );
+
+		viewDesc.Texture3D.MostDetailedMip = textureDesc.MipLevels - 1;
+		viewDesc.Texture3D.MipLevels = -1;
+	}
+
+	ID3D11ShaderResourceView *view = nullptr;
+	HRESULT hresult = device->CreateShaderResourceView( resource, &viewDesc, &view );
+	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	HRESULT hresult = device->CreateShaderResourceView( resource, &viewDesc, &view );
-	return !FAILED( hresult );
+	this->view = view;
+	this->buffer = buffer;
+	return true;
 }
 
 ID3D11ShaderResourceView *DX11TextureDescriptor::GetView() {
 	return view;
 }
 
-/*
-// DX11RenderBuffer
+TextureBuffer *DX11TextureDescriptor::GetBuffer() {
+	return buffer;
+}
 
-bool DX11RenderBuffer::Create( DX11Device *const device, const RenderBufferDesc &desc ) {
-	D3D11_TEXTURE2D_DESC textureDesc;
-	ZeroMemory( &textureDesc, sizeof( textureDesc ) );
-	textureDesc.Width				= static_cast< UINT >( desc.width );
-	textureDesc.Height				= static_cast< UINT >( desc.height );
-	textureDesc.MipLevels			= 1;
-	textureDesc.ArraySize			= 1;
-	textureDesc.Format				= GetDXGIFormat( desc.format );
-	textureDesc.Usage				= D3D11_USAGE_DEFAULT;
-	textureDesc.BindFlags			= D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	textureDesc.CPUAccessFlags		= 0;
-	textureDesc.MiscFlags			= 0;
-	textureDesc.SampleDesc.Count	= desc.samplesCount;
+// DX11RenderTargetDescriptor
 
-	if ( desc.multisampleQuality == MAX_MULTISAMPLE_QUALITY ) {
-		textureDesc.SampleDesc.Quality = device->GetMultisampleQuality( desc.samplesCount );
+DX11RenderTargetDescriptor::DX11RenderTargetDescriptor() {
+	view = nullptr;
+	buffer = nullptr;
+}
+
+DX11RenderTargetDescriptor::~DX11RenderTargetDescriptor() {
+	ReleaseCOM( &view );
+}
+
+bool DX11RenderTargetDescriptor::Create( ID3D11Device * const device, DX11TextureBuffer * const buffer ) {
+	TextureBufferType type = buffer->GetType();
+	ID3D11Resource *resource = buffer->GetTextureResource();
+	D3D11_RENDER_TARGET_VIEW_DESC viewDesc;
+	ZeroMemory( &viewDesc, sizeof( viewDesc ) );
+	
+	// 1D
+	if ( type == TextureBufferType::TEXTURE_1D ) {
+		ID3D11Texture1D *texture = static_cast< ID3D11Texture1D* >( resource );
+		D3D11_TEXTURE1D_DESC textureDesc;
+		texture->GetDesc( &textureDesc );
+
+		viewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE1D;
+		viewDesc.Format = textureDesc.Format;
+		viewDesc.Texture1D.MipSlice = 0;
+
+	// 2D
+	} else if ( type == TextureBufferType::TEXTURE_2D ) {
+		ID3D11Texture2D *texture = static_cast< ID3D11Texture2D* >( resource );
+		D3D11_TEXTURE2D_DESC textureDesc;
+		texture->GetDesc( &textureDesc );
+
+		viewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+		viewDesc.Format = textureDesc.Format;
+		viewDesc.Texture2D.MipSlice = 0;
+
+	// 2D_MS
+	} else if ( type == TextureBufferType::TEXTURE_2D_MS ) {
+		ID3D11Texture2D *texture = static_cast< ID3D11Texture2D* >( resource );
+		D3D11_TEXTURE2D_DESC textureDesc;
+		texture->GetDesc( &textureDesc );
+
+		viewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
+		viewDesc.Format = textureDesc.Format;
+
+	// Not supported formats
 	} else {
-		textureDesc.SampleDesc.Quality = desc.multisampleQuality;
+		return false;
 	}
 
-	ID3D11Device *dxDevice = device->GetDevice();
-	HRESULT hresult = 0;
-
-	ID3D11Texture2D *texture = nullptr;
-	hresult = dxDevice->CreateTexture2D( &textureDesc, NULL, &texture );
+	ID3D11RenderTargetView *view = nullptr;
+	HRESULT hresult = device->CreateRenderTargetView ( buffer->GetTextureResource(), &viewDesc, &view );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	ID3D11RenderTargetView *rtv = nullptr;
-	hresult = dxDevice->CreateRenderTargetView( texture, NULL, &rtv );
-	if ( FAILED( hresult ) ) {
-		texture->Release();
-		return false;
-	}
-	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
-	ZeroMemory( &srvDesc, sizeof( srvDesc ) );
-	srvDesc.Format = GetDXGIFormat( desc.format );
-	srvDesc.ViewDimension = desc.samplesCount > 1 ? D3D11_SRV_DIMENSION_TEXTURE2DMS : D3D11_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MipLevels = 1;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-
-	ID3D11ShaderResourceView *srv = nullptr;
-	hresult = dxDevice->CreateShaderResourceView( texture, &srvDesc, &srv );
-	if ( FAILED( hresult ) ) {
-		texture->Release();
-		rtv->Release();
-		return false;
-	}
-	// ulozit vytvorene objekty
-	this->texture = texture;
-	this->renderTargetObject.view = rtv;
-	this->shaderResourceObject.view = srv;
-	this->desc = desc;
-
+	this->view = view;
+	this->buffer = buffer;
 	return true;
 }
-*/
+
+TextureBuffer *DX11RenderTargetDescriptor::GetBuffer() {
+	return buffer;
+}
+
+ID3D11RenderTargetView *DX11RenderTargetDescriptor::GetView() {
+	return view;
+}
 
 // DX11DepthStencilBuffer
 
@@ -830,7 +931,7 @@ bool DX11DepthStencilBuffer::Create( ID3D11Device *device, const DepthStencilBuf
 	D3D11_DEPTH_STENCIL_VIEW_DESC viewDesc;
 	ZeroMemory( &viewDesc, sizeof( viewDesc ) );
 	viewDesc.Format = bufferDesc.Format;
-	viewDesc.ViewDimension = desc.samplesCount > 1 ? D3D11_DSV_DIMENSION_TEXTURE2DMS : D3D11_DSV_DIMENSION_TEXTURE2D;
+	viewDesc.ViewDimension = ( desc.samplesCount > 1 ? D3D11_DSV_DIMENSION_TEXTURE2DMS : D3D11_DSV_DIMENSION_TEXTURE2D );
 	viewDesc.Flags = 0;
 
 	ID3D11DepthStencilView *view = nullptr;
@@ -847,11 +948,11 @@ bool DX11DepthStencilBuffer::Create( ID3D11Device *device, const DepthStencilBuf
 	return true;
 }
 
-DepthStencilBufferDesc DX11DepthStencilBuffer::GetDesc() const {
-	return desc;
+void DX11DepthStencilBuffer::Resize( const int width, const int height ) {
+	// ...
 }
 
-ID3D11DepthStencilView *DX11DepthStencilBuffer::GetDepthStencilView() {
+ID3D11DepthStencilView *DX11DepthStencilBuffer::GetView() {
 	return view;
 }
 

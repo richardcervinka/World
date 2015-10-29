@@ -1,7 +1,7 @@
 #include "Window.h"
 
 Window::Window() {
-	device = nullptr;
+	renderer = nullptr;
 	backBuffer = nullptr;
 }
 
@@ -12,24 +12,22 @@ Window::~Window() {
 	}
 }
 
-void Window::SetRenderDevice( RenderInterface::Device * const device ) {
-	// unbind current
-	if ( backBuffer != nullptr ) {
-		backBuffer->Release();
-		backBuffer = nullptr;
-		this->device = nullptr;
+void Window::SetRenderer( Renderer * const renderer ) {
+	// unbind current (NOT IMPLEMENTED)
+	if ( this->renderer != nullptr ) {
+		return;
 	}
-	if ( device == nullptr ) {
+	if ( renderer == nullptr ) {
 		return;
 	}
 	// create new back buffer
-	RenderInterface::BackBuffer *newBackBuffer = device->CreateBackBuffer( *this );
-	if ( newBackBuffer == nullptr ) {
+	RenderInterface::BackBuffer *backBuffer = renderer->CreateWindowBackBuffer( *this );
+	if ( backBuffer == nullptr ) {
 		return;
 	}
 	// save new state
-	this->backBuffer = newBackBuffer;
-	this->device = device;
+	this->backBuffer = backBuffer;
+	this->renderer = renderer;
 }
 
 void Window::PresentBackBuffer( const int vsync ) {
@@ -48,6 +46,12 @@ void Window::ResizeBackBuffer() {
 	}
 }
 
-bool Window::IsRenderTarget() const {
-	return backBuffer != nullptr;
+bool Window::RendererControlled() const {
+	return renderer != nullptr;
+}
+
+void Window::OnResized( const int width, const int height ) {
+	if ( renderer != nullptr ) {
+		renderer->ResizeBuffers( *this, width, height );
+	}
 }
