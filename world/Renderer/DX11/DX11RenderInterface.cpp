@@ -220,7 +220,7 @@ void DX11CommandInterface::End() {
 	// UNIMPLEMENTED command list!
 }
 
-void DX11CommandInterface::SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) {
+void DX11CommandInterface::SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilDescriptor * const depthStencil ) {
 	if ( count > MAX_RENDER_TARGETS ) {
 		return;
 	}
@@ -230,9 +230,9 @@ void DX11CommandInterface::SetRenderTargets( RenderTargetDescriptor * const rend
 		renderTargetViews[ i ] = static_cast< DX11RenderTargetDescriptor* >( renderTargets[ i ] )->GetView();
 	}
 	ID3D11DepthStencilView *depthStencilView = NULL;
-	if ( depthStencilBuffer != nullptr ) {
-		ASSERT_DOWNCAST( depthStencilBuffer, DX11DepthStencilBuffer );
-		depthStencilView = static_cast< DX11DepthStencilBuffer* >( depthStencilBuffer )->GetView();
+	if ( depthStencil != nullptr ) {
+		ASSERT_DOWNCAST( depthStencil, DX11DepthStencilDescriptor );
+		depthStencilView = static_cast< DX11DepthStencilDescriptor* >( depthStencil )->GetView();
 	}
 	context->OMSetRenderTargets( MAX_RENDER_TARGETS, renderTargetViews, depthStencilView );
 }
@@ -245,30 +245,30 @@ void DX11CommandInterface::ClearRenderTarget( RenderTargetDescriptor * const ren
 	);
 }
 
-void DX11CommandInterface::ClearDepthStencilBuffer( DepthStencilBuffer * const buffer, const float depth, const Uint8 stencil ) {
-	ASSERT_DOWNCAST( buffer, DX11DepthStencilBuffer );
+void DX11CommandInterface::ClearDepthStencil( DepthStencilDescriptor * const descriptor, const float depth, const Uint8 stencil ) {
+	ASSERT_DOWNCAST( descriptor, DX11DepthStencilDescriptor );
 	context->ClearDepthStencilView(
-		static_cast< DX11DepthStencilBuffer* >( buffer )->GetView(),
+		static_cast< DX11DepthStencilDescriptor* >( descriptor )->GetView(),
 		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
 		static_cast< FLOAT >( depth ),
 		static_cast< UINT8 >( stencil )
 	);
 }
 
-void DX11CommandInterface::ClearDepthBuffer( DepthStencilBuffer * const buffer, const float depth ) {
-	ASSERT_DOWNCAST( buffer, DX11DepthStencilBuffer );
+void DX11CommandInterface::ClearDepth( DepthStencilDescriptor * const descriptor, const float depth ) {
+	ASSERT_DOWNCAST( descriptor, DX11DepthStencilDescriptor );
 	context->ClearDepthStencilView(
-		static_cast< DX11DepthStencilBuffer* >( buffer )->GetView(),
+		static_cast< DX11DepthStencilDescriptor* >( descriptor )->GetView(),
 		D3D11_CLEAR_DEPTH,
 		static_cast< FLOAT >( depth ),
 		0
 	);
 }
 
-void DX11CommandInterface::ClearStencilBuffer( DepthStencilBuffer * const buffer, const Uint8 stencil ) {
-	ASSERT_DOWNCAST( buffer, DX11DepthStencilBuffer );
+void DX11CommandInterface::ClearStencil( DepthStencilDescriptor * const descriptor, const Uint8 stencil ) {
+	ASSERT_DOWNCAST( descriptor, DX11DepthStencilDescriptor );
 	context->ClearDepthStencilView(
-		static_cast< DX11DepthStencilBuffer* >( buffer )->GetView(),
+		static_cast< DX11DepthStencilDescriptor* >( descriptor )->GetView(),
 		D3D11_CLEAR_STENCIL,
 		0,
 		static_cast< UINT8 >( stencil )
@@ -504,18 +504,6 @@ bool DX11BackBuffer::Create( ID3D11Device *const device, IDXGIFactory1 *const fa
 }
 
 void DX11BackBuffer::Resize() {
-	// zjistit pocet referenci na RenderTargetView
-	ULONG refs = renderTargetView->AddRef();
-	renderTargetView->Release();
-	
-	// nejsou uvolneny vsechny reference na back buffer
-	if ( refs > 2 ) {
-		return;
-	}
-	// release RTV
-	ReleaseCOM( &renderTargetView );
-	
-	// resize
 	const int width = window->GetClientWidth();
 	const int height = window->GetClientHeight();
 	DXGI_SWAP_CHAIN_DESC swapChainDesc;
@@ -525,10 +513,6 @@ void DX11BackBuffer::Resize() {
 
 void DX11BackBuffer::Present( const int vsync ) {
 	dxgiSwapChain->Present( vsync, 0 );
-}
-
-ID3D11RenderTargetView *DX11BackBuffer::GetView() {
-	return renderTargetView;
 }
 
 IDXGISwapChain *DX11BackBuffer::GetSwapChain() {
@@ -740,7 +724,7 @@ bool DX11RenderTargetDescriptor::Create( ID3D11Device * const device, TextureBuf
 
 bool DX11RenderTargetDescriptor::Create( ID3D11Device * const device, BackBuffer * const buffer ) {
 	ASSERT_DOWNCAST( buffer, DX11BackBuffer );
-	IDXGISwapChain *swapChain = static_cast< DX11BackBuffer >( buffer )->GetSwapChain();
+	IDXGISwapChain *swapChain = static_cast< DX11BackBuffer* >( buffer )->GetSwapChain();
 	ID3D11Texture2D *texture = nullptr;
 	HRESULT hresult = 0;
 	hresult = swapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &texture ) );

@@ -101,11 +101,11 @@ public:
 	virtual void Begin( Device * const device ) override;
 	virtual void Begin( CommandList * const commandList ) override;
 	virtual void End() override;
-	virtual void SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) override;
+	virtual void SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilDescriptor * const depthStencil ) override;
 	virtual void ClearRenderTarget( RenderTargetDescriptor * const renderTarget, const Color &color ) override;
-	virtual void ClearDepthStencilBuffer( DepthStencilBuffer * const buffer, const float depth, const Uint8 stencil ) override;
-	virtual void ClearDepthBuffer( DepthStencilBuffer * const buffer, const float depth ) override;
-	virtual void ClearStencilBuffer( DepthStencilBuffer * const buffer, const Uint8 stencil ) override;
+	virtual void ClearDepthStencil( DepthStencilDescriptor * const descriptor, const float depth, const Uint8 stencil ) override;
+	virtual void ClearDepth( DepthStencilDescriptor * const descriptor, const float depth ) override;
+	virtual void ClearStencil( DepthStencilDescriptor * const descriptor, const Uint8 stencil ) override;
 	virtual void ClearState() override;
 	virtual void Flush() override;
 
@@ -156,7 +156,7 @@ public:
 
 private:
 	ID3D11RenderTargetView *view;
-	DX11TextureBuffer *buffer;
+	TextureBuffer *buffer;
 };
 
 class DX11BackBuffer: public BackBuffer {
@@ -170,7 +170,6 @@ public:
 	virtual void Resize() override;
 	
 	// DirectX 11 getters
-	ID3D11RenderTargetView *GetView();
 	IDXGISwapChain *GetSwapChain();
 
 private:

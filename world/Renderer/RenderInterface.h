@@ -233,19 +233,19 @@ namespace RenderInterface {
 		virtual void End() = 0;
 		
 		// Nastavi multiple render targets plus nepovinne depth stencil buffer (muze byt nullptr)
-		virtual void SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) = 0;
+		virtual void SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilDescriptor * const depthStencil ) = 0;
 		
 		// Vyplni render target barvou
 		virtual void ClearRenderTarget( RenderTargetDescriptor * const renderTarget, const Color &color ) = 0;
 
 		// nastavi depth i stencil buffer na pozadovanou hodnotu
-		virtual void ClearDepthStencilBuffer( DepthStencilBuffer * const buffer, const float depth, const Uint8 stencil ) = 0;
+		virtual void ClearDepthStencil( DepthStencilDescriptor * const descriptor, const float depth, const Uint8 stencil ) = 0;
 
 		// nastavi depth buffer na hodnotu depth
-		virtual void ClearDepthBuffer( DepthStencilBuffer * const buffer, const float depth ) = 0;
+		virtual void ClearDepth( DepthStencilDescriptor * const descriptor, const float depth ) = 0;
 
 		// nastavi stencil buffer na hodnotu stencil
-		virtual void ClearStencilBuffer( DepthStencilBuffer * const buffer, const Uint8 stencil ) = 0;
+		virtual void ClearStencil( DepthStencilDescriptor * const descriptor, const Uint8 stencil ) = 0;
 
 		// Nastavi objekt Device do vychoziho stavu
 		virtual void ClearState() = 0;
