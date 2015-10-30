@@ -11,15 +11,12 @@ namespace RenderInterface {
 	class Display;
 	class CommandInterface;
 	class CommandList;
-	class RenderTargetDescriptor;
-	class TextureDescriptor;
 	class TextureBuffer;
-	class TextureBuffer1D;
-	class TextureBuffer1DArray;
-	class TextureBuffer2D;
-	class TextureBuffer2DArray;
 	class BackBuffer;
 	class DepthStencilBuffer;
+	class RenderTargetDescriptor;
+	class TextureDescriptor;
+	class DepthStencilDescriptor;
 	class TextureSampler;
 	
 	// Render Interface global constants
@@ -205,6 +202,8 @@ namespace RenderInterface {
 		virtual BackBuffer *CreateBackBuffer( Window &window ) = 0;
 		virtual TextureBuffer *CreateTextureBuffer( const TextureBufferDesc &desc, const void * const initialData[] ) = 0;
 		virtual DepthStencilBuffer *CreateDepthStencilBuffer( const DepthStencilBufferDesc &desc ) = 0;
+		virtual RenderTargetDescriptor *CreateRenderTargetDescriptor( TextureBuffer * const buffer ) = 0;
+		virtual RenderTargetDescriptor *CreateRenderTargetDescriptor( BackBuffer * const buffer ) = 0;
 
 		//**************************
 		virtual TextureSampler *CreateTextureSampler( const TextureSamplerDesc &desc ) = 0;
@@ -235,9 +234,6 @@ namespace RenderInterface {
 		
 		// Nastavi multiple render targets plus nepovinne depth stencil buffer (muze byt nullptr)
 		virtual void SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) = 0;
-
-		// Nastavi back buffer jako aktualni render target. Neni mozne pouzivat back buffery jako multiple render targets.
-		virtual void SetBackBuffer( BackBuffer * const backBuffer, DepthStencilBuffer * const depthStencilBuffer ) = 0;
 		
 		// Vyplni render target barvou
 		virtual void ClearRenderTarget( RenderTargetDescriptor * const renderTarget, const Color &color ) = 0;
@@ -347,7 +343,63 @@ namespace RenderInterface {
 	*/
 	class DepthStencilBuffer: public DeviceObject {
 	public:
-		virtual void Resize( const int width, const int height ) = 0;
+	};
+
+
+	enum class DepthComparsion {
+		NEVER,
+		LESS,
+		EQUAL,
+		LESS_EQUAL,
+		GREATER,
+		NOT_EQUAL,
+		GREATER_EQUAL,
+		ALWAYS
+	};
+
+	enum class StencilComparsion {
+		NEVER,
+		LESS,
+		EQUAL,
+		LESS_EQUAL,
+		GREATER,
+		NOT_EQUAL,
+		GREATER_EQUAL,
+		ALWAYS
+	};
+
+	enum class StencilOperation {
+		KEEP,
+		ZERO,
+		REPLACE,
+		INCR_SAT,
+		DECR_SAT,
+		INVERT,
+		INCR,
+		DECR
+	};
+
+	enum DepthStencilConfiguration {
+			
+	};
+
+	// stejne nastaveni pro front i back face
+	struct DepthStencilState {
+		int depth;				// read, write, read_write, disabled
+		int stencil;			// read, write, read_write, disabled
+		DepthComparsion depthFunc;
+		StencilComparsion stencilFunc;
+		StencilOperation stencilPassOp;
+		StencilOperation stencilFailOp;
+		StencilOperation stencilDepthFailOp;
+	};
+
+	/*
+	Umoznuje nabindovat DepthStencilBuffer do pipeline
+	Popisuje konfiguraci depth stencil testu a zapisu do bufferu
+	*/
+	class DepthStencilDescriptor: public DeviceObject {
+	public:
 	};
 	
 	//**************************************************

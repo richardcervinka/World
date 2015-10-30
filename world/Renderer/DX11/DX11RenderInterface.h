@@ -53,7 +53,9 @@ public:
 	virtual Display *CreateDisplay( const int outputId ) override;
 	virtual BackBuffer *CreateBackBuffer( Window &window ) override;
 	virtual TextureBuffer *CreateTextureBuffer( const TextureBufferDesc &desc, const void * const initialData[] ) override;
-	
+	virtual RenderTargetDescriptor *CreateRenderTargetDescriptor( TextureBuffer * const buffer ) override;
+	virtual RenderTargetDescriptor *CreateRenderTargetDescriptor( BackBuffer * const buffer ) override;
+
 	//******************
 	
 	virtual DepthStencilBuffer *CreateDepthStencilBuffer( const DepthStencilBufferDesc &desc ) override;
@@ -100,7 +102,6 @@ public:
 	virtual void Begin( CommandList * const commandList ) override;
 	virtual void End() override;
 	virtual void SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilBuffer * const depthStencilBuffer ) override;
-	virtual void SetBackBuffer( BackBuffer * const backBuffer, DepthStencilBuffer * const depthStencilBuffer ) override;
 	virtual void ClearRenderTarget( RenderTargetDescriptor * const renderTarget, const Color &color ) override;
 	virtual void ClearDepthStencilBuffer( DepthStencilBuffer * const buffer, const float depth, const Uint8 stencil ) override;
 	virtual void ClearDepthBuffer( DepthStencilBuffer * const buffer, const float depth ) override;
@@ -129,7 +130,7 @@ class DX11TextureDescriptor: public TextureDescriptor {
 public:
 	DX11TextureDescriptor();
 	virtual ~DX11TextureDescriptor();
-	bool Create( ID3D11Device * const device, DX11TextureBuffer * const buffer );
+	bool Create( ID3D11Device * const device, TextureBuffer * const buffer );
 	ID3D11ShaderResourceView *GetView();
 
 	// implementace rozhrani TextureDescriptor
@@ -144,7 +145,8 @@ class DX11RenderTargetDescriptor: public RenderTargetDescriptor {
 public:
 	DX11RenderTargetDescriptor();
 	virtual ~DX11RenderTargetDescriptor();
-	bool Create( ID3D11Device * const device, DX11TextureBuffer * const buffer );
+	bool Create( ID3D11Device * const device, TextureBuffer * const buffer );
+	bool Create( ID3D11Device * const device, BackBuffer * const buffer );
 
 	// implementace rozhrani RenderTargetDescriptor
 	virtual TextureBuffer *GetBuffer() override;
@@ -172,7 +174,6 @@ public:
 	IDXGISwapChain *GetSwapChain();
 
 private:
-	ID3D11RenderTargetView *renderTargetView;
 	IDXGISwapChain *dxgiSwapChain;
 	ID3D11Device *device;
 	Window *window;
@@ -180,25 +181,37 @@ private:
 	int height;
 };
 
-// DX11DepthStencilBuffer
-
 class DX11DepthStencilBuffer: public DepthStencilBuffer {
 public:
 	DX11DepthStencilBuffer();
 	~DX11DepthStencilBuffer();
 	bool Create( ID3D11Device *device, const DepthStencilBufferDesc &desc );
 
-	// implementace DepthStencilBuffer
-	virtual void Resize( const int width, const int height ) override;
-
-	ID3D11DepthStencilView *GetView();
+	// DirectX 11 getters
+	ID3D11Texture2D *GetTexture();
 
 private:
 	ID3D11Device *device;
 	ID3D11Texture2D *texture;
-	ID3D11DepthStencilView *view;
 	DepthStencilBufferDesc desc;
 };
+
+class DX11DepthStencilDescriptor: public DepthStencilDescriptor {
+public:
+	DX11DepthStencilDescriptor();
+	~DX11DepthStencilDescriptor();
+	bool Create( ID3D11Device *device, DepthStencilBuffer * const buffer, const DepthStencilState &desc );
+
+	// DirectX 11 accessors
+	ID3D11DepthStencilView *GetView();
+	ID3D11DepthStencilState *GetState();
+
+private:
+	ID3D11DepthStencilView *view;
+	ID3D11DepthStencilState *state;
+};
+
+//ID3D11DepthStencilView *view;
 
 //******************
 
