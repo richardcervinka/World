@@ -21,6 +21,7 @@ DXGI_FORMAT GetDXGIFormat(const Format format) {
 		DXGI_FORMAT_R8_UNORM, 				// R8_UNORM
 		DXGI_FORMAT_R16_FLOAT, 				// R16_FLOAT
 		DXGI_FORMAT_R32_FLOAT, 				// R32_FLOAT
+		DXGI_FORMAT_D24_UNORM_S8_UINT,		// DEPTH_24_UNORM_STENCIL_8_UINT
 		DXGI_FORMAT_BC1_UNORM, 				// BC1
 		DXGI_FORMAT_BC3_UNORM 				// BC3
 	};
@@ -146,15 +147,6 @@ BackBuffer *DX11Device::CreateBackBuffer( Window &window ) {
 	return backBuffer;
 }
 
-DepthStencilBuffer *DX11Device::CreateDepthStencilBuffer( const DepthStencilBufferDesc &desc ) {
-	DX11DepthStencilBuffer *buffer = new DX11DepthStencilBuffer();
-	if ( !buffer->Create( device, desc ) ) {
-		delete buffer;
-		return nullptr;
-	}
-	return buffer;
-}
-
 TextureBuffer *DX11Device::CreateTextureBuffer( const TextureBufferDesc &desc, const void * const initialData[] ) {
 	DX11TextureBuffer *buffer = new DX11TextureBuffer();
 	if ( !buffer->Create( device, desc, initialData ) ) {
@@ -174,7 +166,21 @@ RenderTargetDescriptor *DX11Device::CreateRenderTargetDescriptor( TextureBuffer 
 }
 
 RenderTargetDescriptor *DX11Device::CreateRenderTargetDescriptor( BackBuffer * const buffer ) {
-	DX11RenderTargetDescriptor *descriptor = new DX11RenderTargetDescriptor(); //***************************************************************************************************************
+	DX11RenderTargetDescriptor *descriptor = new DX11RenderTargetDescriptor();
+	if ( !descriptor->Create( device, buffer ) ) {
+		delete descriptor;
+		return nullptr;
+	}
+	return descriptor;
+}
+
+DepthStencilDescriptor *DX11Device::CreateDepthStencilDescriptor( TextureBuffer * const buffer, const DepthStencilState &desc ) {
+	DX11DepthStencilDescriptor *descriptor = new DX11DepthStencilDescriptor();
+	if ( !descriptor->Create( device, buffer, desc ) ) {
+		delete descriptor;
+		return nullptr;
+	}
+	return descriptor;
 }
 
 Display *DX11Device::CreateDisplay( const int outputId ) {
@@ -498,7 +504,6 @@ bool DX11BackBuffer::Create( ID3D11Device *const device, IDXGIFactory1 *const fa
 	device->AddRef();
 	this->window = &window;
 	this->dxgiSwapChain = swapChain;
-	//this->renderTargetView = renderTargetView;
 
 	return true;
 }
@@ -548,8 +553,16 @@ bool DX11TextureBuffer::Create( ID3D11Device * const device, const TextureBuffer
 		CPUAccessFlags |= D3D11_CPU_ACCESS_WRITE;
 	}
 
+	UINT bindFlags = D3D11_BIND_SHADER_RESOURCE;
+
 	// pouzit texturu jako render target?
-	UINT renderTargetBindFlag = ( desc.renderTarget ? D3D11_BIND_RENDER_TARGET : 0 );
+	if ( desc.renderTarget ) {
+		bindFlags |= D3D11_BIND_RENDER_TARGET;
+	}
+	// pouzit texturu jako depth stencil buffer
+	if ( desc.format == Format::DEPTH_24_UNORM_STENCIL_8_UINT ) {
+		bindFlags |= D3D11_BIND_DEPTH_STENCIL;
+	}
 
 	std::unique_ptr< D3D11_SUBRESOURCE_DATA[] > subresources( nullptr );
 	
@@ -594,7 +607,7 @@ bool DX11TextureBuffer::Create( ID3D11Device * const device, const TextureBuffer
 		textureDesc.ArraySize			= desc.arraySize;
 		textureDesc.Format				= GetDXGIFormat( desc.format );
 		textureDesc.Usage				= usage;
-		textureDesc.BindFlags			= D3D11_BIND_SHADER_RESOURCE | renderTargetBindFlag;
+		textureDesc.BindFlags			= bindFlags;
 		textureDesc.CPUAccessFlags		= CPUAccessFlags;
 		textureDesc.MiscFlags			= 0;
 		
@@ -623,7 +636,7 @@ bool DX11TextureBuffer::Create( ID3D11Device * const device, const TextureBuffer
 		textureDesc.SampleDesc.Count 	= desc.samplesCount;
 		textureDesc.SampleDesc.Quality 	= desc.samplesQuality;
 		textureDesc.Usage				= usage;
-		textureDesc.BindFlags			= D3D11_BIND_SHADER_RESOURCE | renderTargetBindFlag;
+		textureDesc.BindFlags			= bindFlags;
 		textureDesc.CPUAccessFlags		= CPUAccessFlags;
 		textureDesc.MiscFlags			= 0;
 		
@@ -646,7 +659,7 @@ bool DX11TextureBuffer::Create( ID3D11Device * const device, const TextureBuffer
 		textureDesc.MipLevels 			= desc.mipLevels;
 		textureDesc.Format				= GetDXGIFormat( desc.format );
 		textureDesc.Usage				= usage;
-		textureDesc.BindFlags			= D3D11_BIND_SHADER_RESOURCE | renderTargetBindFlag;
+		textureDesc.BindFlags			= bindFlags;
 		textureDesc.CPUAccessFlags		= CPUAccessFlags;
 		textureDesc.MiscFlags			= 0;
 
@@ -749,52 +762,6 @@ TextureBuffer *DX11RenderTargetDescriptor::GetBuffer() {
 ID3D11RenderTargetView *DX11RenderTargetDescriptor::GetView() {
 	return view;
 }
-
-// DX11DepthStencilBuffer
-
-DX11DepthStencilBuffer::DX11DepthStencilBuffer() {
-	device = nullptr;
-	texture = nullptr;
-	ZeroMemory( &desc, sizeof( desc ) );
-}
-
-DX11DepthStencilBuffer::~DX11DepthStencilBuffer() {
-	ReleaseCOM( &texture );
-	ReleaseCOM( &device );
-}
-
-bool DX11DepthStencilBuffer::Create( ID3D11Device *device, const DepthStencilBufferDesc &desc ) {
-	D3D11_TEXTURE2D_DESC bufferDesc;
-	ZeroMemory( &bufferDesc, sizeof( bufferDesc ) );
-	bufferDesc.Width				= static_cast< UINT >( desc.width );
-	bufferDesc.Height				= static_cast< UINT >( desc.height );
-	bufferDesc.MipLevels			= 1;
-	bufferDesc.ArraySize			= 1;
-	bufferDesc.Format				= DXGI_FORMAT_D24_UNORM_S8_UINT;
-	bufferDesc.SampleDesc.Count		= static_cast< UINT >( desc.samplesCount );
-	bufferDesc.SampleDesc.Quality	= static_cast< UINT >( desc.multisampleQuality );
-	bufferDesc.Usage				= D3D11_USAGE_DEFAULT;
-	bufferDesc.BindFlags			= D3D11_BIND_DEPTH_STENCIL;
-
-	ID3D11Texture2D *texture = nullptr;
-	HRESULT hresult = device->CreateTexture2D( &bufferDesc, NULL, &texture );
-	if ( FAILED( hresult ) ) {
-		return false;
-	}
-
-	// ulozit objekty
-	this->device = device;
-	device->AddRef();
-	this->texture = texture;
-	this->desc = desc;
-
-	return true;
-}
-
-ID3D11Texture2D *DX11DepthStencilBuffer::GetTexture() {
-	return texture;
-}
-
 
 // Depth Stencil descriptor
 	/*

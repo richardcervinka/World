@@ -13,7 +13,6 @@ namespace RenderInterface {
 	class CommandList;
 	class TextureBuffer;
 	class BackBuffer;
-	class DepthStencilBuffer;
 	class RenderTargetDescriptor;
 	class TextureDescriptor;
 	class DepthStencilDescriptor;
@@ -44,6 +43,7 @@ namespace RenderInterface {
 		R8_UNORM,
 		R16_FLOAT,
 		R32_FLOAT,
+		DEPTH_24_UNORM_STENCIL_8_UINT,
 		BC1,
 		BC3
 	};
@@ -68,14 +68,7 @@ namespace RenderInterface {
 		int refreshRateNumerator;
 		int refreshRateDenominator;
 	};
-	
-	struct DepthStencilBufferDesc {
-		int width;
-		int height;
-		int samplesCount;
-		int multisampleQuality;
-	};
-	
+
 	/*
 	Pristupova prava CPU do bufferu
 	Hodnoty je mozne prevest na uint a pracovat s nimi jako s priznaky (flags)
@@ -201,11 +194,11 @@ namespace RenderInterface {
 		virtual Display *CreateDisplay( const int outputId ) = 0;
 		virtual BackBuffer *CreateBackBuffer( Window &window ) = 0;
 		virtual TextureBuffer *CreateTextureBuffer( const TextureBufferDesc &desc, const void * const initialData[] ) = 0;
-		virtual DepthStencilBuffer *CreateDepthStencilBuffer( const DepthStencilBufferDesc &desc ) = 0;
 		virtual RenderTargetDescriptor *CreateRenderTargetDescriptor( TextureBuffer * const buffer ) = 0;
 		virtual RenderTargetDescriptor *CreateRenderTargetDescriptor( BackBuffer * const buffer ) = 0;
+		virtual DepthStencilDescriptor *CreateDepthStencilDescriptor( TextureBuffer * const buffer, const DepthStencilState &desc ) = 0;
 
-		//**************************
+
 		virtual TextureSampler *CreateTextureSampler( const TextureSamplerDesc &desc ) = 0;
 		/*
 		vrati max quality pro pozadovany pocet msaa level.
@@ -337,14 +330,6 @@ namespace RenderInterface {
 		//virtual int GetWidth() const = 0;
 		//virtual int GetHeight() const = 0;
 	};
-	
-	/*
-	DepthStencilBuffer
-	*/
-	class DepthStencilBuffer: public DeviceObject {
-	public:
-	};
-
 
 	enum class DepthComparsion {
 		NEVER,
@@ -379,14 +364,16 @@ namespace RenderInterface {
 		DECR
 	};
 
-	enum DepthStencilConfiguration {
-			
+	enum DepthStencilUsage {
+		DISABLED,
+		READ,
+		READ_WRITE
 	};
 
 	// stejne nastaveni pro front i back face
 	struct DepthStencilState {
-		int depth;				// read, write, read_write, disabled
-		int stencil;			// read, write, read_write, disabled
+		int depth;				// read, read_write, disabled
+		int stencil;			// read, read_write, disabled
 		DepthComparsion depthFunc;
 		StencilComparsion stencilFunc;
 		StencilOperation stencilPassOp;

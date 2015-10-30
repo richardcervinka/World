@@ -55,10 +55,10 @@ public:
 	virtual TextureBuffer *CreateTextureBuffer( const TextureBufferDesc &desc, const void * const initialData[] ) override;
 	virtual RenderTargetDescriptor *CreateRenderTargetDescriptor( TextureBuffer * const buffer ) override;
 	virtual RenderTargetDescriptor *CreateRenderTargetDescriptor( BackBuffer * const buffer ) override;
+	virtual DepthStencilDescriptor *CreateDepthStencilDescriptor( TextureBuffer * const buffer, const DepthStencilState &desc ) override;
 
 	//******************
 	
-	virtual DepthStencilBuffer *CreateDepthStencilBuffer( const DepthStencilBufferDesc &desc ) override;
 	virtual TextureSampler *CreateTextureSampler( const TextureSamplerDesc &desc ) override;
 	virtual int GetMultisampleQuality( const int samplesCount ) const override;
 
@@ -180,26 +180,11 @@ private:
 	int height;
 };
 
-class DX11DepthStencilBuffer: public DepthStencilBuffer {
-public:
-	DX11DepthStencilBuffer();
-	~DX11DepthStencilBuffer();
-	bool Create( ID3D11Device *device, const DepthStencilBufferDesc &desc );
-
-	// DirectX 11 getters
-	ID3D11Texture2D *GetTexture();
-
-private:
-	ID3D11Device *device;
-	ID3D11Texture2D *texture;
-	DepthStencilBufferDesc desc;
-};
-
 class DX11DepthStencilDescriptor: public DepthStencilDescriptor {
 public:
 	DX11DepthStencilDescriptor();
 	~DX11DepthStencilDescriptor();
-	bool Create( ID3D11Device *device, DepthStencilBuffer * const buffer, const DepthStencilState &desc );
+	bool Create( ID3D11Device *device, TextureBuffer * const buffer, const DepthStencilState &desc );
 
 	// DirectX 11 accessors
 	ID3D11DepthStencilView *GetView();
