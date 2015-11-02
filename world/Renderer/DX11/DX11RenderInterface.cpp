@@ -12,20 +12,72 @@ void AbortDXInvalidCall( const HRESULT hresult ) {
 }
 
 DXGI_FORMAT GetDXGIFormat(const Format format) {
-	static const DXGI_FORMAT table[] = {
-		DXGI_FORMAT_UNKNOWN, 				// UNKNOWN
-		DXGI_FORMAT_R8G8B8A8_UNORM,			// R8G8B8A8_UNORM
-		DXGI_FORMAT_R8G8B8A8_SNORM,			// R8G8B8A8_SNORM
-		DXGI_FORMAT_R16G16B16A16_FLOAT, 	// R16G16B16A16_FLOAT
-		DXGI_FORMAT_R16G16_FLOAT, 			// R16G16_FLOAT
-		DXGI_FORMAT_R8_UNORM, 				// R8_UNORM
-		DXGI_FORMAT_R16_FLOAT, 				// R16_FLOAT
-		DXGI_FORMAT_R32_FLOAT, 				// R32_FLOAT
-		DXGI_FORMAT_D24_UNORM_S8_UINT,		// DEPTH_24_UNORM_STENCIL_8_UINT
-		DXGI_FORMAT_BC1_UNORM, 				// BC1
-		DXGI_FORMAT_BC3_UNORM 				// BC3
-	};
-	return table[ static_cast< unsigned int >( format ) ];
+	switch ( format ) {
+	case Format::UNKNOWN:						return DXGI_FORMAT_UNKNOWN;
+	case Format::R8G8B8A8_UNORM:				return DXGI_FORMAT_R8G8B8A8_UNORM;
+	case Format::R8G8B8A8_SNORM:				return DXGI_FORMAT_R8G8B8A8_SNORM;
+	case Format::R16G16B16A16_FLOAT:			return DXGI_FORMAT_R16G16B16A16_FLOAT;
+	case Format::R16G16_FLOAT:					return DXGI_FORMAT_R16G16_FLOAT;
+	case Format::R8_UNORM:						return DXGI_FORMAT_R8_UNORM;
+	case Format::R16_FLOAT:						return DXGI_FORMAT_R16_FLOAT;
+	case Format::R32_FLOAT:						return DXGI_FORMAT_R32_FLOAT;
+	case Format::DEPTH_24_UNORM_STENCIL_8_UINT:	return DXGI_FORMAT_D24_UNORM_S8_UINT;
+	case Format::BC1:							return DXGI_FORMAT_BC1_UNORM;
+	case Format::BC3:							return DXGI_FORMAT_BC3_UNORM;
+	}
+	return DXGI_FORMAT_UNKNOWN;
+}
+
+D3D11_COMPARISON_FUNC GetComparsionFunc( const DepthStencilComparsion dsc ) {
+	switch ( dsc ) {
+	case DepthStencilComparsion::NEVER:			return D3D11_COMPARISON_NEVER;
+	case DepthStencilComparsion::LESS:			return D3D11_COMPARISON_LESS;
+	case DepthStencilComparsion::EQUAL:			return D3D11_COMPARISON_EQUAL;
+	case DepthStencilComparsion::LESS_EQUAL:	return D3D11_COMPARISON_LESS_EQUAL;
+	case DepthStencilComparsion::GREATER:		return D3D11_COMPARISON_GREATER;
+	case DepthStencilComparsion::NOT_EQUAL:		return D3D11_COMPARISON_NOT_EQUAL;
+	case DepthStencilComparsion::GREATER_EQUAL:	return D3D11_COMPARISON_GREATER_EQUAL;
+	case DepthStencilComparsion::ALWAYS:		return D3D11_COMPARISON_ALWAYS;
+	}
+	return D3D11_COMPARISON_NEVER;
+}
+
+D3D11_STENCIL_OP GetStencilOp( const StencilOperation op ) {
+	switch ( op ) {
+	case StencilOperation::KEEP:				return D3D11_STENCIL_OP_KEEP;
+	case StencilOperation::ZERO:				return D3D11_STENCIL_OP_ZERO;
+	case StencilOperation::REPLACE:				return D3D11_STENCIL_OP_REPLACE;
+	case StencilOperation::INCR_SAT:			return D3D11_STENCIL_OP_INCR_SAT;
+	case StencilOperation::DECR_SAT:			return D3D11_STENCIL_OP_DECR_SAT;
+	case StencilOperation::INVERT:				return D3D11_STENCIL_OP_INVERT;
+	case StencilOperation::INCR:				return D3D11_STENCIL_OP_INCR;
+	case StencilOperation::DECR:				return D3D11_STENCIL_OP_DECR;
+	}
+	return D3D11_STENCIL_OP_KEEP;
+}
+
+D3D11_TEXTURE_ADDRESS_MODE GetTextureAddressMode( const TextureAddressing addressing ) {
+	switch ( addressing ) {
+	case TextureAddressing::WRAP:				return D3D11_TEXTURE_ADDRESS_WRAP;
+	case TextureAddressing::MIRROR:				return D3D11_TEXTURE_ADDRESS_MIRROR;
+	case TextureAddressing::CLAMP:				return D3D11_TEXTURE_ADDRESS_CLAMP;
+	}
+	return D3D11_TEXTURE_ADDRESS_WRAP;
+}
+
+D3D11_FILTER GetTextureFilter( const TextureFilter filter ) {
+	switch ( filter ) {
+	case POINT:									return D3D11_FILTER_MIN_MAG_MIP_POINT;
+	case POINT_MIP_LINEAR:						return D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+	case MIN_POINT_MAG_LINEAR_MIP_POINT:		return D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
+	case MIN_POINT_MAG_MIP_LINEAR:				return D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR;
+	case MIN_LINEAR_MAG_MIP_POINT:				return D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
+	case MIN_LINEAR_MAG_POINT_MIP_LINEAR:		return D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+	case LINEAR_MIP_POINT:						return D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+	case LINEAR:								return D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	case ANISOTROPIC:							return D3D11_FILTER_ANISOTROPIC;
+	}
+	return POINT;
 }
 
 // DX11Device
@@ -174,7 +226,7 @@ RenderTargetDescriptor *DX11Device::CreateRenderTargetDescriptor( BackBuffer * c
 	return descriptor;
 }
 
-DepthStencilDescriptor *DX11Device::CreateDepthStencilDescriptor( TextureBuffer * const buffer, const DepthStencilState &desc ) {
+DepthStencilDescriptor *DX11Device::CreateDepthStencilDescriptor( TextureBuffer * const buffer, const DepthStencilStateDesc &desc ) {
 	DX11DepthStencilDescriptor *descriptor = new DX11DepthStencilDescriptor();
 	if ( !descriptor->Create( device, buffer, desc ) ) {
 		delete descriptor;
@@ -192,9 +244,13 @@ Display *DX11Device::CreateDisplay( const int outputId ) {
 	return display;
 }
 
-// *********************************************************************************
 TextureSampler *DX11Device::CreateTextureSampler( const TextureSamplerDesc &desc ) {
-	return nullptr;
+	DX11TextureSampler *sampler = new DX11TextureSampler();
+	if ( !sampler->Create( device, desc ) ) {
+		delete sampler;
+		return nullptr;
+	}
+	return sampler;
 }
 
 // DX11CommandInterface
@@ -466,7 +522,7 @@ DX11BackBuffer::~DX11BackBuffer() {
 	ReleaseCOM( &device );
 }
 
-bool DX11BackBuffer::Create( ID3D11Device *const device, IDXGIFactory1 *const factory, Window &window ) {
+bool DX11BackBuffer::Create( ID3D11Device * const device, IDXGIFactory1 * const factory, Window &window ) {
 	HRESULT hresult = 0;
 
 	ASSERT_DOWNCAST( &window, WindowsWindow );
@@ -763,21 +819,90 @@ ID3D11RenderTargetView *DX11RenderTargetDescriptor::GetView() {
 	return view;
 }
 
-// Depth Stencil descriptor
-	/*
+// DX11DepthStencilDescriptor
+
+DX11DepthStencilDescriptor::DX11DepthStencilDescriptor() {
+	view = nullptr;
+	state = nullptr;
+}
+
+DX11DepthStencilDescriptor::~DX11DepthStencilDescriptor() {
+	ReleaseCOM( &state );
+	ReleaseCOM( &view );
+}
+
+bool DX11DepthStencilDescriptor::Create( ID3D11Device * const device, TextureBuffer * const buffer, const DepthStencilStateDesc &desc ) {
+	if ( buffer->GetFormat() != Format::DEPTH_24_UNORM_STENCIL_8_UINT ) {
+		return false;
+	}
+	ASSERT_DOWNCAST( buffer, DX11TextureBuffer );
+	ID3D11Resource *texture = static_cast< DX11TextureBuffer* >( buffer )->GetTextureResource();
+	HRESULT hresult = 0;
+
+	// view
+
 	D3D11_DEPTH_STENCIL_VIEW_DESC viewDesc;
 	ZeroMemory( &viewDesc, sizeof( viewDesc ) );
-	viewDesc.Format = bufferDesc.Format;
-	viewDesc.ViewDimension = ( desc.samplesCount > 1 ? D3D11_DSV_DIMENSION_TEXTURE2DMS : D3D11_DSV_DIMENSION_TEXTURE2D );
-	viewDesc.Flags = 0;
+	viewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+	// Pouze standard depth stencil usage podporuje zapis do bufferu
+	if ( desc.depthUsage != DepthStencilUsage::STANDARD ) {
+		viewDesc.Flags |= D3D11_DSV_READ_ONLY_DEPTH;
+	}
+	if ( desc.stencilUsage != DepthStencilUsage::STANDARD ) {
+		viewDesc.Flags |= D3D11_DSV_READ_ONLY_STENCIL;
+	}
+	// view dimension
+	TextureBufferType type = buffer->GetType();
+	if ( type == TEXTURE_2D ) {
+		viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+		viewDesc.Texture2D.MipSlice = 0;
+
+	} else if ( type == TEXTURE_2D_MS ) {
+		viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
+
+	} else 
+		// not supported texture dimmension
+		return false;
+	}
 
 	ID3D11DepthStencilView *view = nullptr;
 	hresult = device->CreateDepthStencilView( texture, &viewDesc, &view );
-	if ( FAILED( hresult ) ) {
-		texture->Release();
+	if ( FAILED( hresult )  ) {
 		return false;
 	}
-	*/
+
+	// state
+
+	D3D11_DEPTH_STENCIL_DESC stateDesc;
+	stateDesc.DepthEnable = static_cast< BOOL >( desc.depthUsage != DepthStencilUsage::DISABLED );
+	stateDesc.DepthWriteMask = (
+		desc.depthUsage == DepthStencilUsage::STANDARD ?
+		D3D11_DEPTH_WRITE_MASK_ALL :
+		D3D11_DEPTH_WRITE_MASK_ZERO
+	);
+	stateDesc.DepthFunc = GetComparsionFunc( desc.depthFunc );
+	stateDesc.StencilEnable = static_cast< BOOL >( desc.stencilUsage != DepthStencilUsage::DISABLED );
+	stateDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+	stateDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+	stateDesc.FrontFace.StencilFunc = GetComparsionFunc( desc.stencilFunc );
+	stateDesc.FrontFace.StencilPassOp = GetStencilOp( desc.stencilPassOp );
+	stateDesc.FrontFace.StencilFailOp = GetStencilOp( desc.stencilFailOp );
+	stateDesc.FrontFace.StencilDepthFailOp = GetStencilOp( desc.stencilDepthFailOp );
+	stateDesc.BackFace = stateDesc.FrontFace;
+
+	ID3D11DepthStencilState *state;
+	hresult = device->CreateDepthStencilState( &stateDesc, &state );
+	if ( FAILED( hresult )  ) {
+		view->Release();
+		return false;
+	}
+
+	// ulozit objekty
+	this->view = view;
+	this->state = state;
+	return true;
+}
 
 // DX11TextureSampler
 
@@ -790,52 +915,30 @@ DX11TextureSampler::~DX11TextureSampler() {
 	ReleaseCOM( &sampler );
 }
 
-bool DX11TextureSampler::Create( DX11Device * const device, const TextureSamplerDesc &desc ) {
-
-	D3D11_TEXTURE_ADDRESS_MODE textureAddressModes[ 3 ];
-	textureAddressModes[ static_cast< int >( TextureAddress::WRAP ) ]	= D3D11_TEXTURE_ADDRESS_WRAP;
-	textureAddressModes[ static_cast< int >( TextureAddress::MIRROR ) ] = D3D11_TEXTURE_ADDRESS_MIRROR;
-	textureAddressModes[ static_cast< int >( TextureAddress::CLAMP ) ]	= D3D11_TEXTURE_ADDRESS_CLAMP;
-
-	D3D11_FILTER filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-	switch ( desc.filter ) {
-	case TextureFilter::LINEAR:								filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;				break;
-	case TextureFilter::POINT:								filter = D3D11_FILTER_MIN_MAG_MIP_POINT;				break;
-	case TextureFilter::ANISOTROPIC:						filter = D3D11_FILTER_ANISOTROPIC;						break;
-	case TextureFilter::POIN_MIP_LINEAR:					filter = D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;			break;
-	case TextureFilter::MIN_POINT_MAG_LINEAR_MIP_POINT:		filter = D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;	break;
-	case TextureFilter::MIN_POINT_MAG_MIP_LINEAR:			filter = D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR;			break;
-	case TextureFilter::MIN_LINEAR_MAG_MIP_POINT:			filter = D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;			break;
-	case TextureFilter::MIN_LINEAR_MAG_POINT_MIP_LINEAR:	filter = D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;	break;
-	case TextureFilter::LINEAR_MIP_POINT:					filter = D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;			break;
-	}
-
+bool DX11TextureSampler::Create( ID3D11Device * const device, const TextureSamplerDesc &desc ) {
 	D3D11_SAMPLER_DESC samplerDesc;
 	ZeroMemory( &samplerDesc, sizeof( samplerDesc ) );
-	samplerDesc.Filter			= filter;
-	samplerDesc.AddressU		= textureAddressModes[ static_cast< int >( desc.uAddress ) ];
-	samplerDesc.AddressV		= textureAddressModes[ static_cast< int >( desc.vAddress ) ];
-	samplerDesc.AddressW		= textureAddressModes[ static_cast< int >( desc.wAddress ) ];
+	samplerDesc.Filter			= GetTextureFilter( desc.filter );
+	samplerDesc.AddressU		= GetTextureAddressMode( desc.uAddress );
+	samplerDesc.AddressV		= GetTextureAddressMode( desc.vAddress );
+	samplerDesc.AddressW		= GetTextureAddressMode( desc.wAddress );
 	samplerDesc.MipLODBias		= 0;
 	samplerDesc.MaxAnisotropy	= desc.maxAnisotropy;
 	samplerDesc.ComparisonFunc	= D3D11_COMPARISON_NEVER;
 	samplerDesc.MinLOD			= desc.minLOD;
 	samplerDesc.MaxLOD			= ( desc.maxLOD == MAX_TEXTURE_LOD ? D3D11_FLOAT32_MAX : desc.maxLOD );
 
-	ID3D11Device *dxDevice = device->GetDevice();
-	HRESULT hresult = dxDevice->CreateSamplerState( &samplerDesc, &sampler );
+	ID3D11SamplerState *sampler = nullptr;
+	HRESULT hresult = device->CreateSamplerState( &samplerDesc, &sampler );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
 
+	this->sampler = sampler;
 	this->desc = desc;
 	return true;
 }
 
 ID3D11SamplerState *DX11TextureSampler::GetSamplerState() {
 	return sampler;
-}
-
-TextureSamplerDesc DX11TextureSampler::GetDesc() const {
-	return desc;
 }

@@ -17,6 +17,8 @@ namespace RenderInterface {
 	class TextureDescriptor;
 	class DepthStencilDescriptor;
 	class TextureSampler;
+	class VertexBuffer;
+	class IndexBuffer;
 	
 	// Render Interface global constants
 	const int MAX_RENDER_TARGETS = 8;
@@ -86,26 +88,6 @@ namespace RenderInterface {
 		READ_WRITE
 	};
 	
-	// Filtrovani textur
-	enum class TextureFilter {
-		POINT,
-		POIN_MIP_LINEAR,
-		MIN_POINT_MAG_LINEAR_MIP_POINT,
-		MIN_POINT_MAG_MIP_LINEAR,
-		MIN_LINEAR_MAG_MIP_POINT,
-		MIN_LINEAR_MAG_POINT_MIP_LINEAR,
-		LINEAR_MIP_POINT,
-		LINEAR,
-		ANISOTROPIC
-	};
-	
-	// Adresovani textur
-	enum class TextureAddress {
-		WRAP,
-		MIRROR,
-		CLAMP
-	};
-	
 	// Rozmery texture bufferu. Pokud neni rozmer definovan, je jeho hodnota 1.
 	struct TextureDimmensions {
 		int width;
@@ -141,15 +123,74 @@ namespace RenderInterface {
 		int samplesQuality;
 		bool renderTarget;
 	};
+
+	// Filtrovani textur
+	enum class TextureFilter {
+		POINT,
+		POINT_MIP_LINEAR,
+		MIN_POINT_MAG_LINEAR_MIP_POINT,
+		MIN_POINT_MAG_MIP_LINEAR,
+		MIN_LINEAR_MAG_MIP_POINT,
+		MIN_LINEAR_MAG_POINT_MIP_LINEAR,
+		LINEAR_MIP_POINT,
+		LINEAR,
+		ANISOTROPIC
+	};
+	
+	// Adresovani textur
+	enum class TextureAddressing {
+		WRAP,
+		MIRROR,
+		CLAMP
+	};
 	
 	struct TextureSamplerDesc {
 		TextureFilter filter;
-		TextureAddress uAddress;
-		TextureAddress vAddress;
-		TextureAddress wAddress;
+		TextureAddressing uAddressing;
+		TextureAddressing vAddressing;
+		TextureAddressing wAddressing;
 		int maxAnisotropy;
-		float minLOD;
+		float minLOD;	// hodnota >= 0
 		float maxLOD;	// hodnota v rozsahu <0; MAX_TEXTURE_LOD>
+	};
+
+	enum class DepthStencilComparsion {
+		NEVER,
+		LESS,
+		EQUAL,
+		LESS_EQUAL,
+		GREATER,
+		NOT_EQUAL,
+		GREATER_EQUAL,
+		ALWAYS
+	};
+
+	enum class StencilOperation {
+		KEEP,
+		ZERO,
+		REPLACE,
+		INCR_SAT,
+		DECR_SAT,
+		INVERT,
+		INCR,
+		DECR
+	};
+
+	enum DepthStencilUsage {
+		DISABLED,	// no depth or stencil tests performed
+		STANDARD,	// read write depth stencil usage
+		READONLY	// readonly depth stencil usage
+	};
+
+	// stejne nastaveni pro front i back face
+	struct DepthStencilStateDesc {
+		DepthStencilUsage depthUsage;			// default: STANDARD
+		DepthStencilUsage stencilUsage;			// default: STANDARD
+		DepthStencilComparsion depthFunc;		// default: LESS
+		DepthStencilComparsion stencilFunc;		// default: ALWAYS
+		StencilOperation stencilPassOp;			// default: KEEP
+		StencilOperation stencilFailOp;			// default: KEEP
+		StencilOperation stencilDepthFailOp;	// default: KEEP
 	};
 	
 	// Identifikace shader stag, hodnoty lze kombinovat operatorem OR
@@ -158,6 +199,26 @@ namespace RenderInterface {
 	const ShaderStage PIXEL_SHADER_STAGE = 0x0002;
 	const ShaderStage GEOMETRY_SHADER_STAGE = 0x0004;
 	
+	/*
+	DEVICE CREATE TARGETS:
+
+	BlendState
+	ClassLinkage
+	ComputeShader
+	Counter
+	DomainShader
+	GeometryShader
+	GeometryShaderWithStreamOutput
+	HullShader
+	InputLayout
+	PixelShader
+	Predicate
+	Query
+	RasterizerState
+	UnorderedAccessView
+	VertexShader
+	*/
+
 	/*
 	Zakladni trida pro vsechny objekty vytvarene tridou Device.
 	Objekt Device je factory vsech device objektu, device objekty se uvolnuji metodou Release()
@@ -176,10 +237,7 @@ namespace RenderInterface {
 		
 		// inkrementuje pocitadlo referenci, objekt neni uvolnen z pameti, dokud je pocet referenci vetsi nez 0
 		void AddRef();
-		
-		// Vraci true, pokud je objekt pripraveny k pouziti, tj. je radne inicializovany a neni v zadnem chybovem stavu
-		//bool Valid() const = 0;
-	
+
 	private:
 		int references;
 	};
@@ -196,9 +254,7 @@ namespace RenderInterface {
 		virtual TextureBuffer *CreateTextureBuffer( const TextureBufferDesc &desc, const void * const initialData[] ) = 0;
 		virtual RenderTargetDescriptor *CreateRenderTargetDescriptor( TextureBuffer * const buffer ) = 0;
 		virtual RenderTargetDescriptor *CreateRenderTargetDescriptor( BackBuffer * const buffer ) = 0;
-		virtual DepthStencilDescriptor *CreateDepthStencilDescriptor( TextureBuffer * const buffer, const DepthStencilState &desc ) = 0;
-
-
+		virtual DepthStencilDescriptor *CreateDepthStencilDescriptor( TextureBuffer * const buffer, const DepthStencilStateDesc &desc ) = 0;
 		virtual TextureSampler *CreateTextureSampler( const TextureSamplerDesc &desc ) = 0;
 		/*
 		vrati max quality pro pozadovany pocet msaa level.
@@ -225,7 +281,7 @@ namespace RenderInterface {
 		// ukonceni sekvence commandu
 		virtual void End() = 0;
 		
-		// Nastavi multiple render targets plus nepovinne depth stencil buffer (muze byt nullptr)
+		// Nastavi multiple render targets a depth stencil buffer (pokud je nullptr, pouzije se vychozi depth stencil state)
 		virtual void SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilDescriptor * const depthStencil ) = 0;
 		
 		// Vyplni render target barvou
@@ -245,8 +301,6 @@ namespace RenderInterface {
 
 		// Odesle obsah command bufferu do GPU
 		virtual void Flush() = 0;
-
-		//virtual void SetPipelineState()
 	};
 	
 	/*
@@ -280,13 +334,24 @@ namespace RenderInterface {
 	};
 	
 	/*
+	Umoznuje zobrazeni obsahu back bufferu do klientske oblasti okna. Objekt je asociovan s oknem pri svem vytvoreni.
+	*/
+	class BackBuffer: public DeviceObject {
+	public:
+		virtual void Present( const int vsync ) = 0;
+		virtual void Resize() = 0;
+		//virtual int GetWidth() const = 0;
+		//virtual int GetHeight() const = 0;
+	};
+
+	/*
 	Texture buffer je obecne blok pameti pro ukladani dat textur.
 	*/
 	class TextureBuffer: public DeviceObject {
 	public:
 		TextureBuffer();
 
-		// TextureBufferDesc members getters
+		// TextureBufferDesc member getters
 		const Format GetFormat() const;
 		TextureBufferType GetType() const;
 		int GetDimmension() const;
@@ -297,6 +362,7 @@ namespace RenderInterface {
 		bool RenderTargetUsable() const;
 
 	protected:
+		// Odvozena trida nema pristup k privatni promenne desc, rozhrani proto poskytuje setter
 		void SetDesc( const TextureBufferDesc &desc );
 
 	private:
@@ -321,84 +387,50 @@ namespace RenderInterface {
 	};
 
 	/*
-	Umoznuje zobrazeni obsahu back bufferu do klientske oblasti okna. Objekt je asociovan s oknem pri svem vytvoreni.
-	*/
-	class BackBuffer: public DeviceObject {
-	public:
-		virtual void Present( const int vsync ) = 0;
-		virtual void Resize() = 0;
-		//virtual int GetWidth() const = 0;
-		//virtual int GetHeight() const = 0;
-	};
-
-	enum class DepthComparsion {
-		NEVER,
-		LESS,
-		EQUAL,
-		LESS_EQUAL,
-		GREATER,
-		NOT_EQUAL,
-		GREATER_EQUAL,
-		ALWAYS
-	};
-
-	enum class StencilComparsion {
-		NEVER,
-		LESS,
-		EQUAL,
-		LESS_EQUAL,
-		GREATER,
-		NOT_EQUAL,
-		GREATER_EQUAL,
-		ALWAYS
-	};
-
-	enum class StencilOperation {
-		KEEP,
-		ZERO,
-		REPLACE,
-		INCR_SAT,
-		DECR_SAT,
-		INVERT,
-		INCR,
-		DECR
-	};
-
-	enum DepthStencilUsage {
-		DISABLED,
-		READ,
-		READ_WRITE
-	};
-
-	// stejne nastaveni pro front i back face
-	struct DepthStencilState {
-		int depth;				// read, read_write, disabled
-		int stencil;			// read, read_write, disabled
-		DepthComparsion depthFunc;
-		StencilComparsion stencilFunc;
-		StencilOperation stencilPassOp;
-		StencilOperation stencilFailOp;
-		StencilOperation stencilDepthFailOp;
-	};
-
-	/*
-	Umoznuje nabindovat DepthStencilBuffer do pipeline
-	Popisuje konfiguraci depth stencil testu a zapisu do bufferu
+	Umoznuje nabindovat DepthStencilBuffer do pipeline.
+	Popisuje konfiguraci depth stencil testu a pristup do texture bufferu.
+	Podporovane formaty asociovaneho texture bufferu: TEXTURE_2D a TEXTURE_2D_MS
 	*/
 	class DepthStencilDescriptor: public DeviceObject {
-	public:
 	};
 	
-	//**************************************************
-
 	/*
 	TextureSampler
 	*/
 	class TextureSampler: public DeviceObject {
 	public:
-		virtual ~TextureSampler() {};
-		virtual TextureSamplerDesc GetDesc() const = 0;
+		//virtual TextureSamplerDesc GetDesc() const = 0;
 	};
+
+	/*
+	Vertex buffer
+	*/
+	class VertexBuffer: public DeviceObject {
+	public:
+		// Vraci pocet vertexu, tj. maximalni mnozstvi, ktere je mozne do bufferu ulozit
+		virtual int GetCapacity() const = 0;
+
+		// Vraci pocet vertexu ulozenych v bufferu
+		virtual int GetLength() const = 0;
+
+		// Vraci velikost vertexu v bajtech
+		virtual int GetVertexSize() const = 0;
+
+		// Velikost bufferu v bajtech
+		virtual int GetByteSize() const = 0;
+
+		// Vynuluje pocet vertexu ulozenych v bufferu
+		virtual void Clear() = 0;
+	};
+
+	/*
+	Index buffer
+	*/
+	class IndexBuffer: public DeviceObject {
+	public:
+	};
+
+	//**************************************************
 	
 	struct BlendStateDescription {
 	};
@@ -413,18 +445,6 @@ namespace RenderInterface {
 	
 	class PipelineState: public DeviceObject {
 	public:
-	
-	private:
-	};
-	
-	/*
-	Zakladni trida pro vsechny buffer objekty, jako jsou Textury apod.
-	*/
-	class Buffer: public DeviceObject {
-	public:
-		// int GetWidth() const;
-		// int GetHeight() const;
-		// int GetByteSize() const;
 	
 	private:
 	};

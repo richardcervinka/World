@@ -55,11 +55,9 @@ public:
 	virtual TextureBuffer *CreateTextureBuffer( const TextureBufferDesc &desc, const void * const initialData[] ) override;
 	virtual RenderTargetDescriptor *CreateRenderTargetDescriptor( TextureBuffer * const buffer ) override;
 	virtual RenderTargetDescriptor *CreateRenderTargetDescriptor( BackBuffer * const buffer ) override;
-	virtual DepthStencilDescriptor *CreateDepthStencilDescriptor( TextureBuffer * const buffer, const DepthStencilState &desc ) override;
-
-	//******************
-	
+	virtual DepthStencilDescriptor *CreateDepthStencilDescriptor( TextureBuffer * const buffer, const DepthStencilStateDesc &desc ) override;
 	virtual TextureSampler *CreateTextureSampler( const TextureSamplerDesc &desc ) override;
+
 	virtual int GetMultisampleQuality( const int samplesCount ) const override;
 
 private:
@@ -163,7 +161,7 @@ class DX11BackBuffer: public BackBuffer {
 public:
 	DX11BackBuffer();
 	virtual ~DX11BackBuffer();
-	bool Create( ID3D11Device *const device, IDXGIFactory1 *const factory, Window &window );
+	bool Create( ID3D11Device * const device, IDXGIFactory1 * const factory, Window &window );
 
 	// implementace rozhrani BackBuffer
 	virtual void Present( const int vsync ) override;
@@ -184,9 +182,9 @@ class DX11DepthStencilDescriptor: public DepthStencilDescriptor {
 public:
 	DX11DepthStencilDescriptor();
 	~DX11DepthStencilDescriptor();
-	bool Create( ID3D11Device *device, TextureBuffer * const buffer, const DepthStencilState &desc );
+	bool Create( ID3D11Device * const device, TextureBuffer * const buffer, const DepthStencilStateDesc &desc );
 
-	// DirectX 11 accessors
+	// DirectX 11 getters
 	ID3D11DepthStencilView *GetView();
 	ID3D11DepthStencilState *GetState();
 
@@ -195,16 +193,13 @@ private:
 	ID3D11DepthStencilState *state;
 };
 
-//ID3D11DepthStencilView *view;
-
-//******************
-
 class DX11TextureSampler: public TextureSampler {
 public:
 	DX11TextureSampler();
 	~DX11TextureSampler();
-	bool Create( DX11Device * const device, const TextureSamplerDesc &desc );
-	virtual TextureSamplerDesc GetDesc() const override;
+	bool Create( ID3D11Device * const device, const TextureSamplerDesc &desc );
+
+	// DirectX 11 getters
 	ID3D11SamplerState *GetSamplerState();
 
 private:
