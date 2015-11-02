@@ -15,6 +15,7 @@ class DX11TextureBuffer;
 class DX11BackBuffer;
 class DX11DepthStencilBuffer;
 class DX11TextureSampler;
+class DX11VertexBuffer;
 
 using namespace RenderInterface;
 
@@ -205,4 +206,18 @@ public:
 private:
 	ID3D11SamplerState *sampler;
 	TextureSamplerDesc desc;
+};
+
+class DX11VertexBuffer: public VertexBuffer {
+public:
+	DX11VertexBuffer();
+	~DX11VertexBuffer();
+	//bool Create( ID3D11Device * const device, const int vertexSize, const int capacity, const void * const initialData );
+
+	// implementace rozhrani VertexBuffer
+	virtual int GetCapacity() const override;
+	virtual int GetLength() const override;
+	virtual int GetVertexSize() const override;
+	virtual int GetByteSize() const override;
+	virtual void Clear() override;
 };

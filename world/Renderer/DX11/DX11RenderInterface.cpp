@@ -376,8 +376,8 @@ void DX11Display::EnumDisplayModes() {
 	dxgiOutput->GetDisplayModeList( BACK_BUFFER_FORMAT, 0, &count, NULL );
 
 	// zjistit dostupne mody
-	DXGI_MODE_DESC *dxgiModes = new DXGI_MODE_DESC[ count ];
-	dxgiOutput->GetDisplayModeList( BACK_BUFFER_FORMAT, 0, &count, dxgiModes );
+	std::unique_ptr< DXGI_MODE_DESC[] > dxgiModes( new DXGI_MODE_DESC[ count ] );
+	dxgiOutput->GetDisplayModeList( BACK_BUFFER_FORMAT, 0, &count, dxgiModes.get() );
 
 	// ulozit vysledek
 	modes.Clear();
@@ -389,8 +389,6 @@ void DX11Display::EnumDisplayModes() {
 		dm.refreshRateDenominator = static_cast< int >( dxgiModes[ i ].RefreshRate.Denominator );
 		modes.Push( dm );
 	}
-	// uvolneni docasnych objektu
-	delete [] dxgiModes;
 }
 
 void DX11Display::SetSystemMode() {
@@ -950,3 +948,5 @@ bool DX11TextureSampler::Create( ID3D11Device * const device, const TextureSampl
 ID3D11SamplerState *DX11TextureSampler::GetSamplerState() {
 	return sampler;
 }
+
+// DX11VertexBuffer
