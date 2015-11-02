@@ -67,17 +67,17 @@ D3D11_TEXTURE_ADDRESS_MODE GetTextureAddressMode( const TextureAddressing addres
 
 D3D11_FILTER GetTextureFilter( const TextureFilter filter ) {
 	switch ( filter ) {
-	case POINT:									return D3D11_FILTER_MIN_MAG_MIP_POINT;
-	case POINT_MIP_LINEAR:						return D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
-	case MIN_POINT_MAG_LINEAR_MIP_POINT:		return D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
-	case MIN_POINT_MAG_MIP_LINEAR:				return D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR;
-	case MIN_LINEAR_MAG_MIP_POINT:				return D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
-	case MIN_LINEAR_MAG_POINT_MIP_LINEAR:		return D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
-	case LINEAR_MIP_POINT:						return D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
-	case LINEAR:								return D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	case ANISOTROPIC:							return D3D11_FILTER_ANISOTROPIC;
+	case TextureFilter::POINT:								return D3D11_FILTER_MIN_MAG_MIP_POINT;
+	case TextureFilter::POINT_MIP_LINEAR:					return D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+	case TextureFilter::MIN_POINT_MAG_LINEAR_MIP_POINT:		return D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
+	case TextureFilter::MIN_POINT_MAG_MIP_LINEAR:			return D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR;
+	case TextureFilter::MIN_LINEAR_MAG_MIP_POINT:			return D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
+	case TextureFilter::MIN_LINEAR_MAG_POINT_MIP_LINEAR:	return D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+	case TextureFilter::LINEAR_MIP_POINT:					return D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+	case TextureFilter::LINEAR:								return D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	case TextureFilter::ANISOTROPIC:						return D3D11_FILTER_ANISOTROPIC;
 	}
-	return POINT;
+	return D3D11_FILTER_MIN_MAG_MIP_POINT;
 }
 
 // DX11Device
@@ -854,14 +854,14 @@ bool DX11DepthStencilDescriptor::Create( ID3D11Device * const device, TextureBuf
 	}
 	// view dimension
 	TextureBufferType type = buffer->GetType();
-	if ( type == TEXTURE_2D ) {
+	if ( type == TextureBufferType::TEXTURE_2D ) {
 		viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 		viewDesc.Texture2D.MipSlice = 0;
 
-	} else if ( type == TEXTURE_2D_MS ) {
+	} else if ( type == TextureBufferType::TEXTURE_2D_MS ) {
 		viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
 
-	} else 
+	} else {
 		// not supported texture dimmension
 		return false;
 	}
@@ -904,6 +904,14 @@ bool DX11DepthStencilDescriptor::Create( ID3D11Device * const device, TextureBuf
 	return true;
 }
 
+ID3D11DepthStencilView *DX11DepthStencilDescriptor::GetView() {
+	return view;
+}
+
+ID3D11DepthStencilState *DX11DepthStencilDescriptor::GetState() {
+	return state;
+}
+
 // DX11TextureSampler
 
 DX11TextureSampler::DX11TextureSampler() {
@@ -919,9 +927,9 @@ bool DX11TextureSampler::Create( ID3D11Device * const device, const TextureSampl
 	D3D11_SAMPLER_DESC samplerDesc;
 	ZeroMemory( &samplerDesc, sizeof( samplerDesc ) );
 	samplerDesc.Filter			= GetTextureFilter( desc.filter );
-	samplerDesc.AddressU		= GetTextureAddressMode( desc.uAddress );
-	samplerDesc.AddressV		= GetTextureAddressMode( desc.vAddress );
-	samplerDesc.AddressW		= GetTextureAddressMode( desc.wAddress );
+	samplerDesc.AddressU		= GetTextureAddressMode( desc.uAddressing );
+	samplerDesc.AddressV		= GetTextureAddressMode( desc.vAddressing );
+	samplerDesc.AddressW		= GetTextureAddressMode( desc.wAddressing );
 	samplerDesc.MipLODBias		= 0;
 	samplerDesc.MaxAnisotropy	= desc.maxAnisotropy;
 	samplerDesc.ComparisonFunc	= D3D11_COMPARISON_NEVER;
