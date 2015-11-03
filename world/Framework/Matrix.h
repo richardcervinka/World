@@ -26,31 +26,31 @@ public:
 	Matrix();
 	
 	// operace
-	void Mul( const Matrix &m );
+	void Mul( const Matrix& m );
 	void Identity();
 	void Transpose();
 	void Inverse();
 	
 	// transformace
-	void Transform( const Matrix &transformations );
+	void Transform( const Matrix& transformations );
 	void Translate( const float x, const float y, const float z );
-	void Translate( const Vector &xyz );
+	void Translate( const Vector& xyz );
 	void Rotate( const float roll, const float pitch, const float yaw );
-	void Rotate( const Vector &rollPitchYaw );
+	void Rotate( const Vector& rollPitchYaw );
 	void RotateX( const float rad );
 	void RotateY( const float rad );
 	void RotateZ( const float rad );
-	void RotateAxis( const Vector &axes, const float rad );
+	void RotateAxis( const Vector& axes, const float rad );
 	void Scale( const float x, const float y, const float z );
-	void Scale( const Vector &xyz );
+	void Scale( const Vector& xyz );
 	
 	// ulozeni do FloatNxN jako column major
-	void StoreColumnMajor( Float4x4 &dest ) const;
-	void StoreColumnMajor( Float3x3 &dest ) const;
+	void StoreColumnMajor( Float4x4& dest ) const;
+	void StoreColumnMajor( Float3x3& dest ) const;
 	
 	// ulozeni do FloatNxN
-	void Store( Float4x4 &dest ) const;
-	void Store( Float3x3 &dest ) const;
+	void Store( Float4x4& dest ) const;
+	void Store( Float3x3& dest ) const;
 	
 	// pretypovani na FloatNxN
 	operator Float4x4() const;
@@ -60,7 +60,7 @@ public:
 	void PerspectiveLH( const float fovVertical, const float aspectRatio, const float nearDraw, const float farDraw );
 	
 	// pohledova matice
-	void LookToLH( const Vector &position, const Vector &direction, const Vector &up );
+	void LookToLH( const Vector& position, const Vector& direction, const Vector& up );
 };
 
 #include "Vector.h"
@@ -87,7 +87,7 @@ inline void Matrix::Inverse() {
 	);
 }
 
-inline void Matrix::Mul( const Matrix &m ) {
+inline void Matrix::Mul( const Matrix& m ) {
 	DirectX::XMStoreFloat4x4A( &xm4x4,
 		DirectX::XMMatrixMultiply(
 			DirectX::XMLoadFloat4x4A( &xm4x4 ),
@@ -96,7 +96,7 @@ inline void Matrix::Mul( const Matrix &m ) {
 	);
 }
 
-inline void Matrix::Transform( const Matrix &transformations ) {
+inline void Matrix::Transform( const Matrix& transformations ) {
 	Mul( transformations );
 }
 
@@ -109,7 +109,7 @@ inline void Matrix::Translate( const float x, const float y, const float z ) {
 	);
 }
 
-inline void Matrix::Translate( const Vector &xyz ) {
+inline void Matrix::Translate( const Vector& xyz ) {
 	Translate( xyz.x, xyz.y, xyz.z );
 }
 
@@ -122,7 +122,7 @@ inline void Matrix::Rotate( const float roll, const float pitch, const float yaw
 	);
 }
 
-inline void Matrix::Rotate( const Vector &rollPitchYaw ) {
+inline void Matrix::Rotate( const Vector& rollPitchYaw ) {
 	Rotate( rollPitchYaw.y, rollPitchYaw.z, rollPitchYaw.x );
 }
 
@@ -153,7 +153,7 @@ inline void Matrix::RotateZ( const float rad ) {
 	);
 }
 
-inline void Matrix::RotateAxis( const Vector &axes, const float rad ) {
+inline void Matrix::RotateAxis( const Vector& axes, const float rad ) {
 	DirectX::XMStoreFloat4x4A( &xm4x4,
 		DirectX::XMMatrixMultiply(
 			DirectX::XMLoadFloat4x4A( &xm4x4 ),
@@ -171,32 +171,32 @@ inline void Matrix::Scale( const float x, const float y, const float z ) {
 	);
 }
 
-inline void Matrix::Scale( const Vector &xyz ) {
+inline void Matrix::Scale( const Vector& xyz ) {
 	Scale( xyz.x, xyz.y, xyz.z );
 }
 
-inline void Matrix::StoreColumnMajor( Float4x4 &dest ) const {
+inline void Matrix::StoreColumnMajor( Float4x4& dest ) const {
 	DirectX::XMStoreFloat4x4A(
 		reinterpret_cast< DirectX::XMFLOAT4X4A* >( &dest ),
 		DirectX::XMMatrixTranspose( DirectX::XMLoadFloat4x4A( &xm4x4 ) )
 	);
 }
 
-inline void Matrix::StoreColumnMajor( Float3x3 &dest ) const {
+inline void Matrix::StoreColumnMajor( Float3x3& dest ) const {
 	DirectX::XMStoreFloat3x3(
 		reinterpret_cast< DirectX::XMFLOAT3X3* >( &dest ),
 		DirectX::XMMatrixTranspose( DirectX::XMLoadFloat4x4A( &xm4x4 ) )
 	);
 }
 
-inline void Matrix::Store( Float4x4 &dest ) const {
+inline void Matrix::Store( Float4x4& dest ) const {
 	DirectX::XMStoreFloat4x4A(
 		reinterpret_cast< DirectX::XMFLOAT4X4A* >( &dest ),
 		DirectX::XMLoadFloat4x4A( &xm4x4 )
 	);
 }
 
-inline void Matrix::Store( Float3x3 &dest ) const {
+inline void Matrix::Store( Float3x3& dest ) const {
 	DirectX::XMStoreFloat3x3(
 		reinterpret_cast< DirectX::XMFLOAT3X3* >( &dest ),
 		DirectX::XMLoadFloat4x4A( &xm4x4 )
@@ -221,7 +221,7 @@ inline void Matrix::PerspectiveLH( const float fovVertical, const float aspectRa
 	);
 }
 
-inline void Matrix::LookToLH( const Vector &position, const Vector &direction, const Vector &up ) {
+inline void Matrix::LookToLH( const Vector& position, const Vector& direction, const Vector& up ) {
 	DirectX::XMStoreFloat4x4A( &xm4x4,
 		DirectX::XMMatrixLookToLH( 
 			DirectX::XMLoadFloat4A( &position.xm4 ),

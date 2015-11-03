@@ -3,20 +3,8 @@
 #include <cstdint>
 #include <climits>
 
-#ifndef Int32
-typedef int32_t Int32;
-#endif
-#ifndef Uint32
-typedef uint32_t Uint32;
-#endif
-#ifndef Int8
-typedef int8_t Int8;
-#endif
-#ifndef Uint8
-typedef uint8_t Uint8;
-#endif
 #ifndef Byte
-typedef uint8_t Byte;
+using Byte = uint8_t;
 #endif
 
 struct alignas( 16 ) Float2 {

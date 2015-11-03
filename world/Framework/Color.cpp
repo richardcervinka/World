@@ -12,14 +12,14 @@ const ColorUnorm ColorUnorm::CYAN = ColorUnorm( 0, 255, 255, 255 );
 const ColorUnorm ColorUnorm::MAGENTA = ColorUnorm( 255, 0, 255, 255 );
 const ColorUnorm ColorUnorm::YELLOW = ColorUnorm( 255, 255, 0, 255 );
 
-ColorUnorm::ColorUnorm( const Uint8 r, const Uint8 g, const Uint8 b, const Uint8 a ) {
+ColorUnorm::ColorUnorm( const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a ) {
 	this->r = r;
 	this->g = g;
 	this->b = b;
 	this->a = a;
 }
 
-ColorUnorm::ColorUnorm( const Uint32 rgba ) {
+ColorUnorm::ColorUnorm( const uint32_t rgba ) {
 	pack = rgba;
 }
 
@@ -91,10 +91,10 @@ void Color::SetRGBA( const float r, const float g, const float b, const float a 
 
 ColorUnorm Color::ToUnorm() const {
 	return ColorUnorm(
-		static_cast< Uint8 >( Math::Clamp( r * 255.0f, 0.0f, 255.0f ) ),
-		static_cast< Uint8 >( Math::Clamp( g * 255.0f, 0.0f, 255.0f ) ),
-		static_cast< Uint8 >( Math::Clamp( b * 255.0f, 0.0f, 255.0f ) ),
-		static_cast< Uint8 >( Math::Clamp( a * 255.0f, 0.0f, 255.0f ) )
+		static_cast< uint8_t >( Math::Clamp( r * 255.0f, 0.0f, 255.0f ) ),
+		static_cast< uint8_t >( Math::Clamp( g * 255.0f, 0.0f, 255.0f ) ),
+		static_cast< uint8_t >( Math::Clamp( b * 255.0f, 0.0f, 255.0f ) ),
+		static_cast< uint8_t >( Math::Clamp( a * 255.0f, 0.0f, 255.0f ) )
 	);
 }
 
@@ -111,10 +111,10 @@ Float3 Color::ToFloat3() const {
 }
 
 void Color::StoreUnorm( ColorUnorm &target ) const {
-	target.r = static_cast< Uint8 >( Math::Clamp( r * 255.0f, 0.0f, 255.0f ) );
-	target.g = static_cast< Uint8 >( Math::Clamp( g * 255.0f, 0.0f, 255.0f ) );
-	target.b = static_cast< Uint8 >( Math::Clamp( b * 255.0f, 0.0f, 255.0f ) );
-	target.a = static_cast< Uint8 >( Math::Clamp( a * 255.0f, 0.0f, 255.0f ) );
+	target.r = static_cast< uint8_t >( Math::Clamp( r * 255.0f, 0.0f, 255.0f ) );
+	target.g = static_cast< uint8_t >( Math::Clamp( g * 255.0f, 0.0f, 255.0f ) );
+	target.b = static_cast< uint8_t >( Math::Clamp( b * 255.0f, 0.0f, 255.0f ) );
+	target.a = static_cast< uint8_t >( Math::Clamp( a * 255.0f, 0.0f, 255.0f ) );
 }
 
 void Color::StoreVector( Vector &target ) const {

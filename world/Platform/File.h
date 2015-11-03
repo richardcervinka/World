@@ -92,8 +92,8 @@ public:
 	
 	// Nacte zakladni datove typy ulozene v souboru jako little-endian
 	virtual Byte ReadByte();
-	virtual Int32 ReadInt32();
-	virtual Uint32 ReadUint32();
+	virtual int32_t ReadInt32();
+	virtual uint32_t ReadUint32();
 	virtual float ReadFloat();
 	virtual Float2 ReadFloat2();
 	virtual Float3 ReadFloat3();
@@ -102,8 +102,8 @@ public:
 	// Ulozi zakladni datove typy jako little-endian
 	// Data nejsou zarovnana (aligned), tzn. ze typ Float3 se ulozi jako posloupnost 3 x float
 	virtual void WriteByte( const Byte value );
-	virtual void WriteInt32( const Int32 value );
-	virtual void WriteUint32( const Uint32 value );
+	virtual void WriteInt32( const int32_t value );
+	virtual void WriteUint32( const uint32_t value );
 	virtual void WriteFloat( const float value );
 	virtual void WriteFloat2( const Float2 &value );
 	virtual void WriteFloat3( const Float3 &value );

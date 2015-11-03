@@ -54,15 +54,15 @@ Byte IFile::ReadByte() {
 	return byte;
 }
 
-Int32 IFile::ReadInt32() {
-	Int32 value = 0;
-	Read( &value, sizeof( Int32 ) );
+int32_t IFile::ReadInt32() {
+	int32_t value = 0;
+	Read( &value, sizeof( int32_t ) );
 	return value;
 }
 
-Uint32 IFile::ReadUint32() {
-	Uint32 value = 0;
-	Read( &value, sizeof( Uint32 ) );
+uint32_t IFile::ReadUint32() {
+	uint32_t value = 0;
+	Read( &value, sizeof( uint32_t ) );
 	return value;
 }
 
@@ -94,12 +94,12 @@ void IFile::WriteByte( const Byte value ) {
 	Write( &value, sizeof( Byte ) );
 }
 
-void IFile::WriteInt32( const Int32 value ) {
-	Write( &value, sizeof( Int32 ) );
+void IFile::WriteInt32( const int32_t value ) {
+	Write( &value, sizeof( int32_t ) );
 }
 
-void IFile::WriteUint32( const Uint32 value ) {
-	Write( &value, sizeof( Uint32 ) );
+void IFile::WriteUint32( const uint32_t value ) {
+	Write( &value, sizeof( uint32_t ) );
 }
 
 void IFile::WriteFloat( const float value ) {

@@ -3,8 +3,8 @@
 
 using namespace RenderInterface;
 
-Device *RenderInterface::DX11CreateDevice( const DX11CreateDeviceParams &params ) {
-	DX11Device *device = new DX11Device();
+Device* RenderInterface::DX11CreateDevice( const DX11CreateDeviceParams& params ) {
+	DX11Device* device = new DX11Device();
 	if ( device == nullptr ) {
 		return nullptr;
 	}
@@ -15,7 +15,7 @@ Device *RenderInterface::DX11CreateDevice( const DX11CreateDeviceParams &params 
 	return device;
 }
 
-const FormatDesc RenderInterface::GetFormatDesc( const Format &format ) {
+const FormatDesc RenderInterface::GetFormatDesc( const Format format ) {
 	switch ( format ) {
 	case Format::UNKNOWN:						return { Format::UNKNOWN,						0, 0,  0 };
 	case Format::R8G8B8A8_UNORM:				return { Format::R8G8B8A8_UNORM,				4, 8,  4 };
@@ -99,6 +99,6 @@ bool TextureBuffer::RenderTargetUsable() const {
 	return desc.renderTarget;
 }
 
-void TextureBuffer::SetDesc( const TextureBufferDesc &desc ) {
+void TextureBuffer::SetDesc( const TextureBufferDesc& desc ) {
 	this->desc = desc;
 }

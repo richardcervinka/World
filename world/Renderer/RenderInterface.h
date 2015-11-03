@@ -18,8 +18,10 @@ namespace RenderInterface {
 	class DepthStencilDescriptor;
 	class TextureSampler;
 	class VertexBuffer;
+	class VertexBufferDescriptor;
 	class IndexBuffer;
-	
+	class IndexBufferDescriptor;
+
 	// Render Interface global constants
 	const int MAX_RENDER_TARGETS = 8;
 	const int MAX_MULTISAMPLE_QUALITY = -1;
@@ -33,7 +35,7 @@ namespace RenderInterface {
 	};
 	
 	// Vytvori device objekt implementovany v DirectX 11
-	Device *DX11CreateDevice( const DX11CreateDeviceParams &params );
+	Device* DX11CreateDevice( const DX11CreateDeviceParams &params );
 	
 	// Format dat ulozenych v bufferu
 	enum class Format {
@@ -61,7 +63,7 @@ namespace RenderInterface {
 		int pointPitch; 	// slouzi k vypoctu row pitch; rowPitch = pointPitch * textureWidth
 	};
 	
-	const FormatDesc GetFormatDesc( const Format &format );
+	const FormatDesc GetFormatDesc( const Format format );
 	
 	// Fullscreen rezim displeje
 	struct DisplayMode {
@@ -71,23 +73,25 @@ namespace RenderInterface {
 		int refreshRateDenominator;
 	};
 
+	// Usage popisuje jakym zpusobem pristupuje GPU a CPU do bufferu
+	enum class BufferUsage {
+		DRAW,		// GPU ma plny pristup do bufferu (CPU nema zadny pristup), typicke pouziti render target buffer
+		STATIC,		// GPU readonly, buffer musi byt inicializovan pri svem vytvoreni, obsah nemuze byt nijak zmenen
+		DYNAMIC,	// GPU read only, CPU write only; napr. dynamicky vertex buffer
+		COPY		// GPU read write, CPU read write
+	};
+
 	/*
-	Pristupova prava CPU do bufferu
+	CPU pristupova prava do bufferu, konkretizuje hodnotu BufferUsage.
 	Hodnoty je mozne prevest na uint a pracovat s nimi jako s priznaky (flags)
 	*/
-	enum class CPUAccess {
-		NONE = 0x00,
-		READ = 0x01,
-		WRITE = 0x02,
-		READ_WRITE = READ | WRITE
+	enum class BufferAccess {
+		NONE		= 0x00,
+		READ		= 0x01,
+		WRITE		= 0x02,
+		READ_WRITE	= READ | WRITE
 	};
-	
-	// Pristupova prava GPU do bufferu
-	enum class GPUAccess {
-		READ,
-		READ_WRITE
-	};
-	
+
 	// Rozmery texture bufferu. Pokud neni rozmer definovan, je jeho hodnota 1.
 	struct TextureDimmensions {
 		int width;
@@ -113,8 +117,8 @@ namespace RenderInterface {
 	*/
 	struct TextureBufferDesc {
 		Format format;
-		GPUAccess gpuAccess;
-		CPUAccess cpuAccess;
+		BufferUsage usage;
+		BufferAccess access;
 		TextureBufferType type;
 		TextureDimmensions dimmensions;
 		int arraySize;
@@ -192,7 +196,28 @@ namespace RenderInterface {
 		StencilOperation stencilFailOp;			// default: KEEP
 		StencilOperation stencilDepthFailOp;	// default: KEEP
 	};
-	
+
+	//Parametry funkce Device::CreateVertexBuffer()
+	struct VertexBufferDesc {
+		int vertexSize;
+		int capacity;
+		BufferUsage usage;
+		BufferAccess access;
+	};
+
+	enum class IndexBufferFormat {
+		UINT_16,	// uint16_t
+		UINT_32		// uint32_t
+	};
+
+	//Parametry funkce Device::CreateIndexBuffer()
+	struct IndexBufferDesc {
+		IndexBufferFormat format;
+		int capacity;
+		BufferUsage usage;
+		BufferAccess access;
+	};
+
 	// Identifikace shader stag, hodnoty lze kombinovat operatorem OR
 	typedef unsigned int ShaderStage;
 	const ShaderStage VERTEX_SHADER_STAGE = 0x0001;
@@ -248,14 +273,17 @@ namespace RenderInterface {
 	class Device: public DeviceObject {
 	public:
 		// vytvareni device objektu
-		virtual CommandInterface *CreateCommandInterface() = 0;
-		virtual Display *CreateDisplay( const int outputId ) = 0;
-		virtual BackBuffer *CreateBackBuffer( Window &window ) = 0;
-		virtual TextureBuffer *CreateTextureBuffer( const TextureBufferDesc &desc, const void * const initialData[] ) = 0;
-		virtual RenderTargetDescriptor *CreateRenderTargetDescriptor( TextureBuffer * const buffer ) = 0;
-		virtual RenderTargetDescriptor *CreateRenderTargetDescriptor( BackBuffer * const buffer ) = 0;
-		virtual DepthStencilDescriptor *CreateDepthStencilDescriptor( TextureBuffer * const buffer, const DepthStencilStateDesc &desc ) = 0;
-		virtual TextureSampler *CreateTextureSampler( const TextureSamplerDesc &desc ) = 0;
+		virtual CommandInterface*		CreateCommandInterface() = 0;
+		virtual Display*				CreateDisplay( const int outputId ) = 0;
+		virtual BackBuffer*				CreateBackBuffer( Window& window ) = 0;
+		virtual VertexBuffer*			CreateVertexBuffer( const VertexBufferDesc& desc, const void* const initialData  ) = 0;
+		virtual IndexBuffer*			CreateIndexBuffer( const IndexBufferDesc& desc, const void* const initialData  ) = 0;
+		virtual VertexBufferDescriptor*	CreateVertexBufferDescriptor( VertexBuffer* const buffer, const int vertexOffset ) = 0;
+		virtual TextureBuffer*			CreateTextureBuffer( const TextureBufferDesc& desc, const void* const initialData[] ) = 0;
+		virtual RenderTargetDescriptor*	CreateRenderTargetDescriptor( TextureBuffer* const buffer ) = 0;
+		virtual RenderTargetDescriptor*	CreateRenderTargetDescriptor( BackBuffer* const buffer ) = 0;
+		virtual DepthStencilDescriptor*	CreateDepthStencilDescriptor( TextureBuffer* const buffer, const DepthStencilStateDesc& desc ) = 0;
+		virtual TextureSampler*			CreateTextureSampler( const TextureSamplerDesc& desc ) = 0;
 		/*
 		vrati max quality pro pozadovany pocet msaa level.
 		Ne vsechny karty a ne vsechna api museji podporovat tuto vlastnost, pak musi funkce vracet 1.
@@ -273,28 +301,28 @@ namespace RenderInterface {
 	class CommandInterface: public DeviceObject {
 	public:
 		// zahajeni posilani commanu primo do grafickeho zarizeni
-		virtual void Begin( Device * const device ) = 0;
+		virtual void Begin( Device* const device ) = 0;
 	
 		// zahajeni ukladani commandu do CommandListu
-		virtual void Begin( CommandList * const commandList ) = 0;
+		virtual void Begin( CommandList* const commandList ) = 0;
 	
 		// ukonceni sekvence commandu
 		virtual void End() = 0;
 		
 		// Nastavi multiple render targets a depth stencil buffer (pokud je nullptr, pouzije se vychozi depth stencil state)
-		virtual void SetRenderTargets( RenderTargetDescriptor * const renderTargets[], const int count, DepthStencilDescriptor * const depthStencil ) = 0;
+		virtual void SetRenderTargets( RenderTargetDescriptor* const renderTargets[], const int count, DepthStencilDescriptor* const depthStencil ) = 0;
 		
 		// Vyplni render target barvou
-		virtual void ClearRenderTarget( RenderTargetDescriptor * const renderTarget, const Color &color ) = 0;
+		virtual void ClearRenderTarget( RenderTargetDescriptor* const renderTarget, const Color& color ) = 0;
 
 		// nastavi depth i stencil buffer na pozadovanou hodnotu
-		virtual void ClearDepthStencil( DepthStencilDescriptor * const descriptor, const float depth, const Uint8 stencil ) = 0;
+		virtual void ClearDepthStencil( DepthStencilDescriptor* const descriptor, const float depth, const uint8_t stencil ) = 0;
 
 		// nastavi depth buffer na hodnotu depth
-		virtual void ClearDepth( DepthStencilDescriptor * const descriptor, const float depth ) = 0;
+		virtual void ClearDepth( DepthStencilDescriptor* const descriptor, const float depth ) = 0;
 
 		// nastavi stencil buffer na hodnotu stencil
-		virtual void ClearStencil( DepthStencilDescriptor * const descriptor, const Uint8 stencil ) = 0;
+		virtual void ClearStencil( DepthStencilDescriptor* const descriptor, const uint8_t stencil ) = 0;
 
 		// Nastavi objekt Device do vychoziho stavu
 		virtual void ClearState() = 0;
@@ -318,19 +346,19 @@ namespace RenderInterface {
 	public:
 		// Nastavi rezim co nejvice odpovidajici pozadavku (na desktopu prepne do rezimu cele obrazovky)
 		// U zarizeni, ktera maji jediny mozny rezim obrazovky (mobilni zarizeni...), nedela nic
-		virtual bool SetMode( const DisplayMode &mode, Window &window ) = 0;
+		virtual bool SetMode( const DisplayMode& mode, Window& window ) = 0;
 		
 		// Nastavi vychozi rezim pro danou platformu (napr. na windows prepne z celoobrazovkoveho rezimu)
 		virtual void SetSystemMode() = 0;
 		
 		// Ziskani rezimu, pokud rezim s pozadovanym id neexistuje, vrati false
-		virtual bool GetMode( const int id, DisplayMode &result ) const = 0;
+		virtual bool GetMode( const int id, DisplayMode& result ) const = 0;
 		
 		// Najde rezim, ktery co nejlepe (ovsem ne nutne nejvice) odpovida pozadovanemu rezimu
-		virtual void FindMode( const DisplayMode &request, DisplayMode &result ) const = 0;
+		virtual void FindMode( const DisplayMode& request, DisplayMode& result ) const = 0;
 		
 		// Najde nejlepsi dostupny rezim pro cilove zarizeni
-		virtual void GetBestMode( DisplayMode &result ) const = 0;
+		virtual void GetBestMode( DisplayMode& result ) const = 0;
 	};
 	
 	/*
@@ -363,7 +391,7 @@ namespace RenderInterface {
 
 	protected:
 		// Odvozena trida nema pristup k privatni promenne desc, rozhrani proto poskytuje setter
-		void SetDesc( const TextureBufferDesc &desc );
+		void SetDesc( const TextureBufferDesc& desc );
 
 	private:
 		TextureBufferDesc desc;
@@ -374,7 +402,7 @@ namespace RenderInterface {
 	*/
 	class TextureDescriptor: public DeviceObject {
 	public:
-		virtual TextureBuffer *GetBuffer() = 0;
+		virtual TextureBuffer* GetBuffer() = 0;
 	};
 	
 	/*
@@ -383,7 +411,7 @@ namespace RenderInterface {
 	*/
 	class RenderTargetDescriptor: public DeviceObject {
 	public:
-		virtual TextureBuffer *GetBuffer() = 0;
+		virtual TextureBuffer* GetBuffer() = 0;
 	};
 
 	/*
@@ -407,28 +435,40 @@ namespace RenderInterface {
 	*/
 	class VertexBuffer: public DeviceObject {
 	public:
-		// Vraci pocet vertexu, tj. maximalni mnozstvi, ktere je mozne do bufferu ulozit
+		// Maximalni pocet vertexu ulozenych v bufferu
 		virtual int GetCapacity() const = 0;
 
-		// Vraci pocet vertexu ulozenych v bufferu
-		virtual int GetLength() const = 0;
-
-		// Vraci velikost vertexu v bajtech
+		// Velikost vertexu v bajtech
 		virtual int GetVertexSize() const = 0;
 
 		// Velikost bufferu v bajtech
 		virtual int GetByteSize() const = 0;
-
-		// Vynuluje pocet vertexu ulozenych v bufferu
-		virtual void Clear() = 0;
 	};
 
 	/*
-	Index buffer
+	Vertex buffer descriptor umoznuje nabindovat VertexBuffer do pipeline.
+	*/
+	class VertexBufferDescriptor: public DeviceObject {};
+
+	/*
+	Index buffer, indexy jsou ve formatu Uint32
 	*/
 	class IndexBuffer: public DeviceObject {
 	public:
+		// Maximalni pocet indexu ulozenych v bufferu
+		virtual int GetCapacity() const = 0;
+
+		// Velikost bufferu v bajtech
+		virtual int GetByteSize() const = 0;
+
+		// Format indexu
+		virtual IndexBufferFormat GetFormat() const = 0;
 	};
+
+	/*
+	Index buffer descriptor umoznuje nabindovat IndexBuffer do pipeline.
+	*/
+	class IndexBufferDescriptor: public DeviceObject {};
 
 	//**************************************************
 	

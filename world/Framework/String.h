@@ -121,7 +121,7 @@ public:
 	int FindBack( const char16_t ch, const int start = MAX_LENGTH ) const;
 	
 	// vypocita hash
-	Uint32 Hash() const;
+	uint32_t Hash() const;
 	
 	// vrati velikost retezce v prislusnem kodovani
 	static int LengthUCS2( const char16_t * const str );

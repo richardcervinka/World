@@ -499,10 +499,10 @@ int String::FindBack( const char16_t ch, const int start ) const {
 	return -1;
 }
 
-Uint32 String::Hash() const {
-	Uint32 hash = 101;
+uint32_t String::Hash() const {
+	uint32_t hash = 101;
 	for ( int i = 0; i < length; i++ ) {
-		hash += 101 * static_cast< Uint32 >( string[ i ] );
+		hash += 101 * static_cast< uint32_t >( string[ i ] );
 	}
 	return hash;
 }

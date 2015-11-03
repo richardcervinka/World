@@ -10,15 +10,15 @@ public:
 	union {
 		// protoze little-endian, museji byt kanaly v opacnem poradi
 		struct {
-			Uint8 a, b, g, r;
+			uint8_t a, b, g, r;
 		};
 		// RGBA kanaly v 4 byte bloku
-		Uint32 pack;
+		uint32_t pack;
 	};
 	
 public:
-	ColorUnorm( const Uint8 r, const Uint8 g, const Uint8 b, const Uint8 a );
-	ColorUnorm( const Uint32 rgba );
+	ColorUnorm( const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a );
+	ColorUnorm( const uint32_t rgba );
 	bool operator==( const ColorUnorm &color );
 	bool operator!=( const ColorUnorm &color );
 	

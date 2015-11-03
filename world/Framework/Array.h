@@ -8,39 +8,39 @@ template <typename T>
 class Array {
 public:
 	Array();
-	Array( const Array &arr );
-	Array &operator=( const Array &arr );
+	Array( const Array& arr );
+	Array& operator=( const Array& arr );
 	~Array() noexcept;
 	
 	// vytvori pole o velikosti size, prvky nejsou inicializovany
 	explicit Array( const int size );
 	
 	// vytvori pole o velikosti size, prvky inicializuje na hodnotu initializer
-	Array( const int size, const T &initializer );
+	Array( const int size, const T& initializer );
 	
 	// vytvori sub array
-	Array( const Array &arr, const int index, const int count );
+	Array( const Array& arr, const int index, const int count );
 	
 	// podpora C++11 initialization list
 	Array( std::initializer_list<T> initlist );
 	
 	// podpora c++11 Range-based for loops
-	const T *begin() const;
-	const T *end() const;
-	T *begin();
-	T *end();
+	const T* begin() const;
+	const T* end() const;
+	T* begin();
+	T* end();
 	
 	// operatory pristupu neprovadi kontrolu rozsahu, pro bezpecny pristup slouzi funkce typu At()
-	T &operator[]( const int index );
-	const T &operator[]( const int index ) const;
+	T& operator[]( const int index );
+	const T& operator[]( const int index ) const;
 	
 	// porovnani poli
-	bool operator==( const Array &arr ) const;
-	bool operator!=( const Array &arr ) const;
+	bool operator==( const Array& arr ) const;
+	bool operator!=( const Array& arr ) const;
 	
 	// Vrati ukazatel na pole pole typu T*, pouzivat jen ve specialnich pripadech.
 	// Operace s polem muzou zpusobit, ze se ukazatel stane neplatnym.
-	const T *Raw() const;
+	const T* Raw() const;
 	
 	// Rozsiri kapacitu minimalne o hodnotu size. Pokud je size <= 0, nedela nic.
 	void Reserve( const int size );
@@ -54,10 +54,10 @@ public:
 
 	// Zmeni velikost pole. Pokud je velikost mensi nez soucasna velikost, pole se orizne!
 	// Prvky pole jsou pri zvetseni inicializovany hodnotou initializer.
-	void Resize( const int size, const T &initializer );
+	void Resize( const int size, const T& initializer );
 	
 	// vlozi prvek na konec pole, velikost pole se zversi o 1. Vraci novou velikost pole.
-	int Push( const T &item );
+	int Push( const T& item );
 	
 	// odstrani prvek z konce pole, velikost pole se zmensi o 1. Vraci index vyjmuteho prvku
 	int Pop();
@@ -72,16 +72,16 @@ public:
 	int Capacity() const;
 	
 	// Vyhledavani v poli, -1 pokud neni prvek nalezen. K porovnani pouziva operator ==
-	int Find( const int start, const T &ref ) const;
+	int Find( const int start, const T& ref ) const;
 	
 	// Vraci true, pokud je v poli obsazen prvek ref
-	bool Contains( const T &ref ) const;
+	bool Contains( const T& ref ) const;
 	
 	// Prehodi pozadi prvku v poli
 	void Reverse();
 	
 	// Seradi prvky pole, k porovnani pouziva callback funkci sort()
-	void Sort( void ( *cmpr )( const T *left, const T *right ) );
+	void Sort( void ( *cmpr )( const T* left, const T* right ) );
 	
 	// Seradi vzestupne prvky pole, k porovnani pouziva operator >=
 	//void SortUp();
@@ -91,13 +91,13 @@ public:
 	
 private:
 	// provadi hloubkovou kopii pole arr. Neuvolnuje zadnou pamet!
-	void Copy( const Array &arr );
+	void Copy( const Array& arr );
 
 private:
 	enum { granularity = 128 };
 	int length;
 	int capacity;
-	T *data;
+	T* data;
 };
 
 template <typename T>
@@ -108,7 +108,7 @@ Array<T>::Array() {
 }
 
 template <typename T>
-Array<T>::Array( const Array<T> &arr ) {
+Array<T>::Array( const Array<T>& arr ) {
 	Copy( arr );
 }
 
@@ -118,12 +118,12 @@ Array<T>::Array( const int size ): Array() {
 }
 
 template <typename T>
-Array<T>::Array( const int size, const T &initializer ): Array() {
+Array<T>::Array( const int size, const T& initializer ): Array() {
 	Resize( size, initializer );
 }
 
 template <typename T>
-Array<T>::Array( const Array &arr, const int index, const int count ): Array() {
+Array<T>::Array( const Array& arr, const int index, const int count ): Array() {
 	// neplatny rozsah, ponechat prazdne pole
 	if ( index + count > arr.length ) {
 		return;
@@ -140,20 +140,20 @@ template <typename T>
 Array<T>::Array( std::initializer_list<T> initlist ): Array() {
 	Resize( initlist.size() );
 	int index = 0;
-	for ( const T &item : initlist ) {
+	for ( const T& item : initlist ) {
 		data[ index++ ] = item;
 	}
 }
 
 template <typename T>
-Array<T> &Array<T>::operator=( const Array<T> &arr ) {
+Array<T>& Array<T>::operator=( const Array<T>& arr ) {
 	if ( &arr == this ) {
 		return *this;
 	}
-	T *old = data;
+	T* old = data;
 	Copy( arr );
 	delete [] old;
-	return *this;
+	return* this;
 }
 
 template <typename T>
@@ -162,7 +162,7 @@ Array<T>::~Array() noexcept {
 }
 
 template <typename T>
-void Array<T>::Copy( const Array<T> &arr ) {
+void Array<T>::Copy( const Array<T>& arr ) {
 	data = new T[ arr.capacity ];
 	length = arr.length;
 	capacity = arr.capacity;
@@ -172,37 +172,37 @@ void Array<T>::Copy( const Array<T> &arr ) {
 }
 
 template <typename T>
-inline const T *Array<T>::begin() const {
+inline const T* Array<T>::begin() const {
 	return data;
 }
 
 template <typename T>
-inline T *Array<T>::begin() {
+inline T* Array<T>::begin() {
 	return data;
 }
 
 template <typename T>
-inline const T *Array<T>::end() const {
+inline const T* Array<T>::end() const {
 	return data + length;
 }
 
 template <typename T>
-inline T *Array<T>::end() {
+inline T* Array<T>::end() {
 	return data + length;
 }
 
 template <typename T>
-T &Array<T>::operator[]( int index ) {
+T& Array<T>::operator[]( int index ) {
 	return data[ index ];
 }
 
 template <typename T>
-inline const T &Array<T>::operator[]( const int index ) const {
+inline const T& Array<T>::operator[]( const int index ) const {
 	return data[ index ];
 }
 
 template <typename T>
-const T *Array<T>::Raw() const {
+const T* Array<T>::Raw() const {
 	return data;
 }
 
@@ -222,7 +222,7 @@ void Array<T>::Reserve( const int size ) {
 		return;
 	}
 	const int newCapacity = capacity + ( ( size + granularity ) / granularity ) * granularity;
-	T *newData = new T[ newCapacity ];
+	T* newData = new T[ newCapacity ];
 	capacity = newCapacity;
 	for ( int i = 0; i < length; i++ ) {
 		newData[ i ] = data[ i ];
@@ -237,7 +237,7 @@ void Array<T>::Flush() {
 	if ( newCapacity == capacity ) {
 		return;
 	}
-	T *newData = new T[ newCapacity ];
+	T* newData = new T[ newCapacity ];
 	capacity = newCapacity;
 	for ( int i = 0; i < length; i++ ) {
 		newData[ i ] = data[ i ];
@@ -253,7 +253,7 @@ void Array<T>::Resize( const int size ) {
 }
 
 template <typename T>
-void Array<T>::Resize( const int size, const T &initializer ) {
+void Array<T>::Resize( const int size, const T& initializer ) {
 	Reserve( size - capacity );
 	for ( int i = length; i < size; i++ ) {
 		data[ i ] = initializer;
@@ -262,7 +262,7 @@ void Array<T>::Resize( const int size, const T &initializer ) {
 }
 
 template <typename T>
-int Array<T>::Push( const T &item ) {
+int Array<T>::Push( const T& item ) {
 	if ( length == capacity ) {
 		Reserve( 1 );
 	}
@@ -289,7 +289,7 @@ void Array<T>::Clear() {
 }
 
 template <typename T>
-bool Array<T>::operator==( const Array<T> &arr ) const {
+bool Array<T>::operator==( const Array<T>& arr ) const {
 	if ( length != arr.length ) {
 		return false;
 	}
@@ -302,12 +302,12 @@ bool Array<T>::operator==( const Array<T> &arr ) const {
 }
 
 template <typename T>
-bool Array<T>::operator!=( const Array<T> &arr ) const {
+bool Array<T>::operator!=( const Array<T>& arr ) const {
 	return !( *this == arr );
 }
 
 template <typename T>
-int Array<T>::Find( const int start, const T &ref ) const {
+int Array<T>::Find( const int start, const T& ref ) const {
 	for ( int i = start; i < length; i++ ) {
 		if ( data[ i ] == ref ) {
 			return i;
@@ -317,7 +317,7 @@ int Array<T>::Find( const int start, const T &ref ) const {
 }
 
 template <typename T>
-bool Array<T>::Contains( const T &ref ) const {
+bool Array<T>::Contains( const T& ref ) const {
 	return Find( 0, ref ) >= 0;
 }
 
