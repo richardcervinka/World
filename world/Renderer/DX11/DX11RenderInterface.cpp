@@ -1,3 +1,4 @@
+#include <d3dcompiler.h>
 #include <memory>
 #include "DX11RenderInterface.h"
 #include "..\..\Platform\Application.h"
@@ -222,18 +223,18 @@ BackBuffer* DX11Device::CreateBackBuffer( Window& window ) {
 	return backBuffer;
 }
 
-VertexBuffer* DX11Device::CreateVertexBuffer( const VertexBufferDesc& desc, const void* const initialData  ) {
+VertexBuffer* DX11Device::CreateVertexBuffer( const VertexBufferParams& params, const void* const initialData  ) {
 	DX11VertexBuffer* buffer = new DX11VertexBuffer();
-	if ( !buffer->Create( device, desc, initialData ) ) {
+	if ( !buffer->Create( device, params, initialData ) ) {
 		delete buffer;
 		return nullptr;
 	}
 	return buffer;
 }
 
-IndexBuffer* DX11Device::CreateIndexBuffer( const IndexBufferDesc& desc, const void* const initialData  ) {
+IndexBuffer* DX11Device::CreateIndexBuffer( const IndexBufferParams& params, const void* const initialData  ) {
 	DX11IndexBuffer* buffer = new DX11IndexBuffer();
-	if ( !buffer->Create( device, desc, initialData ) ) {
+	if ( !buffer->Create( device, params, initialData ) ) {
 		delete buffer;
 		return nullptr;
 	}
@@ -246,9 +247,9 @@ VertexBufferDescriptor*	DX11Device::CreateVertexBufferDescriptor( VertexBuffer* 
 	return descriptor;
 }
 
-TextureBuffer* DX11Device::CreateTextureBuffer( const TextureBufferDesc& desc, const void* const initialData[] ) {
+TextureBuffer* DX11Device::CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) {
 	DX11TextureBuffer* buffer = new DX11TextureBuffer();
-	if ( !buffer->Create( device, desc, initialData ) ) {
+	if ( !buffer->Create( device, params, initialData ) ) {
 		delete buffer;
 		return nullptr;
 	}
@@ -273,9 +274,9 @@ RenderTargetDescriptor* DX11Device::CreateRenderTargetDescriptor( BackBuffer* co
 	return descriptor;
 }
 
-DepthStencilDescriptor* DX11Device::CreateDepthStencilDescriptor( TextureBuffer* const buffer, const DepthStencilStateDesc& desc ) {
+DepthStencilDescriptor* DX11Device::CreateDepthStencilDescriptor( TextureBuffer* const buffer, const DepthStencilDescriptorParams& params ) {
 	DX11DepthStencilDescriptor* descriptor = new DX11DepthStencilDescriptor();
-	if ( !descriptor->Create( device, buffer, desc ) ) {
+	if ( !descriptor->Create( device, buffer, params ) ) {
 		delete descriptor;
 		return nullptr;
 	}
@@ -291,13 +292,22 @@ Display* DX11Device::CreateDisplay( const int outputId ) {
 	return display;
 }
 
-TextureSampler* DX11Device::CreateTextureSampler( const TextureSamplerDesc& desc ) {
+TextureSampler* DX11Device::CreateTextureSampler( const TextureSamplerParams& params ) {
 	DX11TextureSampler* sampler = new DX11TextureSampler();
-	if ( !sampler->Create( device, desc ) ) {
+	if ( !sampler->Create( device, params ) ) {
 		delete sampler;
 		return nullptr;
 	}
 	return sampler;
+}
+
+Shader* DX11Device::CreateShader( const ShaderParams& params ) {
+	DX11Shader *shader = new DX11Shader();
+	if ( !shader->Compile( params ) ) {
+		delete shader;
+		return nullptr;
+	}
+	return shader;
 }
 
 // DX11CommandInterface
@@ -635,17 +645,17 @@ DX11TextureBuffer::~DX11TextureBuffer() {
 	ReleaseCOM( &texture );
 }
 
-bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferDesc& desc, const void* const initialData[] ) {
-	D3D11_USAGE usage = GetUsage( desc.usage );
-	UINT CPUAccessFlags = GetCPUAccessFlags( desc.access );
+bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferParams& params, const void* const initialData[] ) {
+	D3D11_USAGE usage = GetUsage( params.usage );
+	UINT CPUAccessFlags = GetCPUAccessFlags( params.access );
 
 	UINT bindFlags = D3D11_BIND_SHADER_RESOURCE;
 	// render target bind flag
-	if ( desc.renderTarget ) {
+	if ( params.renderTarget ) {
 		bindFlags |= D3D11_BIND_RENDER_TARGET;
 	}
 	// depth stencil bind flag
-	if ( desc.format == Format::DEPTH_24_UNORM_STENCIL_8_UINT ) {
+	if ( params.format == Format::DEPTH_24_UNORM_STENCIL_8_UINT ) {
 		bindFlags |= D3D11_BIND_DEPTH_STENCIL;
 	}
 
@@ -653,14 +663,14 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferD
 	
 	// initialize subresources
 	if ( initialData != nullptr ) {
-		subresources.reset( new D3D11_SUBRESOURCE_DATA[ desc.arraySize * desc.mipLevels ] );
-		FormatDesc formatDesc = GetFormatDesc( desc.format );
+		subresources.reset( new D3D11_SUBRESOURCE_DATA[ params.arraySize * params.mipLevels ] );
+		FormatDesc formatDesc = GetFormatDesc( params.format );
 
 		int subresourceIndex = 0;
-		for ( int arrayIndex = 0; arrayIndex < desc.arraySize; arrayIndex++ ) {
-			TextureDimmensions dimmensions = desc.dimmensions;
+		for ( int arrayIndex = 0; arrayIndex < params.arraySize; arrayIndex++ ) {
+			TextureDimmensions dimmensions = params.dimmensions;
 
-			for ( int mipIndex = 0; mipIndex < desc.mipLevels; mipIndex++ ) {
+			for ( int mipIndex = 0; mipIndex < params.mipLevels; mipIndex++ ) {
 				// set subresource
 				subresources[ subresourceIndex ].pSysMem = initialData[ subresourceIndex ];
 				subresources[ subresourceIndex ].SysMemPitch = formatDesc.pointPitch * dimmensions.width;
@@ -683,14 +693,14 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferD
 	}
 
 	// 1D textures
-	if ( desc.type == TextureBufferType::TEXTURE_1D ||
-		 desc.type == TextureBufferType::TEXTURE_1D_ARRAY
+	if ( params.type == TextureBufferType::TEXTURE_1D ||
+		 params.type == TextureBufferType::TEXTURE_1D_ARRAY
 	) {
 		D3D11_TEXTURE1D_DESC textureDesc;
-		textureDesc.Width 				= desc.dimmensions.width;
-		textureDesc.MipLevels 			= desc.mipLevels;
-		textureDesc.ArraySize			= desc.arraySize;
-		textureDesc.Format				= GetDXGIFormat( desc.format );
+		textureDesc.Width 				= params.dimmensions.width;
+		textureDesc.MipLevels 			= params.mipLevels;
+		textureDesc.ArraySize			= params.arraySize;
+		textureDesc.Format				= GetDXGIFormat( params.format );
 		textureDesc.Usage				= usage;
 		textureDesc.BindFlags			= bindFlags;
 		textureDesc.CPUAccessFlags		= CPUAccessFlags;
@@ -702,24 +712,24 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferD
 			return false;
 		}
 		this->texture = texture;
-		SetDesc( desc );
+		SetParams( params );
 		return true;
 	}
 
 	// 2D textures
-	if ( desc.type == TextureBufferType::TEXTURE_2D ||
-		 desc.type == TextureBufferType::TEXTURE_2D_ARRAY  ||
-		 desc.type == TextureBufferType::TEXTURE_2D_MS ||
-		 desc.type == TextureBufferType::TEXTURE_2D_MS_ARRAY
+	if ( params.type == TextureBufferType::TEXTURE_2D ||
+		 params.type == TextureBufferType::TEXTURE_2D_ARRAY  ||
+		 params.type == TextureBufferType::TEXTURE_2D_MS ||
+		 params.type == TextureBufferType::TEXTURE_2D_MS_ARRAY
 	) {
 		D3D11_TEXTURE2D_DESC textureDesc;
-		textureDesc.Width 				= desc.dimmensions.width;
-		textureDesc.Height				= desc.dimmensions.height;
-		textureDesc.MipLevels 			= desc.mipLevels;
-		textureDesc.ArraySize			= desc.arraySize;
-		textureDesc.Format				= GetDXGIFormat( desc.format );
-		textureDesc.SampleDesc.Count 	= desc.samplesCount;
-		textureDesc.SampleDesc.Quality 	= desc.samplesQuality;
+		textureDesc.Width 				= params.dimmensions.width;
+		textureDesc.Height				= params.dimmensions.height;
+		textureDesc.MipLevels 			= params.mipLevels;
+		textureDesc.ArraySize			= params.arraySize;
+		textureDesc.Format				= GetDXGIFormat( params.format );
+		textureDesc.SampleDesc.Count 	= params.samplesCount;
+		textureDesc.SampleDesc.Quality 	= params.samplesQuality;
 		textureDesc.Usage				= usage;
 		textureDesc.BindFlags			= bindFlags;
 		textureDesc.CPUAccessFlags		= CPUAccessFlags;
@@ -731,18 +741,18 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferD
 			return false;
 		}
 		this->texture = texture;
-		SetDesc( desc );
+		SetParams( params );
 		return true;
 	}
 
 	// 3D texture
-	if ( desc.type == TextureBufferType::TEXTURE_3D ) {
+	if ( params.type == TextureBufferType::TEXTURE_3D ) {
 		D3D11_TEXTURE3D_DESC textureDesc;
-		textureDesc.Width 				= desc.dimmensions.width;
-		textureDesc.Height				= desc.dimmensions.height;
-		textureDesc.Depth				= desc.dimmensions.depth;
-		textureDesc.MipLevels 			= desc.mipLevels;
-		textureDesc.Format				= GetDXGIFormat( desc.format );
+		textureDesc.Width 				= params.dimmensions.width;
+		textureDesc.Height				= params.dimmensions.height;
+		textureDesc.Depth				= params.dimmensions.depth;
+		textureDesc.MipLevels 			= params.mipLevels;
+		textureDesc.Format				= GetDXGIFormat( params.format );
 		textureDesc.Usage				= usage;
 		textureDesc.BindFlags			= bindFlags;
 		textureDesc.CPUAccessFlags		= CPUAccessFlags;
@@ -754,7 +764,7 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferD
 			return false;
 		}
 		this->texture = texture;
-		SetDesc( desc );
+		SetParams( params );
 		return true;
 	}
 
@@ -860,7 +870,7 @@ DX11DepthStencilDescriptor::~DX11DepthStencilDescriptor() {
 	ReleaseCOM( &view );
 }
 
-bool DX11DepthStencilDescriptor::Create( ID3D11Device* const device, TextureBuffer* const buffer, const DepthStencilStateDesc& desc ) {
+bool DX11DepthStencilDescriptor::Create( ID3D11Device* const device, TextureBuffer* const buffer, const DepthStencilDescriptorParams& params ) {
 	if ( buffer->GetFormat() != Format::DEPTH_24_UNORM_STENCIL_8_UINT ) {
 		return false;
 	}
@@ -875,10 +885,10 @@ bool DX11DepthStencilDescriptor::Create( ID3D11Device* const device, TextureBuff
 	viewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 	// Pouze standard depth stencil usage podporuje zapis do bufferu
-	if ( desc.depthUsage != DepthStencilUsage::STANDARD ) {
+	if ( params.depthUsage != DepthStencilUsage::STANDARD ) {
 		viewDesc.Flags |= D3D11_DSV_READ_ONLY_DEPTH;
 	}
-	if ( desc.stencilUsage != DepthStencilUsage::STANDARD ) {
+	if ( params.stencilUsage != DepthStencilUsage::STANDARD ) {
 		viewDesc.Flags |= D3D11_DSV_READ_ONLY_STENCIL;
 	}
 	// view dimension
@@ -904,21 +914,21 @@ bool DX11DepthStencilDescriptor::Create( ID3D11Device* const device, TextureBuff
 	// state
 
 	D3D11_DEPTH_STENCIL_DESC stateDesc;
-	stateDesc.DepthEnable = static_cast< BOOL >( desc.depthUsage != DepthStencilUsage::DISABLED );
+	stateDesc.DepthEnable = static_cast< BOOL >( params.depthUsage != DepthStencilUsage::DISABLED );
 	stateDesc.DepthWriteMask = (
-		desc.depthUsage == DepthStencilUsage::STANDARD ?
+		params.depthUsage == DepthStencilUsage::STANDARD ?
 		D3D11_DEPTH_WRITE_MASK_ALL :
 		D3D11_DEPTH_WRITE_MASK_ZERO
 	);
-	stateDesc.DepthFunc						= GetComparsionFunc( desc.depthFunc );
-	stateDesc.StencilEnable					= static_cast< BOOL >( desc.stencilUsage != DepthStencilUsage::DISABLED );
+	stateDesc.DepthFunc						= GetComparsionFunc( params.depthFunc );
+	stateDesc.StencilEnable					= static_cast< BOOL >( params.stencilUsage != DepthStencilUsage::DISABLED );
 	stateDesc.StencilReadMask				= D3D11_DEFAULT_STENCIL_READ_MASK;
 	stateDesc.StencilWriteMask				= D3D11_DEFAULT_STENCIL_WRITE_MASK;
-	stateDesc.FrontFace.StencilFunc			= GetComparsionFunc( desc.stencilFunc );
-	stateDesc.FrontFace.StencilPassOp		= GetStencilOp( desc.stencilPassOp );
-	stateDesc.FrontFace.StencilFailOp		= GetStencilOp( desc.stencilFailOp );
-	stateDesc.FrontFace.StencilDepthFailOp	= GetStencilOp( desc.stencilDepthFailOp );
-	stateDesc.BackFace = stateDesc.FrontFace;
+	stateDesc.FrontFace.StencilFunc			= GetComparsionFunc( params.stencilFunc );
+	stateDesc.FrontFace.StencilPassOp		= GetStencilOp( params.stencilPassOp );
+	stateDesc.FrontFace.StencilFailOp		= GetStencilOp( params.stencilFailOp );
+	stateDesc.FrontFace.StencilDepthFailOp	= GetStencilOp( params.stencilDepthFailOp );
+	stateDesc.BackFace						= stateDesc.FrontFace;
 
 	ID3D11DepthStencilState* state;
 	hresult = device->CreateDepthStencilState( &stateDesc, &state );
@@ -945,25 +955,24 @@ ID3D11DepthStencilState* DX11DepthStencilDescriptor::GetState() {
 
 DX11TextureSampler::DX11TextureSampler() {
 	sampler = nullptr;
-	ZeroMemory( &desc, sizeof( desc ) );
 }
 
 DX11TextureSampler::~DX11TextureSampler() {
 	ReleaseCOM( &sampler );
 }
 
-bool DX11TextureSampler::Create( ID3D11Device* const device, const TextureSamplerDesc& desc ) {
+bool DX11TextureSampler::Create( ID3D11Device* const device, const TextureSamplerParams& params ) {
 	D3D11_SAMPLER_DESC samplerDesc;
 	ZeroMemory( &samplerDesc, sizeof( samplerDesc ) );
-	samplerDesc.Filter			= GetTextureFilter( desc.filter );
-	samplerDesc.AddressU		= GetTextureAddressMode( desc.uAddressing );
-	samplerDesc.AddressV		= GetTextureAddressMode( desc.vAddressing );
-	samplerDesc.AddressW		= GetTextureAddressMode( desc.wAddressing );
+	samplerDesc.Filter			= GetTextureFilter( params.filter );
+	samplerDesc.AddressU		= GetTextureAddressMode( params.uAddressing );
+	samplerDesc.AddressV		= GetTextureAddressMode( params.vAddressing );
+	samplerDesc.AddressW		= GetTextureAddressMode( params.wAddressing );
 	samplerDesc.MipLODBias		= 0;
-	samplerDesc.MaxAnisotropy	= desc.maxAnisotropy;
+	samplerDesc.MaxAnisotropy	= params.maxAnisotropy;
 	samplerDesc.ComparisonFunc	= D3D11_COMPARISON_NEVER;
-	samplerDesc.MinLOD			= desc.minLOD;
-	samplerDesc.MaxLOD			= ( desc.maxLOD == MAX_TEXTURE_LOD ? D3D11_FLOAT32_MAX : desc.maxLOD );
+	samplerDesc.MinLOD			= params.minLOD;
+	samplerDesc.MaxLOD			= ( params.maxLOD == MAX_TEXTURE_LOD ? D3D11_FLOAT32_MAX : params.maxLOD );
 
 	ID3D11SamplerState* sampler = nullptr;
 	HRESULT hresult = device->CreateSamplerState( &samplerDesc, &sampler );
@@ -972,7 +981,6 @@ bool DX11TextureSampler::Create( ID3D11Device* const device, const TextureSample
 	}
 
 	this->sampler = sampler;
-	this->desc = desc;
 	return true;
 }
 
@@ -984,19 +992,19 @@ ID3D11SamplerState* DX11TextureSampler::GetSamplerState() {
 
 DX11VertexBuffer::DX11VertexBuffer() {
 	buffer = nullptr;
-	ZeroMemory( &desc, sizeof( desc ) );
+	ZeroMemory( &params, sizeof( params ) );
 }
 
 DX11VertexBuffer::~DX11VertexBuffer() {
 	ReleaseCOM( &buffer );
 }
 
-bool DX11VertexBuffer::Create( ID3D11Device* const device, const VertexBufferDesc& desc, const void* const initialData ) {
+bool DX11VertexBuffer::Create( ID3D11Device* const device, const VertexBufferParams& params, const void* const initialData ) {
 	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.ByteWidth			= static_cast< UINT >( desc.vertexSize ) * static_cast< UINT >( desc.capacity );
-	bufferDesc.Usage				= GetUsage( desc.usage );
+	bufferDesc.ByteWidth			= static_cast< UINT >( params.vertexSize ) * static_cast< UINT >( params.capacity );
+	bufferDesc.Usage				= GetUsage( params.usage );
 	bufferDesc.BindFlags			= D3D11_BIND_VERTEX_BUFFER;
-	bufferDesc.CPUAccessFlags		= GetCPUAccessFlags( desc.access );
+	bufferDesc.CPUAccessFlags		= GetCPUAccessFlags( params.access );
 	bufferDesc.MiscFlags			= 0;
 	bufferDesc.StructureByteStride	= 0;
 
@@ -1015,20 +1023,20 @@ bool DX11VertexBuffer::Create( ID3D11Device* const device, const VertexBufferDes
 		return false;
 	}
 	this->buffer = buffer;
-	this->desc = desc;
+	this->params = params;
 	return true;
 }
 
 int DX11VertexBuffer::GetCapacity() const {
-	return desc.capacity;
+	return params.capacity;
 }
 
 int DX11VertexBuffer::GetVertexSize() const {
-	return desc.vertexSize;
+	return params.vertexSize;
 }
 
 int DX11VertexBuffer::GetByteSize() const {
-	return desc.vertexSize * desc.capacity;
+	return params.vertexSize * params.capacity;
 }
 
 ID3D11Buffer* DX11VertexBuffer::GetBuffer() {
@@ -1039,19 +1047,19 @@ ID3D11Buffer* DX11VertexBuffer::GetBuffer() {
 
 DX11IndexBuffer::DX11IndexBuffer() {
 	buffer = nullptr;
-	ZeroMemory( &desc, sizeof( desc ) );
+	ZeroMemory( &params, sizeof( params ) );
 }
 
 DX11IndexBuffer::~DX11IndexBuffer() {
 	ReleaseCOM( &buffer );
 }
 
-bool DX11IndexBuffer::Create( ID3D11Device* const device, const IndexBufferDesc& desc, const void* const initialData ) {
+bool DX11IndexBuffer::Create( ID3D11Device* const device, const IndexBufferParams& params, const void* const initialData ) {
 	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.ByteWidth			= ( desc.format == IndexBufferFormat::UINT_16 ? 2 : 4 ) * static_cast< UINT >( desc.capacity );
-	bufferDesc.Usage				= GetUsage( desc.usage );
+	bufferDesc.ByteWidth			= ( params.format == IndexBufferFormat::UINT_16 ? 2 : 4 ) * static_cast< UINT >( params.capacity );
+	bufferDesc.Usage				= GetUsage( params.usage );
 	bufferDesc.BindFlags			= D3D11_BIND_INDEX_BUFFER;
-	bufferDesc.CPUAccessFlags		= GetCPUAccessFlags( desc.access );
+	bufferDesc.CPUAccessFlags		= GetCPUAccessFlags( params.access );
 	bufferDesc.MiscFlags			= 0;
 	bufferDesc.StructureByteStride	= 0;
 
@@ -1070,20 +1078,20 @@ bool DX11IndexBuffer::Create( ID3D11Device* const device, const IndexBufferDesc&
 		return false;
 	}
 	this->buffer = buffer;
-	this->desc = desc;
+	this->params = params;
 	return true;
 }
 
 int DX11IndexBuffer::GetCapacity() const {
-	return desc.capacity;
+	return params.capacity;
 }
 
 int DX11IndexBuffer::GetByteSize() const {
-	return ( desc.format == IndexBufferFormat::UINT_16 ? 2 : 4 ) * desc.capacity;
+	return ( params.format == IndexBufferFormat::UINT_16 ? 2 : 4 ) * params.capacity;
 }
 
 IndexBufferFormat DX11IndexBuffer::GetFormat() const {
-	return desc.format;
+	return params.format;
 }
 
 ID3D11Buffer* DX11IndexBuffer::GetBuffer() {
@@ -1160,4 +1168,154 @@ UINT DX11IndexBufferDescriptor::GetOffset() const {
 
 DXGI_FORMAT DX11IndexBufferDescriptor::GetDXGIFormat() const {
 	return format;
+}
+
+// DX11ConstantBuffer
+
+DX11ConstantBuffer::DX11ConstantBuffer() {
+	buffer = nullptr;
+}
+
+DX11ConstantBuffer::~DX11ConstantBuffer() {
+	ReleaseCOM( &buffer );
+}
+
+bool DX11ConstantBuffer::Create( ID3D11Device* const device, const ConstantBufferParams& params, const void* const initialData ) {
+	D3D11_BUFFER_DESC bufferDesc;
+	bufferDesc.ByteWidth			= static_cast< UINT >( params.size );
+	bufferDesc.Usage				= GetUsage( params.usage );
+	bufferDesc.BindFlags			= D3D11_BIND_CONSTANT_BUFFER;
+	bufferDesc.CPUAccessFlags		= GetCPUAccessFlags( params.access );
+	bufferDesc.MiscFlags			= 0;
+	bufferDesc.StructureByteStride	= 0;
+
+	D3D11_SUBRESOURCE_DATA* pData = NULL;
+	D3D11_SUBRESOURCE_DATA data;
+	if ( initialData != nullptr ) {
+		data.pSysMem = initialData;
+		data.SysMemPitch = 0;
+		data.SysMemSlicePitch = 0;
+		pData = &data;
+	}
+
+	ID3D11Buffer* buffer = nullptr;
+	HRESULT hresult = device->CreateBuffer( &bufferDesc, pData, &buffer );
+	if ( FAILED( hresult ) ) {
+		return false;
+	}
+	this->buffer = buffer;
+	return true;
+}
+
+ID3D11Buffer* DX11ConstantBuffer::GetBuffer() {
+	return buffer;
+}
+
+// DX11ConstantBufferDescriptor
+
+DX11ConstantBufferDescriptor::DX11ConstantBufferDescriptor() {
+	buffer = nullptr;
+	slot = 0;
+}
+
+DX11ConstantBufferDescriptor::~DX11ConstantBufferDescriptor() {
+	ReleaseCOM( &buffer );
+}
+
+// ##############  DOKONCIT ################
+/*
+bool DX11ConstantBufferDescriptor::Create( ConstantBuffer* const buffer, const int slot, const ConstantBufferMember* const members, const int count ) {
+	map.reset( new Constants[ count ] );
+	for ( int i = 0; i < count; i++ ) {
+		map[ i ].sysMemOffset = members[ i ].sysMemOffset;
+		map[ i ].bufferOffset = 0;
+		map[ i ].size = members[ i ].size;
+	}
+}
+*/
+// DXShader
+
+DX11Shader::DX11Shader() {
+	code = nullptr;
+	type = ShaderType::UNDEFINED;
+	version = ShaderVersion::UNDEFINED;
+}
+
+DX11Shader::~DX11Shader() {
+	ReleaseCOM( &code );
+}
+
+bool DX11Shader::Compile( const ShaderParams& params ) {
+	if ( params.version != ShaderVersion::HLSL_50_GLSL_430 ) {
+		return false;
+	}
+	// zjistit velikost pole defines
+	int definesCount = 0;
+	if ( params.defines != nullptr ) {
+		const char* define = params.defines[ 0 ];
+		while ( define != nullptr ) {
+			definesCount += 1;
+			define++;
+		}
+	}
+	// vytvorit pole D3D_SHADER_MACRO
+	std::unique_ptr< D3D_SHADER_MACRO[] > macros( new D3D_SHADER_MACRO[] );
+	for ( int i = 0; i < definesCount; i++ ) {
+		macros[ i ].Name = params.defines[ i ];
+		macros[ i ].Definition = "0";
+	}
+	// shader target
+	const char *target = nullptr;
+	switch ( params.type ) {
+	case ShaderType::VERTEX_SHADER:		target = "vs_5_0"; break;
+	case ShaderType::PIXEL_SHADER:		target = "ps_5_0"; break;
+	case ShaderType::GEOMETRY_SHADER:	target = "gs_5_0"; break;
+	}
+	// flags
+	UINT flags = 0;
+	if ( params.flags & SHADER_COMPILE_WARNINGS_AS_ERRRORS ) {
+		flags |= D3DCOMPILE_WARNINGS_ARE_ERRORS;
+	}
+	if ( params.flags & SHADER_COMPILE_DEBUG ) {
+		flags |= D3DCOMPILE_DEBUG;
+	}
+	// optimization flags
+	switch ( params.optimization ) {
+	case ShaderOptimization::DISABLED:	flags |= D3DCOMPILE_SKIP_OPTIMIZATION;   break;
+	case ShaderOptimization::LOW:		flags |= D3DCOMPILE_OPTIMIZATION_LEVEL0; break;
+	case ShaderOptimization::MEDIUM:	flags |= D3DCOMPILE_OPTIMIZATION_LEVEL3; break;
+	case ShaderOptimization::HIGH:		flags |= D3DCOMPILE_OPTIMIZATION_LEVEL2; break;
+	}
+	// compile
+	ID3DBlob *code = nullptr;
+	HRESULT hresult = D3DCompile(
+		params.string,
+		strlen( params.string ),
+		NULL,
+		macros.get(),
+		NULL,
+		"main",
+		target,
+		flags,
+		0,
+		&code,
+		NULL
+	);
+	if ( FAILED( hresult ) ) {
+		return false;
+	}
+	// ulozit vysledek
+	this->code = code;
+	this->type = params.type;
+	this->version = params.version;
+
+	return true;
+}
+
+ShaderType DX11Shader::GetType() const {
+	return type;
+}
+
+ShaderVersion DX11Shader::GetVersion() const {
+	return version;
 }

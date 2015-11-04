@@ -21,32 +21,32 @@ namespace Math {
 	}
 
 	template< typename T>
-	inline T Max( const T &a, const T &b ) {
+	inline T Max( const T& a, const T& b ) {
 		return a > b ? a : b;
 	}
 
 	template< typename T>
-	inline T Max( const T &a, const T &b, const T &c ) {
+	inline T Max( const T& a, const T& b, const T& c ) {
 		return Max( Max( a, b ), c );
 	}
 
 	template< typename T>
-	inline T Max( const T &a, const T &b, const T &c, const T &d ) {
+	inline T Max( const T& a, const T& b, const T& c, const T& d ) {
 		return Max( Max( a, b ), Max( c, d ) );
 	}
 
 	template< typename T>
-	inline T Min( const T &a, const T &b ) {
+	inline T Min( const T& a, const T& b ) {
 		return a < b ? a : b;
 	}
 
 	template< typename T>
-	inline T Min( const T &a, const T &b, const T &c ) {
+	inline T Min( const T& a, const T& b, const T& c ) {
 		return Min( Min( a, b ), c );
 	}
 
 	template< typename T>
-	inline T Min( const T &a, const T &b, const T &c, const T &d ) {
+	inline T Min( const T& a, const T& b, const T& c, const T& d ) {
 		return Min( Min( a, b ), Min( c, d ) );
 	}
 

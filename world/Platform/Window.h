@@ -15,30 +15,30 @@ public:
 	
 	// Neni mozne vytvaret kopie okna
 	Window( const Window& ) = delete;
-	Window &operator=( const Window& ) = delete;
+	Window& operator=( const Window& ) = delete;
 	
 	virtual void Destroy() = 0;
 	virtual int GetWidth() const = 0;
 	virtual int GetHeight() const = 0;
 	virtual int GetClientWidth() const = 0;
 	virtual int GetClientHeight() const = 0;
-	virtual void SetBackgroundColor( const Color &color ) = 0;
+	virtual void SetBackgroundColor( const Color& color ) = 0;
 	virtual const Color GetBackgroundColor() const = 0;
 	virtual void SetPosition( const int x, const int y ) = 0;
 	virtual void Show() = 0;
 	virtual void Hide() = 0;
-	virtual void SetName( const String &str ) = 0;
+	virtual void SetName( const String& str ) = 0;
 	virtual const String GetName() const = 0;
 	// vyvola prekresleni klientske oblasti okna
 	virtual void Update() = 0;
 	
 	// back buffering
 
-	void SetRenderer( Renderer * const renderer );
+	void SetRenderer( Renderer* const renderer );
 	void PresentBackBuffer( const int vsync );
 	// ResizeBackBuffer nevolat primo, pri zmene velikosti okna volat OnResized()
 	void ResizeBackBuffer();
-	RenderInterface::BackBuffer *GetBackBuffer();
+	RenderInterface::BackBuffer* GetBackBuffer();
 	bool RendererControlled() const;
 
 protected:
@@ -46,6 +46,6 @@ protected:
 	void OnResized( const int width, const int height );
 	
 private:
-	Renderer *renderer;
-	RenderInterface::BackBuffer *backBuffer;
+	Renderer* renderer;
+	RenderInterface::BackBuffer* backBuffer;
 };

@@ -6,16 +6,16 @@
 #include "..\Framework\Array.h"
 
 // Vrati cely nazev souboru, bez adresarove cesty
-String GetFileName( const String &file );
+String GetFileName( const String& file );
 
 // Vriti cisty nazev souboru bez pripony: "data/images/image.png" -> "image"
-String GetFileBase( const String &file );
+String GetFileBase( const String& file );
 
 // Vrati priponu souboru ("png")
-String GetFileExt( const String &file );
+String GetFileExt( const String& file );
 
 // vrati cestu k souboru: "data/images/image.png" -> "data/images/"
-String GetFileDir( const String &file );
+String GetFileDir( const String& file );
 
 enum class FileMode {
 	READ,
@@ -41,19 +41,19 @@ public:
 	
 	// neni mozne vytvaret kopie objektu
 	IFile( const IFile& ) = delete;
-	IFile &operator=( const IFile& ) = delete;
+	IFile& operator=( const IFile& ) = delete;
 	
 	// Otevre existujici soubor v rezimu READ
-	virtual bool OpenToRead( const String &fullname, const FileAccess access ) = 0;
+	virtual bool OpenToRead( const String& fullname, const FileAccess access ) = 0;
 	
 	// Otevre existujici soubor v rezimu WRITE
-	virtual bool OpenToWrite( const String &fullname, const FileAccess access ) = 0;
+	virtual bool OpenToWrite( const String& fullname, const FileAccess access ) = 0;
 	
 	// Vytvori novy soubor v rezimu WRITE, pokud soubor uz existuje, vrati false
-	virtual bool Create( const String &fullname ) = 0;
+	virtual bool Create( const String& fullname ) = 0;
 	
 	// Vytvori novy soubor v rezimu WRITE, pokud soubor uz existuje, bude zkracen na nulovou velikost.
-	virtual bool CreateNew( const String &fullname ) = 0;
+	virtual bool CreateNew( const String& fullname ) = 0;
 	
 	// Zavre otevreny soubor
 	virtual void Close() = 0;
@@ -64,10 +64,10 @@ public:
 	virtual void Clear() = 0;
 	
 	// Nacte pozadovany pocet bajtu ze souboru do bufferu, vraci pocet nactenych bajtu
-	virtual unsigned long Read( void * const buffer, const unsigned long bytes ) = 0;
+	virtual unsigned long Read( void* const buffer, const unsigned long bytes ) = 0;
 	
 	// Zapise do souboru obsah bufferu, vraci pocet zapsanych bajtu
-	virtual unsigned long Write( const void * const buffer, const unsigned long bytes ) = 0;
+	virtual unsigned long Write( const void* const buffer, const unsigned long bytes ) = 0;
 	
 	// vrati velikost souboru v bajtech
 	virtual unsigned long Size() const = 0;
@@ -105,9 +105,9 @@ public:
 	virtual void WriteInt32( const int32_t value );
 	virtual void WriteUint32( const uint32_t value );
 	virtual void WriteFloat( const float value );
-	virtual void WriteFloat2( const Float2 &value );
-	virtual void WriteFloat3( const Float3 &value );
-	virtual void WriteFloat4( const Float4 &value );
+	virtual void WriteFloat2( const Float2& value );
+	virtual void WriteFloat3( const Float3& value );
+	virtual void WriteFloat4( const Float4& value );
 };
 
 // Operace se soubory a adresari
@@ -115,26 +115,26 @@ public:
 namespace FileSystem {
 	
 	// Vytvori novy adresar
-	bool CreateDir( const String &path );
+	bool CreateDir( const String& path );
 	
 	// odstrani existujici prazdny adresar
-	bool RemoveDir( const String &path );
+	bool RemoveDir( const String& path );
 	
 	// odstrani veskery obsah adresare
-	bool RemoveDirContent( const String &path );
+	bool RemoveDirContent( const String& path );
 	
 	// odstrani soubor
-	bool RemoveFile( const String &fullname );
+	bool RemoveFile( const String& fullname );
 	
 	// RemoveFiles
 	// RemoveDirs
 	
 	// vrati seznam vsech souboru v adresari, napr. "dir/"
 	// je mozne uvest i filtr pro nazev souboru, napr. "dir/*.png"
-	bool EnumFiles( const String &path, Array< String > &result );
+	bool EnumFiles( const String& path, Array< String >& result );
 	
 	// vrati seznam vsech primych podadresaru
-	bool EnumDirs( const String &path, Array< String > &result );
+	bool EnumDirs( const String& path, Array< String >& result );
 };
 
 // Implementace

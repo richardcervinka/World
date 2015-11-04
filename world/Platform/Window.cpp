@@ -12,7 +12,7 @@ Window::~Window() {
 	}
 }
 
-void Window::SetRenderer( Renderer * const renderer ) {
+void Window::SetRenderer( Renderer* const renderer ) {
 	// unbind current (NOT IMPLEMENTED)
 	if ( this->renderer != nullptr ) {
 		return;
@@ -21,7 +21,7 @@ void Window::SetRenderer( Renderer * const renderer ) {
 		return;
 	}
 	// create new back buffer
-	RenderInterface::BackBuffer *backBuffer = renderer->CreateWindowBackBuffer( *this );
+	RenderInterface::BackBuffer* backBuffer = renderer->CreateWindowBackBuffer( *this );
 	if ( backBuffer == nullptr ) {
 		return;
 	}
@@ -36,7 +36,7 @@ void Window::PresentBackBuffer( const int vsync ) {
 	}
 }
 
-RenderInterface::BackBuffer *Window::GetBackBuffer() {
+RenderInterface::BackBuffer* Window::GetBackBuffer() {
 	return backBuffer;
 }
 

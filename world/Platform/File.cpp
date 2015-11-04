@@ -8,7 +8,7 @@ String GetFileName( const String &file ) {
 	return String( file, index + 1, file.Length() - index - 1 );
 }
 
-String GetFileExt( const String &file ) {
+String GetFileExt( const String& file ) {
 	int dot = file.FindBack( u'.' );
 	
 	// tecka nenalezena soubor nema zadnou priponu
@@ -23,7 +23,7 @@ String GetFileExt( const String &file ) {
 	return String( file, dot + 1, file.Length() - dot - 1 );
 }
 
-String GetFileBase( const String &file ) {
+String GetFileBase( const String& file ) {
 	int baseBegin = 0;
 	int slash = file.FindBack( u'/' );
 	if ( slash >= 0 ) {
@@ -37,7 +37,7 @@ String GetFileBase( const String &file ) {
 	return String( file, baseBegin, baseEnd - baseBegin );
 }
 
-String GetFileDir( const String &file ) {
+String GetFileDir( const String& file ) {
 	int slash = file.FindBack( u'/' );
 	return String( file, 0, slash + 1 );
 }
@@ -106,40 +106,40 @@ void IFile::WriteFloat( const float value ) {
 	Write( &value, sizeof( Float2 ) );
 }
 
-void IFile::WriteFloat2( const Float2 &value ) {
+void IFile::WriteFloat2( const Float2& value ) {
 	Write( &value, sizeof( float ) * 2 );
 }
 
-void IFile::WriteFloat3( const Float3 &value ) {
+void IFile::WriteFloat3( const Float3& value ) {
 	Write( &value, sizeof( float ) * 3 );
 }
 
-void IFile::WriteFloat4( const Float4 &value ) {
+void IFile::WriteFloat4( const Float4& value ) {
 	Write( &value, sizeof( float ) * 4 );
 }
 
 // namespace FileSystem
 
-bool FileSystem::CreateDir( const String &path ) {
+bool FileSystem::CreateDir( const String& path ) {
 	return FileSystemPlatform::CreateDir( path );
 }
 
-bool FileSystem::RemoveDir( const String &path ) {
+bool FileSystem::RemoveDir( const String& path ) {
 	return FileSystemPlatform::RemoveDir( path );
 }
 
-bool FileSystem::RemoveDirContent( const String &path ) {
+bool FileSystem::RemoveDirContent( const String& path ) {
 	return FileSystemPlatform::RemoveDirContent( path );
 }
 
-bool FileSystem::RemoveFile( const String &fullname ) {
+bool FileSystem::RemoveFile( const String& fullname ) {
 	return FileSystemPlatform::RemoveFile( fullname );
 }
 
-bool FileSystem::EnumFiles( const String &path, Array< String > &result ) {
+bool FileSystem::EnumFiles( const String& path, Array< String >& result ) {
 	return FileSystemPlatform::EnumFiles( path, result );
 }
 
-bool FileSystem::EnumDirs( const String &path, Array< String > &result ) {
+bool FileSystem::EnumDirs( const String& path, Array< String >& result ) {
 	return FileSystemPlatform::EnumDirs( path, result );
 }

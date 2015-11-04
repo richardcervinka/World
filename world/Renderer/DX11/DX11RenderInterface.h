@@ -2,9 +2,11 @@
 
 #include <d3d11.h>
 #include <dxgi1_2.h>
+#include <memory>
 #include "..\RenderInterface.h"
 #include "..\..\Framework\Array.h"
 
+// forward declarations
 class DX11Device;
 class DX11Display;
 class DX11CommandInterface;
@@ -19,6 +21,9 @@ class DX11VertexBuffer;
 class DX11VertexBufferDescriptor;
 class DX11IndexBuffer;
 class DX11IndexBufferDescriptor;
+class DX11ConstantBuffer;
+class DX11ConstantBufferDescriptor;
+class DX11Shader;
 
 using namespace RenderInterface;
 
@@ -56,14 +61,15 @@ public:
 	virtual CommandInterface* CreateCommandInterface() override;
 	virtual Display* CreateDisplay( const int outputId ) override;
 	virtual BackBuffer* CreateBackBuffer( Window& window ) override;
-	virtual VertexBuffer* CreateVertexBuffer( const VertexBufferDesc& desc, const void* const initialData  ) override;
-	virtual IndexBuffer* CreateIndexBuffer( const IndexBufferDesc& desc, const void* const initialData  ) override;
+	virtual VertexBuffer* CreateVertexBuffer( const VertexBufferParams& params, const void* const initialData  ) override;
+	virtual IndexBuffer* CreateIndexBuffer( const IndexBufferParams& params, const void* const initialData  ) override;
 	virtual VertexBufferDescriptor*	CreateVertexBufferDescriptor( VertexBuffer* const buffer, const int vertexOffset ) override;
-	virtual TextureBuffer* CreateTextureBuffer( const TextureBufferDesc& desc, const void* const initialData[] ) override;
+	virtual TextureBuffer* CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) override;
 	virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( TextureBuffer* const buffer ) override;
 	virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( BackBuffer* const buffer ) override;
-	virtual DepthStencilDescriptor* CreateDepthStencilDescriptor( TextureBuffer* const buffer, const DepthStencilStateDesc& desc ) override;
-	virtual TextureSampler* CreateTextureSampler( const TextureSamplerDesc& desc ) override;
+	virtual DepthStencilDescriptor* CreateDepthStencilDescriptor( TextureBuffer* const buffer, const DepthStencilDescriptorParams& params ) override;
+	virtual TextureSampler* CreateTextureSampler( const TextureSamplerParams& params ) override;
+	virtual Shader* CreateShader( const ShaderParams& params ) override;
 
 	virtual int GetMultisampleQuality( const int samplesCount ) const override;
 
@@ -122,7 +128,7 @@ class DX11TextureBuffer: public TextureBuffer {
 public:
 	DX11TextureBuffer();
 	~DX11TextureBuffer();
-	bool Create( ID3D11Device* const device, const TextureBufferDesc& desc, const void* const initialData[] );
+	bool Create( ID3D11Device* const device, const TextureBufferParams& params, const void* const initialData[] );
 
 	// DirectX 11 getters
 	ID3D11Resource* GetTextureResource();
@@ -189,7 +195,7 @@ class DX11DepthStencilDescriptor: public DepthStencilDescriptor {
 public:
 	DX11DepthStencilDescriptor();
 	~DX11DepthStencilDescriptor();
-	bool Create( ID3D11Device* const device, TextureBuffer* const buffer, const DepthStencilStateDesc& desc );
+	bool Create( ID3D11Device* const device, TextureBuffer* const buffer, const DepthStencilDescriptorParams& params );
 
 	// DirectX 11 getters
 	ID3D11DepthStencilView* GetView();
@@ -204,21 +210,20 @@ class DX11TextureSampler: public TextureSampler {
 public:
 	DX11TextureSampler();
 	~DX11TextureSampler();
-	bool Create( ID3D11Device* const device, const TextureSamplerDesc& desc );
+	bool Create( ID3D11Device* const device, const TextureSamplerParams& params );
 
 	// DirectX 11 getters
 	ID3D11SamplerState* GetSamplerState();
 
 private:
 	ID3D11SamplerState* sampler;
-	TextureSamplerDesc desc;
 };
 
 class DX11VertexBuffer: public VertexBuffer {
 public:
 	DX11VertexBuffer();
 	~DX11VertexBuffer();
-	bool Create( ID3D11Device* const device, const VertexBufferDesc& desc, const void* const initialData );
+	bool Create( ID3D11Device* const device, const VertexBufferParams& params, const void* const initialData );
 
 	// implementace rozhrani VertexBuffer
 	virtual int GetCapacity() const override;
@@ -230,7 +235,7 @@ public:
 
 private:
 	ID3D11Buffer* buffer;
-	VertexBufferDesc desc;
+	VertexBufferParams params;
 };
 
 class DX11VertexBufferDescriptor: public VertexBufferDescriptor {
@@ -254,7 +259,7 @@ class DX11IndexBuffer: public IndexBuffer {
 public:
 	DX11IndexBuffer();
 	~DX11IndexBuffer();
-	bool Create( ID3D11Device* const device, const IndexBufferDesc& desc, const void* const initialData );
+	bool Create( ID3D11Device* const device, const IndexBufferParams& params, const void* const initialData );
 
 	// implementace rozhrani IndexBuffer
 	virtual int GetCapacity() const override;
@@ -266,7 +271,7 @@ public:
 
 private:
 	ID3D11Buffer* buffer;
-	IndexBufferDesc desc;
+	IndexBufferParams params;
 };
 
 class DX11IndexBufferDescriptor: public IndexBufferDescriptor {
@@ -284,4 +289,59 @@ private:
 	ID3D11Buffer* buffer;
 	UINT offset;
 	DXGI_FORMAT format;
+};
+
+class DX11ConstantBuffer: public ConstantBuffer {
+public:
+	DX11ConstantBuffer();
+	~DX11ConstantBuffer();
+	bool Create( ID3D11Device* const device, const ConstantBufferParams& params, const void* const initialData );
+
+	// DirectX 11 getters
+	ID3D11Buffer* GetBuffer();
+
+private:
+	ID3D11Buffer* buffer;
+};
+
+// ##############  DOKONCIT ################
+class DX11ConstantBufferDescriptor: public ConstantBufferDescriptor {
+public:
+	DX11ConstantBufferDescriptor();
+	~DX11ConstantBufferDescriptor();
+	/*
+	bool Create(
+		ConstantBuffer* const buffer,
+		const char* const constantBufferName,
+		const ConstantBufferMember* const members,
+		const int count
+		);
+	*/
+
+private:
+	ID3D11Buffer* buffer;
+	int slot;
+
+	struct Constants {
+		int sysMemOffset;
+		int bufferOffset;
+		int size;
+	};
+	std::unique_ptr< Constants[] > map;
+};
+
+class DX11Shader: public Shader {
+public:
+	DX11Shader();
+	~DX11Shader();
+	bool Compile( const ShaderParams& params );
+
+	// implementace rozhrani Shader
+	virtual ShaderType GetType() const override;
+	virtual ShaderVersion GetVersion() const override;
+
+private:
+	ID3DBlob *code;
+	ShaderType type;
+	ShaderVersion version;
 };

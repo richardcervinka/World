@@ -7,6 +7,7 @@ class Window;
 
 namespace RenderInterface {
 	
+	// forward declarations
 	class Device;
 	class Display;
 	class CommandInterface;
@@ -21,6 +22,7 @@ namespace RenderInterface {
 	class VertexBufferDescriptor;
 	class IndexBuffer;
 	class IndexBufferDescriptor;
+	class Shader;
 
 	// Render Interface global constants
 	const int MAX_RENDER_TARGETS = 8;
@@ -115,7 +117,7 @@ namespace RenderInterface {
 	Parametry funkce Device::CreateTextureBuffer()
 	Generovani mipmap pri vytvareni texture bufferu je zakazane, pocet mip urovni musi byt znamy pred vytvorenim objektu.
 	*/
-	struct TextureBufferDesc {
+	struct TextureBufferParams {
 		Format format;
 		BufferUsage usage;
 		BufferAccess access;
@@ -148,7 +150,7 @@ namespace RenderInterface {
 		CLAMP
 	};
 	
-	struct TextureSamplerDesc {
+	struct TextureSamplerParams {
 		TextureFilter filter;
 		TextureAddressing uAddressing;
 		TextureAddressing vAddressing;
@@ -186,8 +188,11 @@ namespace RenderInterface {
 		READONLY	// readonly depth stencil usage
 	};
 
-	// stejne nastaveni pro front i back face
-	struct DepthStencilStateDesc {
+	/*
+	Parametry funkce Device::CreateDepthStencilDescriptor()
+	Stejne nastaveni pro front i back face
+	*/
+	struct DepthStencilDescriptorParams {
 		DepthStencilUsage depthUsage;			// default: STANDARD
 		DepthStencilUsage stencilUsage;			// default: STANDARD
 		DepthStencilComparsion depthFunc;		// default: LESS
@@ -198,7 +203,7 @@ namespace RenderInterface {
 	};
 
 	//Parametry funkce Device::CreateVertexBuffer()
-	struct VertexBufferDesc {
+	struct VertexBufferParams {
 		int vertexSize;
 		int capacity;
 		BufferUsage usage;
@@ -206,24 +211,72 @@ namespace RenderInterface {
 	};
 
 	enum class IndexBufferFormat {
-		UINT_16,	// uint16_t
-		UINT_32		// uint32_t
+		UINT_16,
+		UINT_32
 	};
 
 	//Parametry funkce Device::CreateIndexBuffer()
-	struct IndexBufferDesc {
+	struct IndexBufferParams {
 		IndexBufferFormat format;
 		int capacity;
 		BufferUsage usage;
 		BufferAccess access;
 	};
 
+	//Parametry funkce Device::CreateConstantBuffer()
+	struct ConstantBufferParams {
+		int size;
+		BufferUsage usage;
+		BufferAccess access;
+	};
+
+	// Propojeni konstanty constant bufferu se systemovou pameti
+	struct ConstantBufferMember {
+		char *name;
+		int sysMemOffset;
+		int size;
+	};
+
+	enum class ShaderType {
+		UNDEFINED,
+		VERTEX_SHADER,
+		PIXEL_SHADER,
+		GEOMETRY_SHADER
+	};
+
+	typedef unsigned int ShaderCompileFlags;
+	const ShaderCompileFlags SHADER_COMPILE_WARNINGS_AS_ERRRORS	= ( 1 );
+	const ShaderCompileFlags SHADER_COMPILE_DEBUG				= ( 1 << 1 );
+
+	enum class ShaderOptimization {
+		DISABLED,	// optimalizace vypnuta (nejrychlejsi kompilace)
+		LOW,
+		MEDIUM,
+		HIGH		// nejlepsi mozna optimalizace (nejpomalejsi kompilace)
+	};
+
+	enum class ShaderVersion {
+		UNDEFINED,
+		HLSL_50_GLSL_430	// HLSL 5.0, GLSL 4.30
+	};
+
+	struct ShaderParams {
+		char* const string;		// null terminated ASCII string
+		char** const defines;	// null terminated array, seznam identifikatoru vlozenych zacatek kodu (#define)
+		ShaderType type;
+		ShaderVersion version;
+		ShaderCompileFlags flags;
+		ShaderOptimization optimization;
+	};
+
 	// Identifikace shader stag, hodnoty lze kombinovat operatorem OR
+	/*
 	typedef unsigned int ShaderStage;
-	const ShaderStage VERTEX_SHADER_STAGE = 0x0001;
-	const ShaderStage PIXEL_SHADER_STAGE = 0x0002;
-	const ShaderStage GEOMETRY_SHADER_STAGE = 0x0004;
-	
+	const ShaderStage SHADER_STAGE_VERTEX_SHADER	= 0x0001;
+	const ShaderStage SHADER_STAGE_PIXEL_SHADER		= 0x0002;
+	const ShaderStage SHADER_STAGE_GEOMETRY_SHADER	= 0x0004;
+	*/
+
 	/*
 	DEVICE CREATE TARGETS:
 
@@ -255,7 +308,7 @@ namespace RenderInterface {
 		
 		// neni mozne vytvaret kopie device objektu, jediny, kdo vytvari device objekty je objekt Device
 		DeviceObject( const DeviceObject& ) = delete;
-		DeviceObject &operator=( const DeviceObject& ) = delete;
+		DeviceObject& operator=( const DeviceObject& ) = delete;
 		
 		// Pokud je pocet referenci 0, uvolni objekt z pameti a nesmi byt dale pouzivan!
 		void Release();
@@ -276,14 +329,15 @@ namespace RenderInterface {
 		virtual CommandInterface*		CreateCommandInterface() = 0;
 		virtual Display*				CreateDisplay( const int outputId ) = 0;
 		virtual BackBuffer*				CreateBackBuffer( Window& window ) = 0;
-		virtual VertexBuffer*			CreateVertexBuffer( const VertexBufferDesc& desc, const void* const initialData  ) = 0;
-		virtual IndexBuffer*			CreateIndexBuffer( const IndexBufferDesc& desc, const void* const initialData  ) = 0;
+		virtual VertexBuffer*			CreateVertexBuffer( const VertexBufferParams& params, const void* const initialData  ) = 0;
+		virtual IndexBuffer*			CreateIndexBuffer( const IndexBufferParams& params, const void* const initialData  ) = 0;
 		virtual VertexBufferDescriptor*	CreateVertexBufferDescriptor( VertexBuffer* const buffer, const int vertexOffset ) = 0;
-		virtual TextureBuffer*			CreateTextureBuffer( const TextureBufferDesc& desc, const void* const initialData[] ) = 0;
+		virtual TextureBuffer*			CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) = 0;
 		virtual RenderTargetDescriptor*	CreateRenderTargetDescriptor( TextureBuffer* const buffer ) = 0;
 		virtual RenderTargetDescriptor*	CreateRenderTargetDescriptor( BackBuffer* const buffer ) = 0;
-		virtual DepthStencilDescriptor*	CreateDepthStencilDescriptor( TextureBuffer* const buffer, const DepthStencilStateDesc& desc ) = 0;
-		virtual TextureSampler*			CreateTextureSampler( const TextureSamplerDesc& desc ) = 0;
+		virtual DepthStencilDescriptor*	CreateDepthStencilDescriptor( TextureBuffer* const buffer, const DepthStencilDescriptorParams& params ) = 0;
+		virtual TextureSampler*			CreateTextureSampler( const TextureSamplerParams& params ) = 0;
+		virtual Shader*					CreateShader( const ShaderParams& params ) = 0;
 		/*
 		vrati max quality pro pozadovany pocet msaa level.
 		Ne vsechny karty a ne vsechna api museji podporovat tuto vlastnost, pak musi funkce vracet 1.
@@ -379,7 +433,7 @@ namespace RenderInterface {
 	public:
 		TextureBuffer();
 
-		// TextureBufferDesc member getters
+		// TextureBufferParams member getters
 		const Format GetFormat() const;
 		TextureBufferType GetType() const;
 		int GetDimmension() const;
@@ -391,10 +445,10 @@ namespace RenderInterface {
 
 	protected:
 		// Odvozena trida nema pristup k privatni promenne desc, rozhrani proto poskytuje setter
-		void SetDesc( const TextureBufferDesc& desc );
+		void SetParams( const TextureBufferParams& params );
 
 	private:
-		TextureBufferDesc desc;
+		TextureBufferParams params;
 	};
 
 	/*
@@ -427,7 +481,6 @@ namespace RenderInterface {
 	*/
 	class TextureSampler: public DeviceObject {
 	public:
-		//virtual TextureSamplerDesc GetDesc() const = 0;
 	};
 
 	/*
@@ -470,17 +523,39 @@ namespace RenderInterface {
 	*/
 	class IndexBufferDescriptor: public DeviceObject {};
 
+	/*
+	Constant buffer
+	*/
+	class ConstantBuffer: public DeviceObject {
+	public:
+	};
+
+	/*
+	Constant buffer descriptor popisuje format, umisteni a usporadani konstant v constant bufferu
+	*/
+	class ConstantBufferDescriptor: public DeviceObject {};
+
+	/*
+	Shader
+	*/
+	class Shader: public DeviceObject {
+	public:
+		virtual ShaderType GetType() const = 0;
+		virtual ShaderVersion GetVersion() const = 0;
+	};
+
 	//**************************************************
-	
-	struct BlendStateDescription {
+
+
+	struct BlendStateDesc {
 	};
 	
-	struct RasterizeStateDescription {
+	struct RasterizeStateDes {
 	};
 	
 	struct PipelineStateDescription {
-		BlendStateDescription blendStateDesc;
-		RasterizeStateDescription rasterizeStateDesc;
+		BlendStateDesc blendStateDesc;
+		//RasterizeStateDesc rasterizeStateDesc;
 	};
 	
 	class PipelineState: public DeviceObject {

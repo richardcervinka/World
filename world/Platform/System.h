@@ -34,6 +34,7 @@ public:
 	// Pristupove thread-safe funkce atributu systemu
 	static bool OSSupport( const OSVersion version );
 	static int ProcessorsCount();
+	static ProcessorArchitecture GetProcessorArchitecture();
 	static long long PhysicalMemory();
 	static bool AvailableSSE();
 	static bool AvailableSSE2();
@@ -46,10 +47,8 @@ public:
 	static double GetTime();
 
 private:
-	static ProcessorArchitecture processorArchitecture;
-	static int processorsCount;
+	//static ProcessorArchitecture processorArchitecture;
 	static long long physicalMemory;
-	static bool bSSE, bSSE2, bSSE3;
 	static long long performanceFrequency;
 	static long long performanceCounter;
 };

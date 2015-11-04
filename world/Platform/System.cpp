@@ -5,30 +5,35 @@
 // staticke promenne singletonu System
 long long System::performanceFrequency = 0;
 long long System::performanceCounter = 0;
-ProcessorArchitecture System::processorArchitecture = ProcessorArchitecture::UNKNOWN;
-int System::processorsCount = 1;
-bool System::bSSE = false;
-bool System::bSSE2 = false;
-bool System::bSSE3 = false;
 long long System::physicalMemory = 0;
 
-void System::Initialize() {
-	// podpora cpu
-	bSSE = IsProcessorFeaturePresent( PF_XMMI_INSTRUCTIONS_AVAILABLE ) != 0;
-	bSSE2 = IsProcessorFeaturePresent( PF_XMMI64_INSTRUCTIONS_AVAILABLE ) != 0;
-	bSSE3 = IsProcessorFeaturePresent( PF_SSE3_INSTRUCTIONS_AVAILABLE ) != 0;
+int GetCPUCount() {
+	SYSTEM_INFO si;
+	GetSystemInfo( &si );
+	return static_cast< int >( si.dwNumberOfProcessors );
+}
 
-	// architektura cpu
+ProcessorArchitecture GetCPUArchitecture() {
 	SYSTEM_INFO si;
 	GetSystemInfo( &si );
 	switch ( si.wProcessorArchitecture ) {
-	case PROCESSOR_ARCHITECTURE_AMD64: processorArchitecture = ProcessorArchitecture::X64; break;
-	case PROCESSOR_ARCHITECTURE_INTEL: processorArchitecture = ProcessorArchitecture::X86; break;
-	case PROCESSOR_ARCHITECTURE_ARM:   processorArchitecture = ProcessorArchitecture::ARM; break;
+	case PROCESSOR_ARCHITECTURE_AMD64: return ProcessorArchitecture::X64;
+	case PROCESSOR_ARCHITECTURE_INTEL: return ProcessorArchitecture::X86;
+	case PROCESSOR_ARCHITECTURE_ARM:   return ProcessorArchitecture::ARM;
 	}
-	processorsCount = static_cast< int >( si.dwNumberOfProcessors );
+	return ProcessorArchitecture::UNKNOWN;
+}
 
-	// Velikost nainstalovane pameti
+void System::Initialize() {
+	// Podpora instrukcnich sad - inicializace statickych promennych
+	AvailableSSE();
+	AvailableSSE2();
+	AvailableSSE3();
+
+	ProcessorsCount();
+	GetProcessorArchitecture();
+
+	// Velikost dostupne systemove pameti
 	ULONGLONG memSize = 0;
 	GetPhysicallyInstalledSystemMemory( &memSize );
 	physicalMemory = memSize;
@@ -57,7 +62,13 @@ bool System::OSSupport( const OSVersion version ) {
 }
 
 int System::ProcessorsCount() {
-	return processorsCount;
+	static const int count = GetCPUCount();
+	return count;
+}
+
+static ProcessorArchitecture System::GetProcessorArchitecture() {
+	static const ProcessorArchitecture architecture = GetCPUArchitecture();
+	return architecture;
 }
 
 long long System::PhysicalMemory() {
@@ -65,14 +76,17 @@ long long System::PhysicalMemory() {
 }
 
 bool System::AvailableSSE() {
+	static const bool bSSE = IsProcessorFeaturePresent( PF_XMMI_INSTRUCTIONS_AVAILABLE ) != 0;
 	return bSSE;
 }
 
 bool System::AvailableSSE2() {
+	static const bool bSSE2 = IsProcessorFeaturePresent( PF_XMMI64_INSTRUCTIONS_AVAILABLE ) != 0;
 	return bSSE2;
 }
 
 bool System::AvailableSSE3() {
+	static const bool bSSE3 = IsProcessorFeaturePresent( PF_SSE3_INSTRUCTIONS_AVAILABLE ) != 0;
 	return bSSE3;
 }
 

@@ -6,8 +6,8 @@
 // 16 byte aligned allocations
 void* operator new( std::size_t size );
 void* operator new[]( std::size_t size );
-void operator delete( void *ptr ) noexcept;
-void operator delete[]( void *ptr ) noexcept;
+void operator delete( void* ptr ) noexcept;
+void operator delete[]( void* ptr ) noexcept;
 
 const unsigned long DEFAULT_ALLOCATOR_CHUNK_SIZE = 128;
 
@@ -49,10 +49,10 @@ public:
 	~FixedAllocator();
 	
 	// vrati ukazatel na blok pameti
-	void *Alloc();
+	void* Alloc();
 	
 	// uvolni blok pameti
-	void Free( void * const ptr );
+	void Free( void* const ptr );
 	
 	// implementace rozhrani tridy Allocator
 	virtual void Reserve( const unsigned long bytes );
@@ -63,22 +63,22 @@ public:
 	
 private:
 	struct alignas( 16 ) Chunk {
-		Chunk *next;
+		Chunk* next;
 		unsigned long count;		// pocet bloku v chunku
 		unsigned long allocated;	// pocet alokovanych bloku
 	};
 	
 	struct alignas( 16 ) Block {
-		Block *next;
-		Chunk *chunk;
+		Block* next;
+		Chunk* chunk;
 	};
 	
 	// alokuje systemovou pamet pro count bloku
 	void Expand( const unsigned long count );
 	
 private:
-	Chunk *chunks;
-	Block *free;
+	Chunk* chunks;
+	Block* free;
 	const unsigned long size;
 	const unsigned long chunkSize;
 	unsigned long allocated;
@@ -91,8 +91,8 @@ class ObjectAllocator: public Allocator {
 public:
 	explicit ObjectAllocator( const unsigned long chunkSize = DEFAULT_ALLOCATOR_CHUNK_SIZE );
 	
-	T *New();
-	void Delete( T * const ptr );
+	T* New();
+	void Delete( T* const ptr );
 	
 	// implementace rozhrani tridy Allocator
 	virtual void Flush();
@@ -113,12 +113,12 @@ ObjectAllocator<T>::ObjectAllocator( const unsigned long chunkSize ):
 }
 
 template <typename T>
-inline T *ObjectAllocator<T>::New() {
+inline T* ObjectAllocator<T>::New() {
 	return new ( allocator.Alloc() ) T();
 }
 
 template <typename T>
-inline void ObjectAllocator<T>::Delete( T * const ptr ) {
+inline void ObjectAllocator<T>::Delete( T* const ptr ) {
 	if ( ptr == nullptr ) {
 		return;
 	}

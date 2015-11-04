@@ -54,19 +54,19 @@ void DeviceObject::AddRef() {
 // TextureBuffer
 
 TextureBuffer::TextureBuffer() {
-	ZeroMemory( &desc, sizeof( desc ) );
+	ZeroMemory( &params, sizeof( params ) );
 }
 
 const Format TextureBuffer::GetFormat() const {
-	return desc.format;
+	return params.format;
 }
 
 TextureBufferType TextureBuffer::GetType() const {
-	return desc.type;
+	return params.type;
 }
 		
 int TextureBuffer::GetDimmension() const {
-	switch ( desc.type ) {
+	switch ( params.type ) {
 	case TextureBufferType::UNDEFINED:				return 0;
 	case TextureBufferType::TEXTURE_1D:				return 1;
 	case TextureBufferType::TEXTURE_1D_ARRAY:		return 1;
@@ -80,25 +80,25 @@ int TextureBuffer::GetDimmension() const {
 }
 		
 TextureDimmensions TextureBuffer::GetDimmensions() const {
-	return desc.dimmensions;
+	return params.dimmensions;
 }
 		
 int TextureBuffer::GetArraySize() const {
-	return desc.arraySize;
+	return params.arraySize;
 }
 		
 int TextureBuffer::GetSamplesCount() const {
-	return desc.samplesCount;
+	return params.samplesCount;
 }
 		
 int TextureBuffer::GetSamplesQuality() const {
-	return desc.samplesQuality;
+	return params.samplesQuality;
 }
 
 bool TextureBuffer::RenderTargetUsable() const {
-	return desc.renderTarget;
+	return params.renderTarget;
 }
 
-void TextureBuffer::SetDesc( const TextureBufferDesc& desc ) {
-	this->desc = desc;
+void TextureBuffer::SetParams( const TextureBufferParams& params ) {
+	this->params = params;
 }

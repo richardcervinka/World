@@ -16,7 +16,7 @@ FileWindows::~FileWindows() {
 	FileWindows::Close();
 }
 
-bool FileWindows::CreateFile( const String &fullname, const FileMode mode, const FileAccess access, const unsigned int disposition ) {
+bool FileWindows::CreateFile( const String& fullname, const FileMode mode, const FileAccess access, const unsigned int disposition ) {
 	if ( handle != 0 ) {
 		return false;
 	}
@@ -67,19 +67,19 @@ bool FileWindows::CreateFile( const String &fullname, const FileMode mode, const
 	return true;
 }
 
-bool FileWindows::OpenToRead( const String &fullname, const FileAccess access ) {
+bool FileWindows::OpenToRead( const String& fullname, const FileAccess access ) {
 	return CreateFile( fullname, FileMode::READ, access, OPEN_EXISTING );
 }
 
-bool FileWindows::OpenToWrite( const String &fullname, const FileAccess access ) {
+bool FileWindows::OpenToWrite( const String& fullname, const FileAccess access ) {
 	return CreateFile( fullname, FileMode::WRITE, access, OPEN_EXISTING );
 }
 
-bool FileWindows::Create( const String &fullname ) {
+bool FileWindows::Create( const String& fullname ) {
 	return CreateFile( fullname, FileMode::WRITE, FileAccess::SEQUENTIAL, CREATE_NEW );
 }
 
-bool FileWindows::CreateNew( const String &fullname ) {
+bool FileWindows::CreateNew( const String& fullname ) {
 	return CreateFile( fullname, FileMode::WRITE, FileAccess::SEQUENTIAL, CREATE_ALWAYS );
 }
 
@@ -120,7 +120,7 @@ unsigned long FileWindows::Size() const {
 	return static_cast< unsigned long >( size.QuadPart );
 }
 
-unsigned long FileWindows::Read( void * const buffer, const unsigned long bytes ) {
+unsigned long FileWindows::Read( void* const buffer, const unsigned long bytes ) {
 	if ( handle == 0 ) {
 		return 0;
 	}
@@ -132,7 +132,7 @@ unsigned long FileWindows::Read( void * const buffer, const unsigned long bytes 
 	return static_cast< unsigned long >( reads );
 }
 
-unsigned long FileWindows::Write( const void * const buffer, const unsigned long bytes ) {
+unsigned long FileWindows::Write( const void* const buffer, const unsigned long bytes ) {
 	if ( handle == 0 ) {
 		return 0;
 	}
@@ -199,20 +199,20 @@ void FileWindows::Flush() {
 
 // FileSystemWindows
 
-bool FileSystemWindows::CreateDir( const String &path ) {
+bool FileSystemWindows::CreateDir( const String& path ) {
 	return CreateDirectoryW( reinterpret_cast< LPCWSTR >( path.Raw() ), NULL ) == TRUE;
 }
 
-bool FileSystemWindows::RemoveDir( const String &path ) {
+bool FileSystemWindows::RemoveDir( const String& path ) {
 	return RemoveDirectoryW( reinterpret_cast< LPCWSTR >( path.Raw() ) ) == TRUE;
 }
 
-bool FileSystemWindows::RemoveDirContent( const String &path ) {
+bool FileSystemWindows::RemoveDirContent( const String& path ) {
 	// not implemented
 	return false;
 }
 
-bool FileSystemWindows::RemoveFile( const String &fullname ) {
+bool FileSystemWindows::RemoveFile( const String& fullname ) {
 	return DeleteFileW( reinterpret_cast< LPCWSTR >( fullname.Raw() ) ) == TRUE;
 }
 
@@ -222,7 +222,7 @@ enum class FindFilesMode {
 	ALL
 };
 
-bool FindFiles( const String &path, FindFilesMode mode, Array< String > &result ) {
+bool FindFiles( const String& path, FindFilesMode mode, Array< String >& result ) {
 	String fullname = path;
 	if ( fullname[ fullname.Length() - 1 ] == u'/' ) {
 		fullname += String( u"*.*" );
@@ -264,10 +264,10 @@ bool FindFiles( const String &path, FindFilesMode mode, Array< String > &result 
 	return true;
 }
 
-bool FileSystemWindows::EnumFiles( const String &path, Array< String > &result ) {
+bool FileSystemWindows::EnumFiles( const String& path, Array< String >& result ) {
 	return FindFiles( path, FindFilesMode::FILE, result );
 }
 
-bool FileSystemWindows::EnumDirs( const String &path, Array< String > &result ) {
+bool FileSystemWindows::EnumDirs( const String& path, Array< String >& result ) {
 	return FindFiles( path, FindFilesMode::DIR, result );
 }
