@@ -5,23 +5,28 @@
 // staticke promenne singletonu System
 long long System::performanceFrequency = 0;
 long long System::performanceCounter = 0;
-long long System::physicalMemory = 0;
 
-int GetCPUCount() {
+int DetectCPUCount() {
 	SYSTEM_INFO si;
 	GetSystemInfo( &si );
 	return static_cast< int >( si.dwNumberOfProcessors );
 }
 
-ProcessorArchitecture GetCPUArchitecture() {
+CPUArchitecture DetectCPUArchitecture() {
 	SYSTEM_INFO si;
 	GetSystemInfo( &si );
 	switch ( si.wProcessorArchitecture ) {
-	case PROCESSOR_ARCHITECTURE_AMD64: return ProcessorArchitecture::X64;
-	case PROCESSOR_ARCHITECTURE_INTEL: return ProcessorArchitecture::X86;
-	case PROCESSOR_ARCHITECTURE_ARM:   return ProcessorArchitecture::ARM;
+	case PROCESSOR_ARCHITECTURE_AMD64: return CPUArchitecture::X64;
+	case PROCESSOR_ARCHITECTURE_INTEL: return CPUArchitecture::X86;
+	case PROCESSOR_ARCHITECTURE_ARM:   return CPUArchitecture::ARM;
 	}
-	return ProcessorArchitecture::UNKNOWN;
+	return CPUArchitecture::UNKNOWN;
+}
+
+long long DetectInstalledMemory() {
+	ULONGLONG size = 0;
+	GetPhysicallyInstalledSystemMemory( &size );
+	return static_cast< long long >( size );
 }
 
 void System::Initialize() {
@@ -30,13 +35,9 @@ void System::Initialize() {
 	AvailableSSE2();
 	AvailableSSE3();
 
-	ProcessorsCount();
-	GetProcessorArchitecture();
-
-	// Velikost dostupne systemove pameti
-	ULONGLONG memSize = 0;
-	GetPhysicallyInstalledSystemMemory( &memSize );
-	physicalMemory = memSize;
+	GetProcessorsCount();
+	GetCPUArchitecture();
+	GetPhysicalMemory();
 
 	// frekvence casovace
 	LARGE_INTEGER frequency;
@@ -61,17 +62,18 @@ bool System::OSSupport( const OSVersion version ) {
 	return false;
 }
 
-int System::ProcessorsCount() {
-	static const int count = GetCPUCount();
+int System::GetProcessorsCount() {
+	static const int count = DetectCPUCount();
 	return count;
 }
 
-static ProcessorArchitecture System::GetProcessorArchitecture() {
-	static const ProcessorArchitecture architecture = GetCPUArchitecture();
+CPUArchitecture System::GetCPUArchitecture() {
+	static const CPUArchitecture architecture = DetectCPUArchitecture();
 	return architecture;
 }
 
-long long System::PhysicalMemory() {
+long long System::GetPhysicalMemory() {
+	static const long long physicalMemory = DetectInstalledMemory();
 	return physicalMemory;
 }
 

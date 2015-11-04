@@ -1,7 +1,7 @@
 #pragma once
 
 enum class OSVersion {
-	UNKNOWN = 0,
+	UNKNOWN,
 	XP,
 	XP_SP1,
 	XP_SP2,
@@ -11,31 +11,43 @@ enum class OSVersion {
 	VISTA_SP2,
 	WIN7,
 	WIN7_SP1,
-	WIN8
+	WIN8,
+	WIN10
 };
 
-enum class ProcessorArchitecture {
-	UNKNOWN = 0,
+enum class CPUArchitecture {
+	UNKNOWN,
 	X64,
 	X86,
 	ARM
 };
 
-// Singleton, reprezentuje operacni system a hardware.
-
+/*
+Hardware (krome adapteru) a operacni system
+*/
 class System {
 public:
 	// neni povoleno vytvaret instance
 	System() = delete;
 
-	// Inicializace, system musi byt inicializovan pred volanim ostatnich metod.
+	// Inicializace, musi byt provedeno pred volanim ostatnich metod.
 	static void Initialize();
 
-	// Pristupove thread-safe funkce atributu systemu
+	// Pristupove thread-safe funkce
+
+	// vraci true, pokud je operacni system kompatibilni s parametrem version
 	static bool OSSupport( const OSVersion version );
-	static int ProcessorsCount();
-	static ProcessorArchitecture GetProcessorArchitecture();
-	static long long PhysicalMemory();
+
+	// pocet logickych procesoru
+	static int GetProcessorsCount();
+
+	// architektura procesoru
+	static CPUArchitecture GetCPUArchitecture();
+
+	// pocet bajtu nainstalovane pameti RAM
+	static long long GetPhysicalMemory();
+
+	// dostupnost instrukcni sady SSE
 	static bool AvailableSSE();
 	static bool AvailableSSE2();
 	static bool AvailableSSE3();
@@ -48,7 +60,6 @@ public:
 
 private:
 	//static ProcessorArchitecture processorArchitecture;
-	static long long physicalMemory;
 	static long long performanceFrequency;
 	static long long performanceCounter;
 };

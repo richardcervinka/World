@@ -1,5 +1,4 @@
 #include <d3dcompiler.h>
-#include <memory>
 #include "DX11RenderInterface.h"
 #include "..\..\Platform\Application.h"
 #include "..\..\Platform\Windows\WindowsWindow.h"
