@@ -302,7 +302,7 @@ TextureSampler* DX11Device::CreateTextureSampler( const TextureSamplerParams& pa
 
 Shader* DX11Device::CreateShader( const ShaderParams& params ) {
 	DX11Shader *shader = new DX11Shader();
-	if ( !shader->Compile( params ) ) {
+	if ( !shader->Compile( device, params ) ) {
 		delete shader;
 		return nullptr;
 	}
@@ -929,7 +929,7 @@ bool DX11DepthStencilDescriptor::Create( ID3D11Device* const device, TextureBuff
 	stateDesc.FrontFace.StencilDepthFailOp	= GetStencilOp( params.stencilDepthFailOp );
 	stateDesc.BackFace						= stateDesc.FrontFace;
 
-	ID3D11DepthStencilState* state;
+	ID3D11DepthStencilState* state = nullptr;
 	hresult = device->CreateDepthStencilState( &stateDesc, &state );
 	if ( FAILED( hresult )  ) {
 		view->Release();
@@ -1173,15 +1173,20 @@ DXGI_FORMAT DX11IndexBufferDescriptor::GetDXGIFormat() const {
 
 DX11ConstantBuffer::DX11ConstantBuffer() {
 	buffer = nullptr;
+	image = nullptr;
 }
 
 DX11ConstantBuffer::~DX11ConstantBuffer() {
 	ReleaseCOM( &buffer );
+	delete [] image;
 }
 
 bool DX11ConstantBuffer::Create( ID3D11Device* const device, const ConstantBufferParams& params, const void* const initialData ) {
+	// byte width musi byt nasobek 16
+	UINT byteWidth = static_cast< UINT >( params.size + ( 16 - params.size % 16 ) );
+
 	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.ByteWidth			= static_cast< UINT >( params.size );
+	bufferDesc.ByteWidth			= byteWidth;
 	bufferDesc.Usage				= GetUsage( params.usage );
 	bufferDesc.BindFlags			= D3D11_BIND_CONSTANT_BUFFER;
 	bufferDesc.CPUAccessFlags		= GetCPUAccessFlags( params.access );
@@ -1202,6 +1207,9 @@ bool DX11ConstantBuffer::Create( ID3D11Device* const device, const ConstantBuffe
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
+	// alokovat systemovou pamet pro obraz bufferu 
+	image = _aligned_malloc( byteWidth, 16 );
+
 	this->buffer = buffer;
 	return true;
 }
@@ -1221,30 +1229,107 @@ DX11ConstantBufferDescriptor::~DX11ConstantBufferDescriptor() {
 	ReleaseCOM( &buffer );
 }
 
-// ##############  DOKONCIT ################
-/*
-bool DX11ConstantBufferDescriptor::Create( ConstantBuffer* const buffer, const int slot, const ConstantBufferMember* const members, const int count ) {
-	map.reset( new Constants[ count ] );
-	for ( int i = 0; i < count; i++ ) {
-		map[ i ].sysMemOffset = members[ i ].sysMemOffset;
-		map[ i ].bufferOffset = 0;
-		map[ i ].size = members[ i ].size;
+bool DX11ConstantBufferDescriptor::Create(
+	ConstantBuffer* const constantBuffer,
+	const char* const bufferName,
+	Shader* const shader,
+	const ConstantBufferConstant* const constants,
+	const int constantsCount
+) {
+	ASSERT_DOWNCAST( shader, DX11Shader )
+	ID3DBlob* blob = static_cast< DX11Shader* >( shader )->GetBlob();
+	if ( blob == nullptr ) {
+		return false;
+	}
+	HRESULT hresult = 0;
+
+	// shader code reflection
+	ID3D11ShaderReflection* reflector = nullptr; 
+	hresult = D3DReflect(
+		blob->GetBufferPointer(),
+		blob->GetBufferSize(),
+		IID_ID3D11ShaderReflection,
+		&reflector
+	);
+	if ( FAILED( hresult ) ) {
+		return false;
+	}
+	// reflect constant buffer
+	ID3D11ShaderReflectionConstantBuffer* cbufferReflector = nullptr;
+	cbufferReflector = reflector->GetConstantBufferByName( bufferName );
+
+	std::unique_ptr< Constants[] > map( new Constants[ constantsCount ] );
+	int linked = 0;
+	int sysMemOffset = 0;
+
+	for ( int i = 0; i < constantsCount; i++ ) {
+		const ConstantBufferConstant& constant = constants[ i ];
+
+		// reflect variable
+		ID3D11ShaderReflectionVariable* variableReflector = nullptr;
+		variableReflector = cbufferReflector->GetVariableByName( constant.name );
+
+		// variable desc
+		D3D11_SHADER_VARIABLE_DESC variableDesc;
+		hresult = variableReflector->GetDesc( &variableDesc );
+
+		// nezdarilo se volani reflect variable
+		if ( FAILED( hresult ) ) {
+			break;
+		}
+		// velikost konstanty musi souhlasit
+		if ( variableDesc.size != static_cast< UINT >( constant.size ) ) {
+			break;
+		}
+		map[ i ].size = constant.size;
+		map[ i ].sysMemOffset = sysMemOffset;
+		map[ i ].bufferOffset = static_cast< int >( variableDesc.StartOffset );
+
+		linked += 1;
+		sysMemOffset += constant.size;
+	}
+	// release reflectors
+	reflector->Release();
+
+	// nepodarilo se propojit vsechny konstanty
+	if ( linked != constantsCount ) {
+		return false;
+	}
+	// ulozit vysledek
+	this->map = map;
+	this->constantsCount = constantsCount;
+	ASSERT_DOWNCAST( constantBuffer, DX11ConstantBuffer );
+	this->buffer = static_cast< DX11ConstantBuffer* >( constantBuffer )->GetBuffer();
+	buffer->AddRef();
+	return true;
+}
+
+void DX11ConstantBufferDescriptor::MapConstants( void* const src, void* const dest ) const {
+	for ( int i = 0; i < constantsCount; i++ ) {
+		Constant& constant = constants[ i ];
+		memcpy(
+			static_cast< Byte* >( dest ) + constant.bufferOffset,
+			static_cast< Byte* >( src ) + constant.sysMemOffset,
+			constant.size
+		);
 	}
 }
-*/
+
 // DXShader
 
 DX11Shader::DX11Shader() {
 	code = nullptr;
+	shader = nullptr;
 	type = ShaderType::UNDEFINED;
 	version = ShaderVersion::UNDEFINED;
 }
 
 DX11Shader::~DX11Shader() {
+	ReleaseCOM( &shader );
 	ReleaseCOM( &code );
 }
 
-bool DX11Shader::Compile( const ShaderParams& params ) {
+bool DX11Shader::Compile( ID3D11Device* const device, const ShaderParams& params ) {
 	if ( params.version != ShaderVersion::HLSL_50_GLSL_430 ) {
 		return false;
 	}
@@ -1264,7 +1349,7 @@ bool DX11Shader::Compile( const ShaderParams& params ) {
 		macros[ i ].Definition = "0";
 	}
 	// shader target
-	const char *target = nullptr;
+	const char* target = nullptr;
 	switch ( params.type ) {
 	case ShaderType::VERTEX_SHADER:		target = "vs_5_0"; break;
 	case ShaderType::PIXEL_SHADER:		target = "ps_5_0"; break;
@@ -1286,7 +1371,7 @@ bool DX11Shader::Compile( const ShaderParams& params ) {
 	case ShaderOptimization::HIGH:		flags |= D3DCOMPILE_OPTIMIZATION_LEVEL2; break;
 	}
 	// compile
-	ID3DBlob *code = nullptr;
+	ID3DBlob* code = nullptr;
 	HRESULT hresult = D3DCompile(
 		params.string,
 		strlen( params.string ),
@@ -1303,8 +1388,35 @@ bool DX11Shader::Compile( const ShaderParams& params ) {
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
+	// shader object
+	ID3D11DeviceChild* shader = nullptr;
+	switch ( params.type ) {
+	case ShaderType::VERTEX_SHADER:
+		ID3D11VertexShader* vs = nullptr;
+		device->CreateVertexShader( code->GetBufferPointer(), code->GetBufferSize(), NULL, &vs );
+		shader = vs;
+		break;
+
+	case ShaderType::PIXEL_SHADER:
+		ID3D11PixelShader* ps = nullptr;
+		device->CreatePixelShader( code->GetBufferPointer(), code->GetBufferSize(), NULL, &ps );
+		shader = ps;
+		break;
+
+	case ShaderType::GEOMETRY_SHADER:
+		ID3D11GeometryShader* gs = nullptr;
+		device->CreateGeometryShader( code->GetBufferPointer(), code->GetBufferSize(), NULL, &gs );
+		shader = gs;
+		break;
+	}
+	if ( shader == nullptr ) {
+		ReleaseCOM( &code );
+		return false;
+	}
+
 	// ulozit vysledek
 	this->code = code;
+	this->shader = shader;
 	this->type = params.type;
 	this->version = params.version;
 
@@ -1317,4 +1429,12 @@ ShaderType DX11Shader::GetType() const {
 
 ShaderVersion DX11Shader::GetVersion() const {
 	return version;
+}
+
+ID3DBlob* DX11Shader::GetBlob() {
+	return code;
+}
+
+ID3D11DeviceChild* DX11Shader::GetShader() {
+	return shader;
 }

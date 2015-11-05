@@ -300,48 +300,65 @@ public:
 	// DirectX 11 getters
 	ID3D11Buffer* GetBuffer();
 
+	// Vrati ukazatel na lokalni obraz bufferu (systemova pamet).
+	// Update bufferu se provadi vzdy pomoci tohoto uloziste.
+	//void* GetImage();
+
 private:
 	ID3D11Buffer* buffer;
+	/*
+	Lokalni obraz bufferu (systemova pamet)
+	Update bufferu se provadi vzdy pomoci tohoto uloziste
+	*/
+	void *image;
 };
 
-// ##############  DOKONCIT ################
 class DX11ConstantBufferDescriptor: public ConstantBufferDescriptor {
 public:
 	DX11ConstantBufferDescriptor();
 	~DX11ConstantBufferDescriptor();
-	/*
+	
 	bool Create(
-		ConstantBuffer* const buffer,
-		const char* const constantBufferName,
-		const ConstantBufferMember* const members,
-		const int count
-		);
-	*/
+		ConstantBuffer* const constantBuffer,
+		const char* const bufferName,
+		Shader* const shader,
+		const ConstantBufferConstant* const constants,
+		const int constantsCount
+	);
+
+	void MapConstants( void* const src, void* const dest ) const;
 
 private:
 	ID3D11Buffer* buffer;
 	int slot;
 
-	struct Constants {
+	// mapovani konstant
+	struct ConstantMap {
 		int sysMemOffset;
 		int bufferOffset;
 		int size;
 	};
 	std::unique_ptr< Constants[] > map;
+	int constantsCount;
 };
 
 class DX11Shader: public Shader {
 public:
 	DX11Shader();
 	~DX11Shader();
-	bool Compile( const ShaderParams& params );
+	bool Compile( ID3D11Device* const device, const ShaderParams& params );
 
 	// implementace rozhrani Shader
 	virtual ShaderType GetType() const override;
 	virtual ShaderVersion GetVersion() const override;
 
+	// DirectX 11 getters
+	ID3DBlob* GetBlob();
+	ID3D11DeviceChild* GetShader();
+
 private:
-	ID3DBlob *code;
+	ID3DBlob* code;
+	ID3D11DeviceChild* shader;
 	ShaderType type;
 	ShaderVersion version;
 };

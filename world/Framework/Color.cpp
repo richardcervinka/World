@@ -23,11 +23,11 @@ ColorUnorm::ColorUnorm( const uint32_t rgba ) {
 	pack = rgba;
 }
 
-bool ColorUnorm::operator==( const ColorUnorm &color ) {
+bool ColorUnorm::operator==( const ColorUnorm& color ) {
 	return pack == color.pack;
 }
 
-bool ColorUnorm::operator!=( const ColorUnorm &color ) {
+bool ColorUnorm::operator!=( const ColorUnorm& color ) {
 	return pack != color.pack;
 }
 
@@ -54,28 +54,28 @@ Color::Color( const float r, const float g, const float b, const float a ) {
 	this->a = a;
 }
 
-Color::Color( const Vector &vector ) {
+Color::Color( const Vector& vector ) {
 	r = vector.x;
 	g = vector.y;
 	b = vector.z;
 	a = vector.w;
 }
 
-Color::Color( const Float4 &f ) {
+Color::Color( const Float4& f ) {
 	r = f.x;
 	g = f.y;
 	b = f.z;
 	a = f.w;
 }
 
-Color::Color( const Float3 &f ) {
+Color::Color( const Float3& f ) {
 	r = f.x;
 	g = f.y;
 	b = f.z;
 	a = 1.0f;
 }
 
-Color::Color( const ColorUnorm &color ) {
+Color::Color( const ColorUnorm& color ) {
 	r = static_cast< float >( color.r ) / 255.0f;
 	g = static_cast< float >( color.g ) / 255.0f;
 	b = static_cast< float >( color.b ) / 255.0f;
@@ -110,25 +110,25 @@ Float3 Color::ToFloat3() const {
 	return Float3( r, g, b );
 }
 
-void Color::StoreUnorm( ColorUnorm &target ) const {
+void Color::StoreUnorm( ColorUnorm& target ) const {
 	target.r = static_cast< uint8_t >( Math::Clamp( r * 255.0f, 0.0f, 255.0f ) );
 	target.g = static_cast< uint8_t >( Math::Clamp( g * 255.0f, 0.0f, 255.0f ) );
 	target.b = static_cast< uint8_t >( Math::Clamp( b * 255.0f, 0.0f, 255.0f ) );
 	target.a = static_cast< uint8_t >( Math::Clamp( a * 255.0f, 0.0f, 255.0f ) );
 }
 
-void Color::StoreVector( Vector &target ) const {
+void Color::StoreVector( Vector& target ) const {
 	target.Set( r, g, b, a ); 
 }
 
-void Color::StoreFloat4( Float4 &target ) const {
+void Color::StoreFloat4( Float4& target ) const {
 	target.x = r;
 	target.y = g;
 	target.z = b;
 	target.w = a;
 }
 
-void Color::StoreFloat3( Float3 &target ) const {
+void Color::StoreFloat3( Float3& target ) const {
 	target.x = r;
 	target.y = g;
 	target.z = b;
@@ -141,11 +141,11 @@ void Color::Clamp() {
 	a = Math::Clamp( a, 0.0f, 1.0f );
 }
 
-bool Color::operator==( const Color &color ) {
+bool Color::operator==( const Color& color ) {
 	return ( r == color.r ) && ( g == color.g ) && ( b == color.b ) && ( a == color.a );
 }
 
-bool Color::operator!=( const Color &color ) {
+bool Color::operator!=( const Color& color ) {
 	return ( r != color.r ) || ( g != color.g ) || ( b != color.b ) || ( a != color.a );
 }
 

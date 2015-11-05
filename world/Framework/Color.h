@@ -19,8 +19,8 @@ public:
 public:
 	ColorUnorm( const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a );
 	ColorUnorm( const uint32_t rgba );
-	bool operator==( const ColorUnorm &color );
-	bool operator!=( const ColorUnorm &color );
+	bool operator==( const ColorUnorm& color );
+	bool operator!=( const ColorUnorm& color );
 	
 	// pojmenovane barvy
 	static const ColorUnorm BLACK;
@@ -44,10 +44,10 @@ public:
 	Color( const float r, const float g, const float b, const float a );
 	
 	// create from
-	explicit Color( const ColorUnorm &color );
-	explicit Color( const Vector &vector );
-	explicit Color( const Float4 &f );
-	explicit Color( const Float3 &f );
+	explicit Color( const ColorUnorm& color );
+	explicit Color( const Vector& vector );
+	explicit Color( const Float4& f );
+	explicit Color( const Float3& f );
 	
 	void SetRGBA( const float r, const float g, const float b, const float a );
 	
@@ -64,13 +64,13 @@ public:
 	Float3 ToFloat3() const;
 	
 	// store to; store metody jsou rychlejsi nez cast metody, nevytvari se docasny objekt
-	void StoreUnorm( ColorUnorm &target ) const;
-	void StoreVector( Vector &target ) const;
-	void StoreFloat4( Float4 &target ) const;
-	void StoreFloat3( Float3 &target ) const;
+	void StoreUnorm( ColorUnorm& target ) const;
+	void StoreVector( Vector& target ) const;
+	void StoreFloat4( Float4& target ) const;
+	void StoreFloat3( Float3& target ) const;
 	
-	bool operator==( const Color &color );
-	bool operator!=( const Color &color );
+	bool operator==( const Color& color );
+	bool operator!=( const Color& color );
 	
 	// orizne hodnoty do rozsahu <0; 1>
 	void Clamp();

@@ -230,10 +230,30 @@ namespace RenderInterface {
 		BufferAccess access;
 	};
 
-	// Propojeni konstanty constant bufferu se systemovou pameti
-	struct ConstantBufferMember {
-		char *name;
-		int sysMemOffset;
+	/*
+	ConstantBufferConstant
+
+	Popisuje konstantu constant bufferu.
+	Pouziva se jako pole, konstanty museji byt ulozeny v systemove pameti ve stejnem poradi jako v tomto poli.
+	pr.:
+
+	// HLSL
+	cbuffer Constants {
+		float3 color;
+		float4 position;
+	}
+	// C++
+	struct Constants {
+		Float4 color;
+		Float3 position;
+	}
+	ConstantBufferConstant map[] = {
+		{ "color", 3 },
+		{ "position", 4 }
+	};
+	*/
+	struct ConstantBufferConstant {
+		const char* name;
 		int size;
 	};
 
@@ -245,8 +265,8 @@ namespace RenderInterface {
 	};
 
 	typedef unsigned int ShaderCompileFlags;
-	const ShaderCompileFlags SHADER_COMPILE_WARNINGS_AS_ERRRORS	= ( 1 );
-	const ShaderCompileFlags SHADER_COMPILE_DEBUG				= ( 1 << 1 );
+	const ShaderCompileFlags SHADER_COMPILE_WARNINGS_AS_ERRRORS	= ( 0x01 );
+	const ShaderCompileFlags SHADER_COMPILE_DEBUG				= ( 0x01 << 1 );
 
 	enum class ShaderOptimization {
 		DISABLED,	// optimalizace vypnuta (nejrychlejsi kompilace)
@@ -524,19 +544,20 @@ namespace RenderInterface {
 	class IndexBufferDescriptor: public DeviceObject {};
 
 	/*
-	Constant buffer
+	Constant buffer reprezentuje pouze datove uloziste, neobsahuje zadne informace o rozlozeni konstant apod.
 	*/
 	class ConstantBuffer: public DeviceObject {
 	public:
 	};
 
 	/*
-	Constant buffer descriptor popisuje format, umisteni a usporadani konstant v constant bufferu
+	Constant buffer descriptor popisuje format, umisteni a usporadani konstant v constant bufferu.
+	Pomoci tohoto objektu jsou data namapovana do bufferu tak, aby odpovidala shaderu.
 	*/
 	class ConstantBufferDescriptor: public DeviceObject {};
 
 	/*
-	Shader
+	Trida pro vsechny typy shaderu (VS, PS i GS)
 	*/
 	class Shader: public DeviceObject {
 	public:
