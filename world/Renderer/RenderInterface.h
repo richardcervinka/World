@@ -231,11 +231,7 @@ namespace RenderInterface {
 	};
 
 	/*
-	ConstantBufferConstant
-
-	Popisuje konstantu constant bufferu.
-	Pouziva se jako pole, konstanty museji byt ulozeny v systemove pameti ve stejnem poradi jako v tomto poli.
-	pr.:
+	ShaderConstant (konstanta constant bufferu)
 
 	// HLSL
 	cbuffer Constants {
@@ -244,17 +240,18 @@ namespace RenderInterface {
 	}
 	// C++
 	struct Constants {
-		Float4 color;
-		Float3 position;
+		Float3 color;
+		Float4 position;
 	}
-	ConstantBufferConstant map[] = {
-		{ "color", 3 },
-		{ "position", 4 }
+	ShaderConstant constants[] = {
+		{ "color",    sizeof( Constants::color ),    alignof( Constants::color ) },
+		{ "position", sizeof( Constants::position ), alignof( Constants::position ) }
 	};
 	*/
-	struct ConstantBufferConstant {
+	struct ShaderConstant {
 		const char* name;
 		int size;
+		int align;
 	};
 
 	enum class ShaderType {

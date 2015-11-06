@@ -306,10 +306,8 @@ public:
 
 private:
 	ID3D11Buffer* buffer;
-	/*
-	Lokalni obraz bufferu (systemova pamet)
-	Update bufferu se provadi vzdy pomoci tohoto uloziste
-	*/
+
+	// Lokalni obraz bufferu. Update bufferu se provadi vzdy pomoci tohoto uloziste
 	void *image;
 };
 
@@ -319,11 +317,11 @@ public:
 	~DX11ConstantBufferDescriptor();
 	
 	bool Create(
-		ConstantBuffer* const constantBuffer,
-		const char* const bufferName,
-		Shader* const shader,
-		const ConstantBufferConstant* const constants,
-		const int constantsCount
+		ConstantBuffer* const _constantBuffer,
+		const char* const _bufferName,
+		Shader* const _shader,
+		const ShaderConstant* const _constants,
+		const int _constantsCount
 	);
 
 	void MapConstants( void* const src, void* const dest ) const;
@@ -332,14 +330,15 @@ private:
 	ID3D11Buffer* buffer;
 	int slot;
 
-	// mapovani konstant
-	struct ConstantMap {
+	// mapovani konstant ze systemove pameti do bufferu
+	struct ConstantPlacement {
 		int sysMemOffset;
 		int bufferOffset;
 		int size;
 	};
-	std::unique_ptr< Constants[] > map;
+	std::unique_ptr< ConstantPlacement[] > map;
 	int constantsCount;
+	int constantsSize;
 };
 
 class DX11Shader: public Shader {

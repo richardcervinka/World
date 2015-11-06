@@ -1183,7 +1183,10 @@ DX11ConstantBuffer::~DX11ConstantBuffer() {
 
 bool DX11ConstantBuffer::Create( ID3D11Device* const device, const ConstantBufferParams& params, const void* const initialData ) {
 	// byte width musi byt nasobek 16
-	UINT byteWidth = static_cast< UINT >( params.size + ( 16 - params.size % 16 ) );
+	UINT byteWidth = static_cast< UINT >( params.size );
+	if ( byteWidth % 16 != 0 ) {
+		byteWidth += 16 - byteWidth % 16;
+	}
 
 	D3D11_BUFFER_DESC bufferDesc;
 	bufferDesc.ByteWidth			= byteWidth;
@@ -1223,6 +1226,8 @@ ID3D11Buffer* DX11ConstantBuffer::GetBuffer() {
 DX11ConstantBufferDescriptor::DX11ConstantBufferDescriptor() {
 	buffer = nullptr;
 	slot = 0;
+	constantsCount = 0;
+	constantsSize = 0;
 }
 
 DX11ConstantBufferDescriptor::~DX11ConstantBufferDescriptor() {
@@ -1230,40 +1235,42 @@ DX11ConstantBufferDescriptor::~DX11ConstantBufferDescriptor() {
 }
 
 bool DX11ConstantBufferDescriptor::Create(
-	ConstantBuffer* const constantBuffer,
-	const char* const bufferName,
-	Shader* const shader,
-	const ConstantBufferConstant* const constants,
-	const int constantsCount
+	ConstantBuffer* const _constantBuffer,
+	const char* const _bufferName,
+	Shader* const _shader,
+	const ShaderConstant* const _constants,
+	const int _constantsCount
 ) {
-	ASSERT_DOWNCAST( shader, DX11Shader )
-	ID3DBlob* blob = static_cast< DX11Shader* >( shader )->GetBlob();
+	HRESULT hresult = 0;
+
+	// get shader code
+	ASSERT_DOWNCAST( _shader, DX11Shader )
+	ID3DBlob* blob = static_cast< DX11Shader* >( _shader )->GetBlob();
 	if ( blob == nullptr ) {
 		return false;
 	}
-	HRESULT hresult = 0;
-
 	// shader code reflection
 	ID3D11ShaderReflection* reflector = nullptr; 
 	hresult = D3DReflect(
 		blob->GetBufferPointer(),
 		blob->GetBufferSize(),
 		IID_ID3D11ShaderReflection,
-		&reflector
+		reinterpret_cast<void** >( &reflector )
 	);
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
 	// reflect constant buffer
 	ID3D11ShaderReflectionConstantBuffer* cbufferReflector = nullptr;
-	cbufferReflector = reflector->GetConstantBufferByName( bufferName );
+	cbufferReflector = reflector->GetConstantBufferByName( _bufferName );
 
-	std::unique_ptr< Constants[] > map( new Constants[ constantsCount ] );
-	int linked = 0;
-	int sysMemOffset = 0;
+	std::unique_ptr< ConstantPlacement[] > map( new ConstantPlacement[ _constantsCount ] );
+	int mapped = 0;
+	int offset = 0;
+	bool aligned = true;
 
-	for ( int i = 0; i < constantsCount; i++ ) {
-		const ConstantBufferConstant& constant = constants[ i ];
+	for ( int i = 0; i < _constantsCount; i++ ) {
+		const ShaderConstant& constant = _constants[ i ];
 
 		// reflect variable
 		ID3D11ShaderReflectionVariable* variableReflector = nullptr;
@@ -1278,35 +1285,55 @@ bool DX11ConstantBufferDescriptor::Create(
 			break;
 		}
 		// velikost konstanty musi souhlasit
-		if ( variableDesc.size != static_cast< UINT >( constant.size ) ) {
+		if ( variableDesc.Size != static_cast< UINT >( constant.size ) ) {
 			break;
 		}
+		// pokud nesouhlasi offset, nesouhlasi take zarovnani systemove pameti
+		if ( offset != static_cast< int >( variableDesc.StartOffset ) ) {
+			aligned = false;
+		}
+		// namapovat konstantu
 		map[ i ].size = constant.size;
-		map[ i ].sysMemOffset = sysMemOffset;
+		map[ i ].sysMemOffset = offset;
 		map[ i ].bufferOffset = static_cast< int >( variableDesc.StartOffset );
 
-		linked += 1;
-		sysMemOffset += constant.size;
+		// update offset (size + align pad)
+		offset += constant.size;
+		if ( constant.size % constant.align > 0 ) {
+			offset += constant.align - constant.size % constant.align;
+		}
+		mapped += 1;
 	}
 	// release reflectors
 	reflector->Release();
 
-	// nepodarilo se propojit vsechny konstanty
-	if ( linked != constantsCount ) {
+	// nepodarilo se namapovat vsechny konstanty
+	if ( mapped != _constantsCount ) {
 		return false;
 	}
-	// ulozit vysledek
-	this->map = map;
-	this->constantsCount = constantsCount;
-	ASSERT_DOWNCAST( constantBuffer, DX11ConstantBuffer );
-	this->buffer = static_cast< DX11ConstantBuffer* >( constantBuffer )->GetBuffer();
-	buffer->AddRef();
+	// ulozit vysledky
+	this->constantsCount = _constantsCount;
+	this->constantsSize = offset;
+	ASSERT_DOWNCAST( _constantBuffer, DX11ConstantBuffer );
+	this->buffer = static_cast< DX11ConstantBuffer* >( _constantBuffer )->GetBuffer();
+	this->buffer->AddRef();
+
+	// nesouhlasi zarovnani pameti, ulozit mapu
+	if ( !aligned ) {
+		this->map = map;
+	}
 	return true;
 }
 
 void DX11ConstantBufferDescriptor::MapConstants( void* const src, void* const dest ) const {
+	// zarovnani systemove pameti odpovida zarovnani constant bufferu
+	if ( !map ) {
+		memcpy( dest, src, constantsSize );
+		return;
+	}
+	// zarovnani pameti nesouhlasi, je provest mapovani
 	for ( int i = 0; i < constantsCount; i++ ) {
-		Constant& constant = constants[ i ];
+		ConstantPlacement& constant = map[ i ];
 		memcpy(
 			static_cast< Byte* >( dest ) + constant.bufferOffset,
 			static_cast< Byte* >( src ) + constant.sysMemOffset,
