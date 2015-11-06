@@ -63,13 +63,15 @@ public:
 	virtual BackBuffer* CreateBackBuffer( Window& window ) override;
 	virtual VertexBuffer* CreateVertexBuffer( const VertexBufferParams& params, const void* const initialData  ) override;
 	virtual IndexBuffer* CreateIndexBuffer( const IndexBufferParams& params, const void* const initialData  ) override;
-	virtual VertexBufferDescriptor*	CreateVertexBufferDescriptor( VertexBuffer* const buffer, const int vertexOffset ) override;
 	virtual TextureBuffer* CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) override;
+	virtual ConstantBuffer* CreateConstantBuffer( const ConstantBufferParams& params, const void* const initialData ) override;
 	virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( TextureBuffer* const buffer ) override;
 	virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( BackBuffer* const buffer ) override;
 	virtual DepthStencilDescriptor* CreateDepthStencilDescriptor( TextureBuffer* const buffer, const DepthStencilDescriptorParams& params ) override;
-	virtual TextureSampler* CreateTextureSampler( const TextureSamplerParams& params ) override;
+	virtual VertexBufferDescriptor* CreateVertexBufferDescriptor( VertexBuffer* const buffer, const int vertexOffset ) override;
+	virtual ConstantBufferDescriptor* CreateConstantBufferDescriptor( ConstantBuffer* const buffer, const ConstantBufferDescriptorParams& params ) override;
 	virtual Shader* CreateShader( const ShaderParams& params ) override;
+	virtual TextureSampler* CreateTextureSampler( const TextureSamplerParams& params ) override;
 
 	virtual int GetMultisampleQuality( const int samplesCount ) const override;
 
@@ -300,29 +302,15 @@ public:
 	// DirectX 11 getters
 	ID3D11Buffer* GetBuffer();
 
-	// Vrati ukazatel na lokalni obraz bufferu (systemova pamet).
-	// Update bufferu se provadi vzdy pomoci tohoto uloziste.
-	//void* GetImage();
-
 private:
 	ID3D11Buffer* buffer;
-
-	// Lokalni obraz bufferu. Update bufferu se provadi vzdy pomoci tohoto uloziste
-	void *image;
 };
 
 class DX11ConstantBufferDescriptor: public ConstantBufferDescriptor {
 public:
 	DX11ConstantBufferDescriptor();
 	~DX11ConstantBufferDescriptor();
-	
-	bool Create(
-		ConstantBuffer* const _constantBuffer,
-		const char* const _bufferName,
-		Shader* const _shader,
-		const ShaderConstant* const _constants,
-		const int _constantsCount
-	);
+	bool Create( ConstantBuffer* const constantBuffer, const ConstantBufferDescriptorParams &params );
 
 	void MapConstants( void* const src, void* const dest ) const;
 

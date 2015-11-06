@@ -22,9 +22,11 @@ namespace RenderInterface {
 	class VertexBufferDescriptor;
 	class IndexBuffer;
 	class IndexBufferDescriptor;
+	class ConstantBuffer;
+	class ConstantBufferDescriptor;
 	class Shader;
 
-	// Render Interface global constants
+	// Render Interface constants
 	const int MAX_RENDER_TARGETS = 8;
 	const int MAX_MULTISAMPLE_QUALITY = -1;
 	const int MAX_TEXTURE_LOD = -1;
@@ -37,7 +39,7 @@ namespace RenderInterface {
 	};
 	
 	// Vytvori device objekt implementovany v DirectX 11
-	Device* DX11CreateDevice( const DX11CreateDeviceParams &params );
+	Device* DX11CreateDevice( const DX11CreateDeviceParams& params );
 	
 	// Format dat ulozenych v bufferu
 	enum class Format {
@@ -254,6 +256,14 @@ namespace RenderInterface {
 		int align;
 	};
 
+	// parametry funkce CreateConstantBufferDescriptor
+	struct ConstantBufferDescriptorParams {
+		Shader* shader;
+		const char* bufferObject;
+		ShaderConstant* const constants;
+		int constantsCount;
+	};
+
 	enum class ShaderType {
 		UNDEFINED,
 		VERTEX_SHADER,
@@ -297,21 +307,12 @@ namespace RenderInterface {
 	/*
 	DEVICE CREATE TARGETS:
 
-	BlendState
-	ClassLinkage
-	ComputeShader
 	Counter
-	DomainShader
-	GeometryShader
 	GeometryShaderWithStreamOutput
-	HullShader
 	InputLayout
-	PixelShader
 	Predicate
 	Query
-	RasterizerState
 	UnorderedAccessView
-	VertexShader
 	*/
 
 	/*
@@ -342,19 +343,27 @@ namespace RenderInterface {
 	*/
 	class Device: public DeviceObject {
 	public:
-		// vytvareni device objektu
-		virtual CommandInterface*		CreateCommandInterface() = 0;
-		virtual Display*				CreateDisplay( const int outputId ) = 0;
-		virtual BackBuffer*				CreateBackBuffer( Window& window ) = 0;
-		virtual VertexBuffer*			CreateVertexBuffer( const VertexBufferParams& params, const void* const initialData  ) = 0;
-		virtual IndexBuffer*			CreateIndexBuffer( const IndexBufferParams& params, const void* const initialData  ) = 0;
-		virtual VertexBufferDescriptor*	CreateVertexBufferDescriptor( VertexBuffer* const buffer, const int vertexOffset ) = 0;
-		virtual TextureBuffer*			CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) = 0;
-		virtual RenderTargetDescriptor*	CreateRenderTargetDescriptor( TextureBuffer* const buffer ) = 0;
-		virtual RenderTargetDescriptor*	CreateRenderTargetDescriptor( BackBuffer* const buffer ) = 0;
-		virtual DepthStencilDescriptor*	CreateDepthStencilDescriptor( TextureBuffer* const buffer, const DepthStencilDescriptorParams& params ) = 0;
-		virtual TextureSampler*			CreateTextureSampler( const TextureSamplerParams& params ) = 0;
-		virtual Shader*					CreateShader( const ShaderParams& params ) = 0;
+		virtual CommandInterface* CreateCommandInterface() = 0;
+		virtual Display* CreateDisplay( const int outputId ) = 0;
+
+		// buffers
+		virtual BackBuffer* CreateBackBuffer( Window& window ) = 0;
+		virtual VertexBuffer* CreateVertexBuffer( const VertexBufferParams& params, const void* const initialData  ) = 0;
+		virtual IndexBuffer* CreateIndexBuffer( const IndexBufferParams& params, const void* const initialData  ) = 0;
+		virtual TextureBuffer* CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) = 0;
+		virtual ConstantBuffer* CreateConstantBuffer( const ConstantBufferParams& params, const void* const initialData ) = 0;
+
+		// descriptors
+		virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( TextureBuffer* const buffer ) = 0;
+		virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( BackBuffer* const buffer ) = 0;
+		virtual DepthStencilDescriptor* CreateDepthStencilDescriptor( TextureBuffer* const buffer, const DepthStencilDescriptorParams& params ) = 0;
+		virtual VertexBufferDescriptor* CreateVertexBufferDescriptor( VertexBuffer* const buffer, const int vertexOffset ) = 0;
+		virtual ConstantBufferDescriptor* CreateConstantBufferDescriptor( ConstantBuffer* const buffer, const ConstantBufferDescriptorParams& params ) = 0;
+
+		// shader objects
+		virtual Shader* CreateShader( const ShaderParams& params ) = 0;
+		virtual TextureSampler* CreateTextureSampler( const TextureSamplerParams& params ) = 0;
+
 		/*
 		vrati max quality pro pozadovany pocet msaa level.
 		Ne vsechny karty a ne vsechna api museji podporovat tuto vlastnost, pak musi funkce vracet 1.

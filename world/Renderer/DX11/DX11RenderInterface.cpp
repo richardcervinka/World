@@ -255,6 +255,15 @@ TextureBuffer* DX11Device::CreateTextureBuffer( const TextureBufferParams& param
 	return buffer;
 }
 
+ConstantBuffer* DX11Device::CreateConstantBuffer( const ConstantBufferParams& params, const void* const initialData ) {
+	DX11ConstantBuffer* buffer = new DX11ConstantBuffer();
+	if ( !buffer->Create( device, params, initialData ) ) {
+		delete buffer;
+		return false;
+	}
+	return buffer;
+}
+
 RenderTargetDescriptor* DX11Device::CreateRenderTargetDescriptor( TextureBuffer* const buffer ) {
 	DX11RenderTargetDescriptor* descriptor = new DX11RenderTargetDescriptor();
 	if ( !descriptor->Create( device, buffer ) ) {
@@ -276,6 +285,15 @@ RenderTargetDescriptor* DX11Device::CreateRenderTargetDescriptor( BackBuffer* co
 DepthStencilDescriptor* DX11Device::CreateDepthStencilDescriptor( TextureBuffer* const buffer, const DepthStencilDescriptorParams& params ) {
 	DX11DepthStencilDescriptor* descriptor = new DX11DepthStencilDescriptor();
 	if ( !descriptor->Create( device, buffer, params ) ) {
+		delete descriptor;
+		return nullptr;
+	}
+	return descriptor;
+}
+
+ConstantBufferDescriptor* DX11Device::CreateConstantBufferDescriptor( ConstantBuffer* const buffer, const ConstantBufferDescriptorParams& params ) {
+	DX11ConstantBufferDescriptor* descriptor = new DX11ConstantBufferDescriptor();
+	if ( !descriptor->Create( buffer, params ) ) {
 		delete descriptor;
 		return nullptr;
 	}
@@ -1173,12 +1191,10 @@ DXGI_FORMAT DX11IndexBufferDescriptor::GetDXGIFormat() const {
 
 DX11ConstantBuffer::DX11ConstantBuffer() {
 	buffer = nullptr;
-	image = nullptr;
 }
 
 DX11ConstantBuffer::~DX11ConstantBuffer() {
 	ReleaseCOM( &buffer );
-	delete [] image;
 }
 
 bool DX11ConstantBuffer::Create( ID3D11Device* const device, const ConstantBufferParams& params, const void* const initialData ) {
@@ -1210,8 +1226,6 @@ bool DX11ConstantBuffer::Create( ID3D11Device* const device, const ConstantBuffe
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	// alokovat systemovou pamet pro obraz bufferu 
-	image = _aligned_malloc( byteWidth, 16 );
 
 	this->buffer = buffer;
 	return true;
@@ -1234,18 +1248,12 @@ DX11ConstantBufferDescriptor::~DX11ConstantBufferDescriptor() {
 	ReleaseCOM( &buffer );
 }
 
-bool DX11ConstantBufferDescriptor::Create(
-	ConstantBuffer* const _constantBuffer,
-	const char* const _bufferName,
-	Shader* const _shader,
-	const ShaderConstant* const _constants,
-	const int _constantsCount
-) {
+bool DX11ConstantBufferDescriptor::Create( ConstantBuffer* const constantBuffer, const ConstantBufferDescriptorParams &params ) {
 	HRESULT hresult = 0;
 
 	// get shader code
-	ASSERT_DOWNCAST( _shader, DX11Shader )
-	ID3DBlob* blob = static_cast< DX11Shader* >( _shader )->GetBlob();
+	ASSERT_DOWNCAST( params.shader, DX11Shader )
+	ID3DBlob* blob = static_cast< DX11Shader* >( params.shader )->GetBlob();
 	if ( blob == nullptr ) {
 		return false;
 	}
@@ -1262,15 +1270,15 @@ bool DX11ConstantBufferDescriptor::Create(
 	}
 	// reflect constant buffer
 	ID3D11ShaderReflectionConstantBuffer* cbufferReflector = nullptr;
-	cbufferReflector = reflector->GetConstantBufferByName( _bufferName );
+	cbufferReflector = reflector->GetConstantBufferByName( params.bufferObject );
 
-	std::unique_ptr< ConstantPlacement[] > map( new ConstantPlacement[ _constantsCount ] );
+	std::unique_ptr< ConstantPlacement[] > map( new ConstantPlacement[ params.constantsCount ] );
 	int mapped = 0;
 	int offset = 0;
 	bool aligned = true;
 
-	for ( int i = 0; i < _constantsCount; i++ ) {
-		const ShaderConstant& constant = _constants[ i ];
+	for ( int i = 0; i < params.constantsCount; i++ ) {
+		const ShaderConstant& constant = params.constants[ i ];
 
 		// reflect variable
 		ID3D11ShaderReflectionVariable* variableReflector = nullptr;
@@ -1308,19 +1316,19 @@ bool DX11ConstantBufferDescriptor::Create(
 	reflector->Release();
 
 	// nepodarilo se namapovat vsechny konstanty
-	if ( mapped != _constantsCount ) {
+	if ( mapped != params.constantsCount ) {
 		return false;
 	}
 	// ulozit vysledky
-	this->constantsCount = _constantsCount;
-	this->constantsSize = offset;
-	ASSERT_DOWNCAST( _constantBuffer, DX11ConstantBuffer );
-	this->buffer = static_cast< DX11ConstantBuffer* >( _constantBuffer )->GetBuffer();
+	ASSERT_DOWNCAST( constantBuffer, DX11ConstantBuffer );
+	this->buffer = static_cast< DX11ConstantBuffer* >( constantBuffer )->GetBuffer();
 	this->buffer->AddRef();
+	this->constantsCount = params.constantsCount;
+	this->constantsSize = offset;
 
 	// nesouhlasi zarovnani pameti, ulozit mapu
 	if ( !aligned ) {
-		this->map = map;
+		this->map = std::move( map );
 	}
 	return true;
 }
@@ -1370,7 +1378,7 @@ bool DX11Shader::Compile( ID3D11Device* const device, const ShaderParams& params
 		}
 	}
 	// vytvorit pole D3D_SHADER_MACRO
-	std::unique_ptr< D3D_SHADER_MACRO[] > macros( new D3D_SHADER_MACRO[] );
+	std::unique_ptr< D3D_SHADER_MACRO[] > macros( new D3D_SHADER_MACRO[ definesCount ] );
 	for ( int i = 0; i < definesCount; i++ ) {
 		macros[ i ].Name = params.defines[ i ];
 		macros[ i ].Definition = "0";
@@ -1417,30 +1425,25 @@ bool DX11Shader::Compile( ID3D11Device* const device, const ShaderParams& params
 	}
 	// shader object
 	ID3D11DeviceChild* shader = nullptr;
-	switch ( params.type ) {
-	case ShaderType::VERTEX_SHADER:
+	if ( params.type == ShaderType::VERTEX_SHADER ) {
 		ID3D11VertexShader* vs = nullptr;
 		device->CreateVertexShader( code->GetBufferPointer(), code->GetBufferSize(), NULL, &vs );
 		shader = vs;
-		break;
 
-	case ShaderType::PIXEL_SHADER:
+	} else if ( params.type == ShaderType::PIXEL_SHADER ) {
 		ID3D11PixelShader* ps = nullptr;
 		device->CreatePixelShader( code->GetBufferPointer(), code->GetBufferSize(), NULL, &ps );
 		shader = ps;
-		break;
 
-	case ShaderType::GEOMETRY_SHADER:
+	} else if ( params.type == ShaderType::GEOMETRY_SHADER ) {
 		ID3D11GeometryShader* gs = nullptr;
 		device->CreateGeometryShader( code->GetBufferPointer(), code->GetBufferSize(), NULL, &gs );
 		shader = gs;
-		break;
 	}
 	if ( shader == nullptr ) {
 		ReleaseCOM( &code );
 		return false;
 	}
-
 	// ulozit vysledek
 	this->code = code;
 	this->shader = shader;
