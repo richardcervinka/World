@@ -52,7 +52,7 @@ void DeviceObject::AddRef() {
 }
 
 // TextureBuffer
-
+/*
 TextureBuffer::TextureBuffer() {
 	ZeroMemory( &params, sizeof( params ) );
 }
@@ -102,3 +102,4 @@ bool TextureBuffer::RenderTargetUsable() const {
 void TextureBuffer::SetParams( const TextureBufferParams& params ) {
 	this->params = params;
 }
+*/

@@ -10,21 +10,18 @@ namespace RenderInterface {
 	// forward declarations
 	class Device;
 	class Display;
+	class BackBuffer;
 	class CommandInterface;
 	class CommandList;
-	class TextureBuffer;
-	class BackBuffer;
+	class Buffer;
 	class RenderTargetDescriptor;
 	class TextureDescriptor;
 	class DepthStencilDescriptor;
-	class TextureSampler;
-	class VertexBuffer;
 	class VertexBufferDescriptor;
-	class IndexBuffer;
 	class IndexBufferDescriptor;
-	class ConstantBuffer;
 	class ConstantBufferDescriptor;
 	class Shader;
+	class Sampler;
 
 	// Render Interface constants
 	const int MAX_RENDER_TARGETS = 8;
@@ -103,8 +100,8 @@ namespace RenderInterface {
 		int depth;
 	};
 	
-	// Typ texture bufferu
-	enum class TextureBufferType {
+	// Typ bufferu
+	enum class BufferType {
 		UNDEFINED,
 		TEXTURE_1D,
 		TEXTURE_1D_ARRAY,
@@ -112,7 +109,10 @@ namespace RenderInterface {
 		TEXTURE_2D_ARRAY,
 		TEXTURE_2D_MS,
 		TEXTURE_2D_MS_ARRAY,
-		TEXTURE_3D
+		TEXTURE_3D,
+		VERTEX_BUFFER,
+		INDEX_BUFFER,
+		CONSTANT_BUFFER
 	};
 	
 	/*
@@ -123,7 +123,7 @@ namespace RenderInterface {
 		Format format;
 		BufferUsage usage;
 		BufferAccess access;
-		TextureBufferType type;
+		BufferType type;
 		TextureDimmensions dimmensions;
 		int arraySize;
 		int mipLevels;
@@ -152,7 +152,7 @@ namespace RenderInterface {
 		CLAMP
 	};
 	
-	struct TextureSamplerParams {
+	struct SamplerParams {
 		TextureFilter filter;
 		TextureAddressing uAddressing;
 		TextureAddressing vAddressing;
@@ -348,21 +348,23 @@ namespace RenderInterface {
 
 		// buffers
 		virtual BackBuffer* CreateBackBuffer( Window& window ) = 0;
-		virtual VertexBuffer* CreateVertexBuffer( const VertexBufferParams& params, const void* const initialData  ) = 0;
-		virtual IndexBuffer* CreateIndexBuffer( const IndexBufferParams& params, const void* const initialData  ) = 0;
-		virtual TextureBuffer* CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) = 0;
-		virtual ConstantBuffer* CreateConstantBuffer( const ConstantBufferParams& params, const void* const initialData ) = 0;
+		virtual Buffer* CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) = 0;
+		virtual Buffer* CreateVertexBuffer( const VertexBufferParams& params, const void* const initialData  ) = 0;
+		virtual Buffer* CreateIndexBuffer( const IndexBufferParams& params, const void* const initialData  ) = 0;
+		virtual Buffer* CreateConstantBuffer( const ConstantBufferParams& params, const void* const initialData ) = 0;
 
 		// descriptors
-		virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( TextureBuffer* const buffer ) = 0;
-		virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( BackBuffer* const buffer ) = 0;
-		virtual DepthStencilDescriptor* CreateDepthStencilDescriptor( TextureBuffer* const buffer, const DepthStencilDescriptorParams& params ) = 0;
-		virtual VertexBufferDescriptor* CreateVertexBufferDescriptor( VertexBuffer* const buffer, const int vertexOffset ) = 0;
-		virtual ConstantBufferDescriptor* CreateConstantBufferDescriptor( ConstantBuffer* const buffer, const ConstantBufferDescriptorParams& params ) = 0;
+		virtual TextureDescriptor* CreateTextureDescriptor( Buffer* const textureBuffer ) = 0;
+		virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( BackBuffer* const backBuffer ) = 0;
+		virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( Buffer* const textureBuffer ) = 0;
+		virtual DepthStencilDescriptor* CreateDepthStencilDescriptor( Buffer* const textureBuffer, const DepthStencilDescriptorParams& params ) = 0;
+		virtual VertexBufferDescriptor* CreateVertexBufferDescriptor( Buffer* const vertexBuffer, const int vertexOffset ) = 0;
+		virtual IndexBufferDescriptor* CreateIndexBufferDescriptor( Buffer* const indexBuffer, const int indexOffset ) = 0;
+		virtual ConstantBufferDescriptor* CreateConstantBufferDescriptor( Buffer* const constantBuffer, const ConstantBufferDescriptorParams& params ) = 0;
 
 		// shader objects
 		virtual Shader* CreateShader( const ShaderParams& params ) = 0;
-		virtual TextureSampler* CreateTextureSampler( const TextureSamplerParams& params ) = 0;
+		virtual Sampler* CreateSampler( const SamplerParams& params ) = 0;
 
 		/*
 		vrati max quality pro pozadovany pocet msaa level.
@@ -453,20 +455,30 @@ namespace RenderInterface {
 	};
 
 	/*
+	Buffer je blok pameti rezervovany v pameti graficke karty
+	*/
+	class Buffer: public DeviceObject {
+	public:
+		virtual BufferType GetType() const = 0;
+		virtual Format GetFormat() const = 0;
+		virtual int GetWidth() const = 0;
+		virtual int GetHeight() const = 0;
+		virtual int GetDepth() const = 0;
+		virtual int GetMipLevels() const = 0;
+		virtual int GetArraySize() const = 0;
+		virtual int GetSamplesCount() const = 0;
+		virtual int GetSamplesQuality() const = 0;
+	};
+
+	/*
 	Texture buffer je obecne blok pameti pro ukladani dat textur.
 	*/
+	/*
 	class TextureBuffer: public DeviceObject {
 	public:
-		TextureBuffer();
-
 		// TextureBufferParams member getters
-		const Format GetFormat() const;
-		TextureBufferType GetType() const;
 		int GetDimmension() const;
 		TextureDimmensions GetDimmensions() const;
-		int GetArraySize() const;
-		int GetSamplesCount() const;
-		int GetSamplesQuality() const;
 		bool RenderTargetUsable() const;
 
 	protected:
@@ -476,13 +488,14 @@ namespace RenderInterface {
 	private:
 		TextureBufferParams params;
 	};
+	*/
 
 	/*
 	TextureDescriptor slouzi k bindovani textury do pipeline stage
 	*/
 	class TextureDescriptor: public DeviceObject {
 	public:
-		virtual TextureBuffer* GetBuffer() = 0;
+		virtual Buffer* GetBuffer() = 0;
 	};
 	
 	/*
@@ -491,7 +504,7 @@ namespace RenderInterface {
 	*/
 	class RenderTargetDescriptor: public DeviceObject {
 	public:
-		virtual TextureBuffer* GetBuffer() = 0;
+		virtual Buffer* GetBuffer() = 0;
 	};
 
 	/*
@@ -505,13 +518,14 @@ namespace RenderInterface {
 	/*
 	TextureSampler
 	*/
-	class TextureSampler: public DeviceObject {
+	class Sampler: public DeviceObject {
 	public:
 	};
 
 	/*
 	Vertex buffer
 	*/
+	/*
 	class VertexBuffer: public DeviceObject {
 	public:
 		// Maximalni pocet vertexu ulozenych v bufferu
@@ -523,7 +537,7 @@ namespace RenderInterface {
 		// Velikost bufferu v bajtech
 		virtual int GetByteSize() const = 0;
 	};
-
+	*/
 	/*
 	Vertex buffer descriptor umoznuje nabindovat VertexBuffer do pipeline.
 	*/
@@ -532,6 +546,7 @@ namespace RenderInterface {
 	/*
 	Index buffer, indexy jsou ve formatu Uint32
 	*/
+	/*
 	class IndexBuffer: public DeviceObject {
 	public:
 		// Maximalni pocet indexu ulozenych v bufferu
@@ -543,7 +558,7 @@ namespace RenderInterface {
 		// Format indexu
 		virtual IndexBufferFormat GetFormat() const = 0;
 	};
-
+	*/
 	/*
 	Index buffer descriptor umoznuje nabindovat IndexBuffer do pipeline.
 	*/
@@ -552,10 +567,11 @@ namespace RenderInterface {
 	/*
 	Constant buffer reprezentuje pouze datove uloziste, neobsahuje zadne informace o rozlozeni konstant apod.
 	*/
+	/*
 	class ConstantBuffer: public DeviceObject {
 	public:
 	};
-
+	*/
 	/*
 	Constant buffer descriptor popisuje format, umisteni a usporadani konstant v constant bufferu.
 	Pomoci tohoto objektu jsou data namapovana do bufferu tak, aby odpovidala shaderu.
@@ -574,14 +590,14 @@ namespace RenderInterface {
 	//**************************************************
 
 
-	struct BlendStateDesc {
+	class BlendState {
 	};
 	
 	struct RasterizeStateDes {
 	};
 	
 	struct PipelineStateDescription {
-		BlendStateDesc blendStateDesc;
+		//BlendStateDesc blendStateDesc;
 		//RasterizeStateDesc rasterizeStateDesc;
 	};
 	

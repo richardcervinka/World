@@ -652,6 +652,81 @@ IDXGISwapChain* DX11BackBuffer::GetSwapChain() {
 	return dxgiSwapChain;
 }
 
+// DX11Buffer
+
+DX11Buffer::DX11Buffer() {
+	resource = nullptr;
+	type = BufferType::UNDEFINED;
+	format = Format::UNKNOWN;
+	width = 0;
+	height = 0;
+	depth = 0;
+	mipLevels = 0;
+	arraySize = 0;
+	samplesCount = 0;
+	samplesQuality = 0;
+}
+
+void DX11Buffer::SetBuffer(
+	ID3D11Resource* const resource,
+	const BufferType type,
+	const Format format,
+	const int width,
+	const int height,
+	const int depth,
+	const int mipLevels,
+	const int arraySize,
+	const int samplesCount,
+	const int samplesQuality
+) {
+	this->resource = resource;
+	this->type = type;
+	this->format = format;
+	this->width = width;
+	this->height = height;
+	this->depth = depth;
+	this->mipLevels = mipLevels;
+	this->arraySize = arraySize;
+	this->samplesCount = samplesCount;
+	this->samplesQuality = samplesQuality;
+}
+
+BufferType DX11Buffer::GetType() const {
+	return type;
+}
+
+Format DX11Buffer::GetFormat() const {
+	return format;
+}
+
+int DX11Buffer::GetWidth() const {
+	return width;
+}
+
+int DX11Buffer::GetHeight() const {
+	return height;
+}
+
+int DX11Buffer::GetDepth() const {
+	return depth;
+}
+
+int DX11Buffer::GetMipLevels() const {
+	return mipLevels;
+}
+
+int DX11Buffer::GetArraySize() const {
+	return arraySize;
+}
+
+int DX11Buffer::GetSamplesCount() const {
+	return samplesCount;
+}
+
+int DX11Buffer::GetSamplesQuality() const {
+	return samplesQuality;
+}
+
 // DX11TextureBuffer
 
 DX11TextureBuffer::DX11TextureBuffer() {
@@ -791,6 +866,19 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferP
 ID3D11Resource* DX11TextureBuffer::GetTextureResource() {
 	return texture;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // DX11TextureDescriptor
 
@@ -1333,13 +1421,13 @@ bool DX11ConstantBufferDescriptor::Create( ConstantBuffer* const constantBuffer,
 	return true;
 }
 
-void DX11ConstantBufferDescriptor::MapConstants( void* const src, void* const dest ) const {
+void DX11ConstantBufferDescriptor::UpdateConstants( void* const src, void* const dest ) const {
 	// zarovnani systemove pameti odpovida zarovnani constant bufferu
 	if ( !map ) {
 		memcpy( dest, src, constantsSize );
 		return;
 	}
-	// zarovnani pameti nesouhlasi, je provest mapovani
+	// zarovnani pameti nesouhlasi, provest mapovani
 	for ( int i = 0; i < constantsCount; i++ ) {
 		ConstantPlacement& constant = map[ i ];
 		memcpy(
