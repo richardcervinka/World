@@ -1,7 +1,7 @@
 #pragma once
 
+#include <cmath>
 #include <DirectXMath.h>
-//#include <cmath>
 
 namespace Math {
 	
@@ -96,7 +96,13 @@ namespace Math {
 		return atan2f( y, x );
 	}
 
-	// ------- PRIDAT VEKTOROVE ZPRACOVANI -> SIN PRO 4 HODNOTY... -------
+	// scalar functions
+
+	inline float Log2( const float x ) {
+		return log2( x );
+	}
+
+
 
 	inline bool IsPow2( const int value ) {
 		if ( value <= 0 ) {

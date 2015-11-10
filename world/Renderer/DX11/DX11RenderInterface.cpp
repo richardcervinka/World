@@ -82,7 +82,7 @@ D3D11_FILTER GetTextureFilter( const TextureFilter filter ) {
 	return D3D11_FILTER_MIN_MAG_MIP_POINT;
 }
 
-D3D11_USAGE GetUsage( const BufferUsage usage ) {
+D3D11_USAGE GetDXUsage( const BufferUsage usage ) {
 	switch ( usage ) {
 	case BufferUsage::DRAW:		return D3D11_USAGE_DEFAULT;
 	case BufferUsage::STATIC:	return D3D11_USAGE_IMMUTABLE;
@@ -222,7 +222,7 @@ BackBuffer* DX11Device::CreateBackBuffer( Window& window ) {
 	return backBuffer;
 }
 
-VertexBuffer* DX11Device::CreateVertexBuffer( const VertexBufferParams& params, const void* const initialData  ) {
+Buffer* DX11Device::CreateVertexBuffer( const VertexBufferParams& params, const void* const initialData  ) {
 	DX11VertexBuffer* buffer = new DX11VertexBuffer();
 	if ( !buffer->Create( device, params, initialData ) ) {
 		delete buffer;
@@ -231,7 +231,7 @@ VertexBuffer* DX11Device::CreateVertexBuffer( const VertexBufferParams& params, 
 	return buffer;
 }
 
-IndexBuffer* DX11Device::CreateIndexBuffer( const IndexBufferParams& params, const void* const initialData  ) {
+Buffer* DX11Device::CreateIndexBuffer( const IndexBufferParams& params, const void* const initialData  ) {
 	DX11IndexBuffer* buffer = new DX11IndexBuffer();
 	if ( !buffer->Create( device, params, initialData ) ) {
 		delete buffer;
@@ -246,7 +246,7 @@ VertexBufferDescriptor*	DX11Device::CreateVertexBufferDescriptor( VertexBuffer* 
 	return descriptor;
 }
 
-TextureBuffer* DX11Device::CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) {
+Buffer* DX11Device::CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) {
 	DX11TextureBuffer* buffer = new DX11TextureBuffer();
 	if ( !buffer->Create( device, params, initialData ) ) {
 		delete buffer;
@@ -255,7 +255,7 @@ TextureBuffer* DX11Device::CreateTextureBuffer( const TextureBufferParams& param
 	return buffer;
 }
 
-ConstantBuffer* DX11Device::CreateConstantBuffer( const ConstantBufferParams& params, const void* const initialData ) {
+Buffer* DX11Device::CreateConstantBuffer( const ConstantBufferParams& params, const void* const initialData ) {
 	DX11ConstantBuffer* buffer = new DX11ConstantBuffer();
 	if ( !buffer->Create( device, params, initialData ) ) {
 		delete buffer;
@@ -656,7 +656,46 @@ IDXGISwapChain* DX11BackBuffer::GetSwapChain() {
 
 DX11Buffer::DX11Buffer() {
 	resource = nullptr;
-	type = BufferType::UNDEFINED;
+	ZeroMemory( &bufferInfo, sizeof( bufferInfo ) );
+}
+
+DX11Buffer::~DX11Buffer() {
+	ReleaseCOM( &resource );
+}
+
+void DX11Buffer::SetBuffer( ID3D11Resource* const resource, const BufferInfo& bufferInfo ) {
+	this->resource = resource;
+	this->resource->AddRef();
+	this->bufferInfo = bufferInfo;
+}
+
+void DX11Buffer::GetInfo( BufferInfo& result ) const {
+	result = bufferInfo;
+}
+
+BufferType DX11Buffer::GetType() const {
+	return bufferInfo.type;
+}
+
+int DX11Buffer::GetByteWidth() const {
+	return bufferInfo.byteWidth;
+}
+
+BufferUsage DX11Buffer::GetUsage() const {
+	return bufferInfo.usage;
+}
+
+BufferAccess DX11Buffer::GetAccess() const {
+	return bufferInfo.access;
+}
+
+ID3D11Resource* DX11Buffer::GetResource() {
+	return resource;
+}
+
+// DX11TextureBuffer
+
+DX11TextureBuffer::DX11TextureBuffer() {
 	format = Format::UNKNOWN;
 	width = 0;
 	height = 0;
@@ -667,116 +706,48 @@ DX11Buffer::DX11Buffer() {
 	samplesQuality = 0;
 }
 
-void DX11Buffer::SetBuffer(
-	ID3D11Resource* const resource,
-	const BufferType type,
-	const Format format,
-	const int width,
-	const int height,
-	const int depth,
-	const int mipLevels,
-	const int arraySize,
-	const int samplesCount,
-	const int samplesQuality
-) {
-	this->resource = resource;
-	this->type = type;
-	this->format = format;
-	this->width = width;
-	this->height = height;
-	this->depth = depth;
-	this->mipLevels = mipLevels;
-	this->arraySize = arraySize;
-	this->samplesCount = samplesCount;
-	this->samplesQuality = samplesQuality;
-}
-
-BufferType DX11Buffer::GetType() const {
-	return type;
-}
-
-Format DX11Buffer::GetFormat() const {
-	return format;
-}
-
-int DX11Buffer::GetWidth() const {
-	return width;
-}
-
-int DX11Buffer::GetHeight() const {
-	return height;
-}
-
-int DX11Buffer::GetDepth() const {
-	return depth;
-}
-
-int DX11Buffer::GetMipLevels() const {
-	return mipLevels;
-}
-
-int DX11Buffer::GetArraySize() const {
-	return arraySize;
-}
-
-int DX11Buffer::GetSamplesCount() const {
-	return samplesCount;
-}
-
-int DX11Buffer::GetSamplesQuality() const {
-	return samplesQuality;
-}
-
-// DX11TextureBuffer
-
-DX11TextureBuffer::DX11TextureBuffer() {
-	texture = nullptr;
-}
-
-DX11TextureBuffer::~DX11TextureBuffer() {
-	ReleaseCOM( &texture );
-}
-
 bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferParams& params, const void* const initialData[] ) {
-	D3D11_USAGE usage = GetUsage( params.usage );
-	UINT CPUAccessFlags = GetCPUAccessFlags( params.access );
+	const D3D11_USAGE usage = GetDXUsage( params.usage );
+	const UINT CPUAccessFlags = GetCPUAccessFlags( params.access );
 
 	UINT bindFlags = D3D11_BIND_SHADER_RESOURCE;
-	// render target bind flag
+	// set render target bind flag
 	if ( params.renderTarget ) {
 		bindFlags |= D3D11_BIND_RENDER_TARGET;
 	}
-	// depth stencil bind flag
+	// set depth stencil bind flag
 	if ( params.format == Format::DEPTH_24_UNORM_STENCIL_8_UINT ) {
 		bindFlags |= D3D11_BIND_DEPTH_STENCIL;
 	}
-
+	// subresources temporary
 	std::unique_ptr< D3D11_SUBRESOURCE_DATA[] > subresources( nullptr );
 	
-	// initialize subresources
+	// initialize subresources temporary
 	if ( initialData != nullptr ) {
 		subresources.reset( new D3D11_SUBRESOURCE_DATA[ params.arraySize * params.mipLevels ] );
-		FormatDesc formatDesc = GetFormatDesc( params.format );
-
+		const FormatInfo formatInfo = GetFormatInfo( params.format );
 		int subresourceIndex = 0;
-		for ( int arrayIndex = 0; arrayIndex < params.arraySize; arrayIndex++ ) {
-			TextureDimmensions dimmensions = params.dimmensions;
 
+		// for each texture in texture array
+		for ( int arrayIndex = 0; arrayIndex < params.arraySize; arrayIndex++ ) {
+			int mipWidth = params.width;
+			int mipHeight = params.height;
+
+			// for each mip
 			for ( int mipIndex = 0; mipIndex < params.mipLevels; mipIndex++ ) {
 				// set subresource
+				const int rowPitch = ( formatInfo.blockByteWidth / formatInfo.blockSize ) * mipWidth;
 				subresources[ subresourceIndex ].pSysMem = initialData[ subresourceIndex ];
-				subresources[ subresourceIndex ].SysMemPitch = formatDesc.pointPitch * dimmensions.width;
-				subresources[ subresourceIndex ].SysMemSlicePitch = formatDesc.pointPitch * dimmensions.width * dimmensions.height;
+				subresources[ subresourceIndex ].SysMemPitch = rowPitch;
+				// pouze pro 3D textury, mipHeight neni nutne delit blockSize, protoze 3D textury nepodporuji blokovou kompresi
+				subresources[ subresourceIndex ].SysMemSlicePitch = rowPitch * mipHeight;
 
 				// vypocitat rozmery nasledujici mip urovne
-				if ( dimmensions.width > 1 ) {
-					dimmensions.width /= 2;
+				if ( mipWidth > formatInfo.blockSize ) {
+					mipWidth /= 2;
 				}
-				if ( dimmensions.height > 1 ) {
-					dimmensions.height /= 2;
-				}
-				if ( dimmensions.depth > 1 ) {
-					dimmensions.depth /= 2;
+				if ( mipHeight > formatInfo.blockSize ) {
+					mipHeight /= 2;
 				}
 				// dalsi subresource
 				subresourceIndex += 1;
@@ -784,12 +755,12 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferP
 		}
 	}
 
-	// 1D textures
-	if ( params.type == TextureBufferType::TEXTURE_1D ||
-		 params.type == TextureBufferType::TEXTURE_1D_ARRAY
+	// 1D texture
+	if ( params.type == BufferType::TEXTURE_1D ||
+		 params.type == BufferType::TEXTURE_1D_ARRAY
 	) {
 		D3D11_TEXTURE1D_DESC textureDesc;
-		textureDesc.Width 				= params.dimmensions.width;
+		textureDesc.Width 				= params.width;
 		textureDesc.MipLevels 			= params.mipLevels;
 		textureDesc.ArraySize			= params.arraySize;
 		textureDesc.Format				= GetDXGIFormat( params.format );
@@ -803,20 +774,19 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferP
 		if ( FAILED( hresult ) ) {
 			return false;
 		}
-		this->texture = texture;
-		SetParams( params );
+		SetTextureBuffer( texture, params );
 		return true;
 	}
 
-	// 2D textures
-	if ( params.type == TextureBufferType::TEXTURE_2D ||
-		 params.type == TextureBufferType::TEXTURE_2D_ARRAY  ||
-		 params.type == TextureBufferType::TEXTURE_2D_MS ||
-		 params.type == TextureBufferType::TEXTURE_2D_MS_ARRAY
+	// 2D texture
+	if ( params.type == BufferType::TEXTURE_2D ||
+		 params.type == BufferType::TEXTURE_2D_ARRAY  ||
+		 params.type == BufferType::TEXTURE_2D_MS ||
+		 params.type == BufferType::TEXTURE_2D_MS_ARRAY
 	) {
 		D3D11_TEXTURE2D_DESC textureDesc;
-		textureDesc.Width 				= params.dimmensions.width;
-		textureDesc.Height				= params.dimmensions.height;
+		textureDesc.Width 				= params.width;
+		textureDesc.Height				= params.height;
 		textureDesc.MipLevels 			= params.mipLevels;
 		textureDesc.ArraySize			= params.arraySize;
 		textureDesc.Format				= GetDXGIFormat( params.format );
@@ -832,17 +802,16 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferP
 		if ( FAILED( hresult ) ) {
 			return false;
 		}
-		this->texture = texture;
-		SetParams( params );
+		SetTextureBuffer( texture, params );
 		return true;
 	}
 
 	// 3D texture
-	if ( params.type == TextureBufferType::TEXTURE_3D ) {
+	if ( params.type == BufferType::TEXTURE_3D ) {
 		D3D11_TEXTURE3D_DESC textureDesc;
-		textureDesc.Width 				= params.dimmensions.width;
-		textureDesc.Height				= params.dimmensions.height;
-		textureDesc.Depth				= params.dimmensions.depth;
+		textureDesc.Width 				= params.width;
+		textureDesc.Height				= params.height;
+		textureDesc.Depth				= params.depth;
 		textureDesc.MipLevels 			= params.mipLevels;
 		textureDesc.Format				= GetDXGIFormat( params.format );
 		textureDesc.Usage				= usage;
@@ -855,30 +824,193 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferP
 		if ( FAILED( hresult ) ) {
 			return false;
 		}
-		this->texture = texture;
-		SetParams( params );
+		SetTextureBuffer( texture, params );
 		return true;
 	}
 
+	// nepodporovany typ bufferu
 	return false;
 }
 
-ID3D11Resource* DX11TextureBuffer::GetTextureResource() {
-	return texture;
+void DX11TextureBuffer::SetTextureBuffer( ID3D11Resource* const resource, const TextureBufferParams& params ) {
+	// ulozit atributy texture bufferu
+	format = params.format;
+	width = Math::Max( params.width, 1 );
+	height = Math::Max( params.height, 1 );
+	depth = Math::Max( params.depth, 1 );
+	mipLevels = params.mipLevels;
+	arraySize = params.arraySize;
+	samplesCount = params.samplesCount;
+	samplesQuality = params.samplesQuality;
+
+	// Vypocitat velikost bufferu, rozhrani ID3DTextureXD neposkytuje informaci o velikosti alokovane pameti
+	
+	const FormatInfo formatInfo = GetFormatInfo( params.format );
+	int mipWidth = width;
+	int mipHeight = height;
+	int mipDepth = depth;
+	int mipSliceSize = 0;
+
+	for ( int i = 0; i < params.mipLevels; i++ ) {
+		mipSliceSize += ( mipWidth / formatInfo.blockSize ) * ( mipHeight / formatInfo.blockSize ) * ( mipDepth ) * formatInfo.blockByteWidth;
+
+		if ( mipWidth > formatInfo.blockSize ) {
+			mipWidth /= 2;
+		}
+		if ( mipHeight > formatInfo.blockSize ) {
+			mipHeight /= 2;
+		}
+		if ( mipDepth > 1 ) {
+			mipDepth /= 2;
+		}
+	}
+	int bufferByteWidth = mipSliceSize * params.arraySize;
+
+	// ulozit atributy bufferu
+	BufferInfo bufferInfo;
+	bufferInfo.type = params.type;
+	bufferInfo.byteWidth = bufferByteWidth;
+	bufferInfo.usage = params.usage;
+	bufferInfo.access = params.access;
+	SetBuffer( resource, bufferInfo );
 }
 
+Format DX11TextureBuffer::GetFormat() const {
+	return format;
+}
 
+int DX11TextureBuffer::GetWidth() const {
+	return width;
+}
 
+int DX11TextureBuffer::GetHeight() const {
+	return height;
+}
 
+int DX11TextureBuffer::GetDepth() const {
+	return depth;
+}
 
+int DX11TextureBuffer::GetMipLevels() const {
+	return mipLevels;
+}
 
+int DX11TextureBuffer::GetArraySize() const {
+	return arraySize;
+}
 
+int DX11TextureBuffer::GetSamplesCount() const {
+	return samplesCount;
+}
 
+int DX11TextureBuffer::GetSamplesQuality() const {
+	return samplesQuality;
+}
 
+// DX11VertexBuffer
 
+bool DX11VertexBuffer::Create( ID3D11Device* const device, const VertexBufferParams& params, const void* const initialData ) {
+	D3D11_BUFFER_DESC bufferDesc;
+	bufferDesc.ByteWidth			= static_cast< UINT >( params.vertexSize ) * static_cast< UINT >( params.capacity );
+	bufferDesc.Usage				= GetDXUsage( params.usage );
+	bufferDesc.BindFlags			= D3D11_BIND_VERTEX_BUFFER;
+	bufferDesc.CPUAccessFlags		= GetCPUAccessFlags( params.access );
+	bufferDesc.MiscFlags			= 0;
+	bufferDesc.StructureByteStride	= 0;
 
+	D3D11_SUBRESOURCE_DATA* pData = NULL;
+	D3D11_SUBRESOURCE_DATA data;
+	if ( initialData != nullptr ) {
+		data.pSysMem = initialData;
+		data.SysMemPitch = 0;
+		data.SysMemSlicePitch = 0;
+		pData = &data;
+	}
+	ID3D11Buffer* buffer = nullptr;
+	HRESULT hresult = device->CreateBuffer( &bufferDesc, pData, &buffer );
+	if ( FAILED( hresult ) ) {
+		return false;
+	}
+	BufferInfo bufferInfo;
+	bufferInfo.type = BufferType::VERTEX_BUFFER;
+	bufferInfo.byteWidth = static_cast< int >( bufferDesc.ByteWidth );
+	bufferInfo.usage = params.usage;
+	bufferInfo.access = params.access;
+	SetBuffer( buffer, bufferInfo );
+	return true;
+}
 
+// DX11IndexBuffer
 
+bool DX11IndexBuffer::Create( ID3D11Device* const device, const IndexBufferParams& params, const void* const initialData ) {
+	D3D11_BUFFER_DESC bufferDesc;
+	bufferDesc.ByteWidth			= ( params.format == IndexBufferFormat::UINT_16 ? 2 : 4 ) * static_cast< UINT >( params.capacity );
+	bufferDesc.Usage				= GetDXUsage( params.usage );
+	bufferDesc.BindFlags			= D3D11_BIND_INDEX_BUFFER;
+	bufferDesc.CPUAccessFlags		= GetCPUAccessFlags( params.access );
+	bufferDesc.MiscFlags			= 0;
+	bufferDesc.StructureByteStride	= 0;
+
+	D3D11_SUBRESOURCE_DATA* pData = NULL;
+	D3D11_SUBRESOURCE_DATA data;
+	if ( initialData != nullptr ) {
+		data.pSysMem = initialData;
+		data.SysMemPitch = 0;
+		data.SysMemSlicePitch = 0;
+		pData = &data;
+	}
+	ID3D11Buffer* buffer = nullptr;
+	HRESULT hresult = device->CreateBuffer( &bufferDesc, pData, &buffer );
+	if ( FAILED( hresult ) ) {
+		return false;
+	}
+	BufferInfo bufferInfo;
+	bufferInfo.type = BufferType::INDEX_BUFFER;
+	bufferInfo.byteWidth = static_cast< int >( bufferDesc.ByteWidth );
+	bufferInfo.usage = params.usage;
+	bufferInfo.access = params.access;
+	SetBuffer( buffer, bufferInfo );
+	return true;
+}
+
+// DX11ConstantBuffer
+
+bool DX11ConstantBuffer::Create( ID3D11Device* const device, const ConstantBufferParams& params, const void* const initialData ) {
+	// byte width musi byt nasobek 16
+	UINT byteWidth = static_cast< UINT >( params.size );
+	if ( byteWidth % 16 != 0 ) {
+		byteWidth += 16 - byteWidth % 16;
+	}
+
+	D3D11_BUFFER_DESC bufferDesc;
+	bufferDesc.ByteWidth			= byteWidth;
+	bufferDesc.Usage				= GetDXUsage( params.usage );
+	bufferDesc.BindFlags			= D3D11_BIND_CONSTANT_BUFFER;
+	bufferDesc.CPUAccessFlags		= GetCPUAccessFlags( params.access );
+	bufferDesc.MiscFlags			= 0;
+	bufferDesc.StructureByteStride	= 0;
+
+	D3D11_SUBRESOURCE_DATA* pData = NULL;
+	D3D11_SUBRESOURCE_DATA data;
+	if ( initialData != nullptr ) {
+		data.pSysMem = initialData;
+		data.SysMemPitch = 0;
+		data.SysMemSlicePitch = 0;
+		pData = &data;
+	}
+	ID3D11Buffer* buffer = nullptr;
+	HRESULT hresult = device->CreateBuffer( &bufferDesc, pData, &buffer );
+	if ( FAILED( hresult ) ) {
+		return false;
+	}
+	BufferInfo bufferInfo;
+	bufferInfo.type = BufferType::CONSTANT_BUFFER;
+	bufferInfo.byteWidth = static_cast< int >( bufferDesc.ByteWidth );
+	bufferInfo.usage = params.usage;
+	bufferInfo.access = params.access;
+	SetBuffer( buffer, bufferInfo );
+	return true;
+}
 
 // DX11TextureDescriptor
 
@@ -890,9 +1022,9 @@ DX11TextureDescriptor::~DX11TextureDescriptor() {
 	ReleaseCOM( &view );
 }
 
-bool DX11TextureDescriptor::Create( ID3D11Device* const device, TextureBuffer* const buffer ) {
+bool DX11TextureDescriptor::Create( ID3D11Device* const device, Buffer* const textureBuffer ) {
 	ASSERT_DOWNCAST( buffer, DX11TextureBuffer );
-	ID3D11Resource* resource = static_cast< DX11TextureBuffer* >( buffer )->GetTextureResource();
+	ID3D11Resource* resource = static_cast< DX11TextureBuffer* >( buffer )->GetResource();
 	ID3D11ShaderResourceView* view = nullptr;
 	HRESULT hresult = device->CreateShaderResourceView( resource, NULL, &view );
 	if ( FAILED( hresult ) ) {
@@ -907,7 +1039,7 @@ ID3D11ShaderResourceView* DX11TextureDescriptor::GetView() {
 	return view;
 }
 
-TextureBuffer* DX11TextureDescriptor::GetBuffer() {
+Buffer* DX11TextureDescriptor::GetBuffer() {
 	return buffer;
 }
 
@@ -915,29 +1047,29 @@ TextureBuffer* DX11TextureDescriptor::GetBuffer() {
 
 DX11RenderTargetDescriptor::DX11RenderTargetDescriptor() {
 	view = nullptr;
-	buffer = nullptr;
+	textureBuffer = nullptr;
 }
 
 DX11RenderTargetDescriptor::~DX11RenderTargetDescriptor() {
 	ReleaseCOM( &view );
 }
 
-bool DX11RenderTargetDescriptor::Create( ID3D11Device* const device, TextureBuffer* const buffer ) {
-	ASSERT_DOWNCAST( buffer, DX11TextureBuffer );
-	ID3D11Resource* resource = static_cast< DX11TextureBuffer* >( buffer )->GetTextureResource();
+bool DX11RenderTargetDescriptor::Create( ID3D11Device* const device, Buffer* const textureBuffer ) {
+	ASSERT_DOWNCAST( textureBuffer, DX11TextureBuffer );
+	ID3D11Resource* resource = static_cast< DX11TextureBuffer* >( textureBuffer )->GetResource();
 	ID3D11RenderTargetView* view = nullptr;
 	HRESULT hresult = device->CreateRenderTargetView ( resource, NULL, &view );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
 	this->view = view;
-	this->buffer = buffer;
+	this->textureBuffer = static_cast< DX11TextureBuffer* >( textureBuffer );
 	return true;
 }
 
-bool DX11RenderTargetDescriptor::Create( ID3D11Device* const device, BackBuffer* const buffer ) {
-	ASSERT_DOWNCAST( buffer, DX11BackBuffer );
-	IDXGISwapChain* swapChain = static_cast< DX11BackBuffer* >( buffer )->GetSwapChain();
+bool DX11RenderTargetDescriptor::Create( ID3D11Device* const device, BackBuffer* const backBuffer ) {
+	ASSERT_DOWNCAST( backBuffer, DX11BackBuffer );
+	IDXGISwapChain* swapChain = static_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
 	ID3D11Texture2D* texture = nullptr;
 	HRESULT hresult = 0;
 	hresult = swapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &texture ) );
@@ -951,12 +1083,12 @@ bool DX11RenderTargetDescriptor::Create( ID3D11Device* const device, BackBuffer*
 		return false;
 	}
 	this->view = view;
-	this->buffer = nullptr;
+	this->textureBuffer = nullptr;
 	return true;
 }
 
-TextureBuffer* DX11RenderTargetDescriptor::GetBuffer() {
-	return buffer;
+Buffer* DX11RenderTargetDescriptor::GetBuffer() {
+	return textureBuffer;
 }
 
 ID3D11RenderTargetView* DX11RenderTargetDescriptor::GetView() {
@@ -975,12 +1107,23 @@ DX11DepthStencilDescriptor::~DX11DepthStencilDescriptor() {
 	ReleaseCOM( &view );
 }
 
-bool DX11DepthStencilDescriptor::Create( ID3D11Device* const device, TextureBuffer* const buffer, const DepthStencilDescriptorParams& params ) {
-	if ( buffer->GetFormat() != Format::DEPTH_24_UNORM_STENCIL_8_UINT ) {
+bool DX11DepthStencilDescriptor::Create( ID3D11Device* const device, Buffer* const textureBuffer, const DepthStencilDescriptorParams& params ) {
+	const BufferType bufferType = textureBuffer->GetType();
+
+	// konrola typu bufferu
+	if ( bufferType != BufferType::TEXTURE_2D && bufferType != BufferType::TEXTURE_2D_MS ) {
 		return false;
 	}
-	ASSERT_DOWNCAST( buffer, DX11TextureBuffer );
-	ID3D11Resource* texture = static_cast< DX11TextureBuffer* >( buffer )->GetTextureResource();
+
+	ASSERT_DOWNCAST( textureBuffer, DX11TextureBuffer );
+
+	// format musi byt DEPTH_24_UNORM_STENCIL_8_UINT 
+	const Format format = static_cast< DX11TextureBuffer* >( textureBuffer )->GetFormat();
+	if ( format != Format::DEPTH_24_UNORM_STENCIL_8_UINT ) {
+		return false;
+	}
+
+	ID3D11Resource* texture = static_cast< DX11TextureBuffer* >( textureBuffer )->GetResource();
 	HRESULT hresult = 0;
 
 	// view
@@ -997,18 +1140,13 @@ bool DX11DepthStencilDescriptor::Create( ID3D11Device* const device, TextureBuff
 		viewDesc.Flags |= D3D11_DSV_READ_ONLY_STENCIL;
 	}
 	// view dimension
-	TextureBufferType type = buffer->GetType();
-	if ( type == TextureBufferType::TEXTURE_2D ) {
+	if ( bufferType == BufferType::TEXTURE_2D ) {
 		viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 		viewDesc.Texture2D.MipSlice = 0;
 
-	} else if ( type == TextureBufferType::TEXTURE_2D_MS ) {
+	} else if ( bufferType == BufferType::TEXTURE_2D_MS ) {
 		viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
-
-	} else {
-		// not supported texture dimmension
-		return false;
-	}
+	} 
 
 	ID3D11DepthStencilView* view = nullptr;
 	hresult = device->CreateDepthStencilView( texture, &viewDesc, &view );
@@ -1016,7 +1154,7 @@ bool DX11DepthStencilDescriptor::Create( ID3D11Device* const device, TextureBuff
 		return false;
 	}
 
-	// state
+	// depth stencil state
 
 	D3D11_DEPTH_STENCIL_DESC stateDesc;
 	stateDesc.DepthEnable = static_cast< BOOL >( params.depthUsage != DepthStencilUsage::DISABLED );
@@ -1056,6 +1194,56 @@ ID3D11DepthStencilState* DX11DepthStencilDescriptor::GetState() {
 	return state;
 }
 
+// DX11VertexBufferDescriptor
+
+DX11VertexBufferDescriptor::DX11VertexBufferDescriptor() {
+	buffer = nullptr;
+	offset = 0;
+	stride = 0;
+}
+
+DX11VertexBufferDescriptor::~DX11VertexBufferDescriptor() {
+	ReleaseCOM( &buffer );
+}
+
+bool DX11VertexBufferDescriptor::Create( Buffer* const vertexBuffer, const int vertexOffset ) {
+	// kontrola typu bufferu
+	if ( vertexBuffer->GetType() != BufferType::VERTEX_BUFFER ) {
+		return false;
+	}
+
+	ASSERT_DOWNCAST( vertexBuffer, DX11VertexBuffer );
+	buffer = static_cast< DX11VertexBuffer* >( vertexBuffer )->GetResource();
+	buffer->AddRef();
+	stride = static_cast< UINT >( vertexBuffer->GetVertexSize() );
+	offset = static_cast< UINT >( vertexOffset ) * stride;
+	return true;
+}
+
+ID3D11Buffer* DX11VertexBufferDescriptor::GetBuffer() {
+	return buffer;
+}
+
+UINT DX11VertexBufferDescriptor::GetOffset() const {
+	return offset;
+}
+
+UINT DX11VertexBufferDescriptor::GetStride() const {
+	return stride;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 // DX11TextureSampler
 
 DX11TextureSampler::DX11TextureSampler() {
@@ -1091,148 +1279,6 @@ bool DX11TextureSampler::Create( ID3D11Device* const device, const TextureSample
 
 ID3D11SamplerState* DX11TextureSampler::GetSamplerState() {
 	return sampler;
-}
-
-// DX11VertexBuffer
-
-DX11VertexBuffer::DX11VertexBuffer() {
-	buffer = nullptr;
-	ZeroMemory( &params, sizeof( params ) );
-}
-
-DX11VertexBuffer::~DX11VertexBuffer() {
-	ReleaseCOM( &buffer );
-}
-
-bool DX11VertexBuffer::Create( ID3D11Device* const device, const VertexBufferParams& params, const void* const initialData ) {
-	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.ByteWidth			= static_cast< UINT >( params.vertexSize ) * static_cast< UINT >( params.capacity );
-	bufferDesc.Usage				= GetUsage( params.usage );
-	bufferDesc.BindFlags			= D3D11_BIND_VERTEX_BUFFER;
-	bufferDesc.CPUAccessFlags		= GetCPUAccessFlags( params.access );
-	bufferDesc.MiscFlags			= 0;
-	bufferDesc.StructureByteStride	= 0;
-
-	D3D11_SUBRESOURCE_DATA* pData = NULL;
-	D3D11_SUBRESOURCE_DATA data;
-	if ( initialData != nullptr ) {
-		data.pSysMem = initialData;
-		data.SysMemPitch = 0;
-		data.SysMemSlicePitch = 0;
-		pData = &data;
-	}
-
-	ID3D11Buffer* buffer = nullptr;
-	HRESULT hresult = device->CreateBuffer( &bufferDesc, pData, &buffer );
-	if ( FAILED( hresult ) ) {
-		return false;
-	}
-	this->buffer = buffer;
-	this->params = params;
-	return true;
-}
-
-int DX11VertexBuffer::GetCapacity() const {
-	return params.capacity;
-}
-
-int DX11VertexBuffer::GetVertexSize() const {
-	return params.vertexSize;
-}
-
-int DX11VertexBuffer::GetByteSize() const {
-	return params.vertexSize * params.capacity;
-}
-
-ID3D11Buffer* DX11VertexBuffer::GetBuffer() {
-	return buffer;
-}
-
-// DX11IndexBuffer
-
-DX11IndexBuffer::DX11IndexBuffer() {
-	buffer = nullptr;
-	ZeroMemory( &params, sizeof( params ) );
-}
-
-DX11IndexBuffer::~DX11IndexBuffer() {
-	ReleaseCOM( &buffer );
-}
-
-bool DX11IndexBuffer::Create( ID3D11Device* const device, const IndexBufferParams& params, const void* const initialData ) {
-	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.ByteWidth			= ( params.format == IndexBufferFormat::UINT_16 ? 2 : 4 ) * static_cast< UINT >( params.capacity );
-	bufferDesc.Usage				= GetUsage( params.usage );
-	bufferDesc.BindFlags			= D3D11_BIND_INDEX_BUFFER;
-	bufferDesc.CPUAccessFlags		= GetCPUAccessFlags( params.access );
-	bufferDesc.MiscFlags			= 0;
-	bufferDesc.StructureByteStride	= 0;
-
-	D3D11_SUBRESOURCE_DATA* pData = NULL;
-	D3D11_SUBRESOURCE_DATA data;
-	if ( initialData != nullptr ) {
-		data.pSysMem = initialData;
-		data.SysMemPitch = 0;
-		data.SysMemSlicePitch = 0;
-		pData = &data;
-	}
-
-	ID3D11Buffer* buffer = nullptr;
-	HRESULT hresult = device->CreateBuffer( &bufferDesc, pData, &buffer );
-	if ( FAILED( hresult ) ) {
-		return false;
-	}
-	this->buffer = buffer;
-	this->params = params;
-	return true;
-}
-
-int DX11IndexBuffer::GetCapacity() const {
-	return params.capacity;
-}
-
-int DX11IndexBuffer::GetByteSize() const {
-	return ( params.format == IndexBufferFormat::UINT_16 ? 2 : 4 ) * params.capacity;
-}
-
-IndexBufferFormat DX11IndexBuffer::GetFormat() const {
-	return params.format;
-}
-
-ID3D11Buffer* DX11IndexBuffer::GetBuffer() {
-	return buffer;
-}
-
-// DX11VertexBufferDescriptor
-
-DX11VertexBufferDescriptor::DX11VertexBufferDescriptor() {
-	buffer = nullptr;
-	offset = 0;
-	stride = 0;
-}
-
-DX11VertexBufferDescriptor::~DX11VertexBufferDescriptor() {
-	ReleaseCOM( &buffer );
-}
-
-void DX11VertexBufferDescriptor::Create( VertexBuffer* const vertexBuffer, const int vertexOffset ) {
-	ASSERT_DOWNCAST( vertexBuffer, DX11VertexBuffer );
-	buffer = static_cast< DX11VertexBuffer* >( vertexBuffer )->GetBuffer();
-	buffer->AddRef();
-	stride = static_cast< UINT >( vertexBuffer->GetVertexSize() );
-	offset = static_cast< UINT >( vertexOffset ) * stride;
-}
-
-ID3D11Buffer* DX11VertexBufferDescriptor::GetBuffer() {
-	return buffer;
-}
-
-UINT DX11VertexBufferDescriptor::GetOffset() const {
-	return offset;
-}
-
-UINT DX11VertexBufferDescriptor::GetStride() const {
-	return stride;
 }
 
 // DX11IndexBufferDescriptor
@@ -1273,54 +1319,6 @@ UINT DX11IndexBufferDescriptor::GetOffset() const {
 
 DXGI_FORMAT DX11IndexBufferDescriptor::GetDXGIFormat() const {
 	return format;
-}
-
-// DX11ConstantBuffer
-
-DX11ConstantBuffer::DX11ConstantBuffer() {
-	buffer = nullptr;
-}
-
-DX11ConstantBuffer::~DX11ConstantBuffer() {
-	ReleaseCOM( &buffer );
-}
-
-bool DX11ConstantBuffer::Create( ID3D11Device* const device, const ConstantBufferParams& params, const void* const initialData ) {
-	// byte width musi byt nasobek 16
-	UINT byteWidth = static_cast< UINT >( params.size );
-	if ( byteWidth % 16 != 0 ) {
-		byteWidth += 16 - byteWidth % 16;
-	}
-
-	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.ByteWidth			= byteWidth;
-	bufferDesc.Usage				= GetUsage( params.usage );
-	bufferDesc.BindFlags			= D3D11_BIND_CONSTANT_BUFFER;
-	bufferDesc.CPUAccessFlags		= GetCPUAccessFlags( params.access );
-	bufferDesc.MiscFlags			= 0;
-	bufferDesc.StructureByteStride	= 0;
-
-	D3D11_SUBRESOURCE_DATA* pData = NULL;
-	D3D11_SUBRESOURCE_DATA data;
-	if ( initialData != nullptr ) {
-		data.pSysMem = initialData;
-		data.SysMemPitch = 0;
-		data.SysMemSlicePitch = 0;
-		pData = &data;
-	}
-
-	ID3D11Buffer* buffer = nullptr;
-	HRESULT hresult = device->CreateBuffer( &bufferDesc, pData, &buffer );
-	if ( FAILED( hresult ) ) {
-		return false;
-	}
-
-	this->buffer = buffer;
-	return true;
-}
-
-ID3D11Buffer* DX11ConstantBuffer::GetBuffer() {
-	return buffer;
 }
 
 // DX11ConstantBufferDescriptor

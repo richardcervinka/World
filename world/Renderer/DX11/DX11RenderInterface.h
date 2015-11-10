@@ -13,6 +13,10 @@ class DX11BackBuffer;
 class DX11CommandInterface;
 class DX11CommandList;
 class DX11Buffer;
+class DX11TextureBuffer;
+class DX11VertexBuffer;
+class DX11IndexBuffer;
+class DX11ConstantBuffer;
 class DX11RenderTargetDescriptor;
 class DX11TextureDescriptor;
 class DX11VertexBufferDescriptor;
@@ -132,7 +136,7 @@ public:
 	virtual void Present( const int vsync ) override;
 	virtual void Resize() override;
 	
-	// DirectX 11 getters
+	// implementation interface
 	IDXGISwapChain* GetSwapChain();
 
 private:
@@ -149,33 +153,42 @@ public:
 	~DX11Buffer();
 
 	// implementace rozhrani Buffer
+	virtual void GetInfo( BufferInfo& result ) const override;
 	virtual BufferType GetType() const override;
-	virtual Format GetFormat() const override;
-	virtual int GetWidth() const override;
-	virtual int GetHeight() const override;
-	virtual int GetDepth() const override;
-	virtual int GetMipLevels() const override;
-	virtual int GetArraySize() const override;
-	virtual int GetSamplesCount() const override;
-	virtual int GetSamplesQuality() const override;
+	virtual int GetByteWidth() const override;
+	virtual BufferUsage GetUsage() const override;
+	virtual BufferAccess GetAccess() const override;
+
+	// implementation interface
+	ID3D11Resource* GetResource();
 
 protected:
-	void SetBuffer(
-		ID3D11Resource* const resource,
-		const BufferType type,
-		const Format format,
-		const int width,
-		const int height,
-		const int depth,
-		const int mipLevels,
-		const int arraySize,
-		const int samplesCount,
-		const int samplesQuality
-	);
+	void SetBuffer( ID3D11Resource* const resource, const BufferInfo& bufferInfo );
 
 private:
 	ID3D11Resource* resource;
-	BufferType type;
+	BufferInfo bufferInfo;
+};
+
+class DX11TextureBuffer: public DX11Buffer {
+public:
+	DX11TextureBuffer();
+	bool Create( ID3D11Device* const device, const TextureBufferParams& params, const void* const initialData[] );
+
+	// implementation interface
+	Format GetFormat() const;
+	int GetWidth() const;
+	int GetHeight() const;
+	int GetDepth() const;
+	int GetMipLevels() const;
+	int GetArraySize() const;
+	int GetSamplesCount() const;
+	int GetSamplesQuality() const;
+
+private:
+	void SetTextureBuffer( ID3D11Resource* const resource, const TextureBufferParams& params );
+
+private:
 	Format format;
 	int width;
 	int height;
@@ -186,85 +199,32 @@ private:
 	int samplesQuality;
 };
 
-class DX11TextureBuffer: public DX11Buffer {
+class DX11VertexBuffer: public DX11Buffer {
 public:
-	DX11TextureBuffer();
-	~DX11TextureBuffer();
-	bool Create( ID3D11Device* const device, const TextureBufferParams& params, const void* const initialData[] );
-
-	// DirectX 11 getters
-	ID3D11Resource* GetResource();
-	
-private:
-	ID3D11Resource* texture;
-};
-
-/*
-class DX11VertexBuffer: public VertexBuffer {
-public:
-	DX11VertexBuffer();
-	~DX11VertexBuffer();
 	bool Create( ID3D11Device* const device, const VertexBufferParams& params, const void* const initialData );
-
-	// implementace rozhrani VertexBuffer
-	virtual int GetCapacity() const override;
-	virtual int GetVertexSize() const override;
-	virtual int GetByteSize() const override;
-
-	// DirectX 11 getters
-	ID3D11Buffer* GetBuffer();
-
-private:
-	ID3D11Buffer* buffer;
-	VertexBufferParams params;
 };
-*/
-/*
-class DX11IndexBuffer: public IndexBuffer {
+
+class DX11IndexBuffer: public DX11Buffer {
 public:
-	DX11IndexBuffer();
-	~DX11IndexBuffer();
 	bool Create( ID3D11Device* const device, const IndexBufferParams& params, const void* const initialData );
-
-	// implementace rozhrani IndexBuffer
-	virtual int GetCapacity() const override;
-	virtual int GetByteSize() const override;
-	virtual IndexBufferFormat GetFormat() const override;
-
-	// DirectX 11 getters
-	ID3D11Buffer* GetBuffer();
-
-private:
-	ID3D11Buffer* buffer;
-	IndexBufferParams params;
 };
-*/
-/*
-class DX11ConstantBuffer: public ConstantBuffer {
+
+class DX11ConstantBuffer: public DX11Buffer {
 public:
-	DX11ConstantBuffer();
-	~DX11ConstantBuffer();
 	bool Create( ID3D11Device* const device, const ConstantBufferParams& params, const void* const initialData );
-
-	// DirectX 11 getters
-	ID3D11Buffer* GetBuffer();
-
-private:
-	ID3D11Buffer* buffer;
 };
-*/
-
-
 
 class DX11TextureDescriptor: public TextureDescriptor {
 public:
 	DX11TextureDescriptor();
 	virtual ~DX11TextureDescriptor();
-	bool Create( ID3D11Device* const device, TextureBuffer* const buffer );
-	ID3D11ShaderResourceView* GetView();
+	bool Create( ID3D11Device* const device, Buffer* const textureBuffer );
 
 	// implementace rozhrani TextureDescriptor
-	TextureBuffer* GetBuffer() override;
+	Buffer* GetBuffer() override;
+
+	// implementation interface
+	ID3D11ShaderResourceView* GetView();
 
 private:
 	ID3D11ShaderResourceView* view;
@@ -275,27 +235,27 @@ class DX11RenderTargetDescriptor: public RenderTargetDescriptor {
 public:
 	DX11RenderTargetDescriptor();
 	virtual ~DX11RenderTargetDescriptor();
-	bool Create( ID3D11Device* const device, TextureBuffer* const buffer );
-	bool Create( ID3D11Device* const device, BackBuffer* const buffer );
+	bool Create( ID3D11Device* const device, Buffer* const textureBuffer );
+	bool Create( ID3D11Device* const device, BackBuffer* const backBuffer );
 
 	// implementace rozhrani RenderTargetDescriptor
-	virtual TextureBuffer* GetBuffer() override;
+	virtual Buffer* GetBuffer() override;
 
-	// DirectX 11 getters
+	// implementation interface
 	ID3D11RenderTargetView* GetView();
 
 private:
 	ID3D11RenderTargetView* view;
-	TextureBuffer* buffer;
+	DX11TextureBuffer* textureBuffer;
 };
 
 class DX11DepthStencilDescriptor: public DepthStencilDescriptor {
 public:
 	DX11DepthStencilDescriptor();
 	~DX11DepthStencilDescriptor();
-	bool Create( ID3D11Device* const device, TextureBuffer* const buffer, const DepthStencilDescriptorParams& params );
+	bool Create( ID3D11Device* const device, Buffer* const textureBuffer, const DepthStencilDescriptorParams& params );
 
-	// DirectX 11 getters
+	// implementation interface
 	ID3D11DepthStencilView* GetView();
 	ID3D11DepthStencilState* GetState();
 
@@ -308,9 +268,9 @@ class DX11VertexBufferDescriptor: public VertexBufferDescriptor {
 public:
 	DX11VertexBufferDescriptor();
 	~DX11VertexBufferDescriptor();
-	void Create( VertexBuffer* const vertexBuffer, const int vertexOffset );
+	bool Create( Buffer* const vertexBuffer, const int vertexOffset );
 
-	// DirectX 11 getters
+	// implementation interface
 	ID3D11Buffer* GetBuffer();
 	UINT GetOffset() const;
 	UINT GetStride() const;
@@ -320,6 +280,15 @@ private:
 	UINT offset;
 	UINT stride;
 };
+
+
+
+
+
+
+
+
+
 
 class DX11IndexBufferDescriptor: public IndexBufferDescriptor {
 public:

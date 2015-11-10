@@ -14,8 +14,8 @@ namespace RenderInterface {
 	class CommandInterface;
 	class CommandList;
 	class Buffer;
-	class RenderTargetDescriptor;
 	class TextureDescriptor;
+	class RenderTargetDescriptor;
 	class DepthStencilDescriptor;
 	class VertexBufferDescriptor;
 	class IndexBufferDescriptor;
@@ -55,18 +55,23 @@ namespace RenderInterface {
 	
 	/*
 	Formaty, ktere maji ruzny pocet bitu na jednotlive kanaly vraceji hodnotu channels = 1
-	pr. D24_UNORM_S8_UINT: channels = 1, channelBits = 32
+	pozn.:
+	pointPitch = blockByteWidth / blockSize
+	rowPitch = pointPitch * textureWidth
 	*/
-	struct FormatDesc {
+	struct FormatInfo {
 		Format format;
-		int channelCount;	// pocet kanalu na pixel
-		int channelBits;	// pocet bitu na kanal
-		int pointPitch; 	// slouzi k vypoctu row pitch; rowPitch = pointPitch * textureWidth
+		int channelCount;		// pocet kanalu na pixel
+		int channelByteWidth;	// pocet bytes na kanal
+		int blockSize;			// velikost bloku
+		int blockByteWidth;		// pocet bytes na blok
 	};
 	
-	const FormatDesc GetFormatDesc( const Format format );
+	const FormatInfo GetFormatInfo( const Format format );
 	
-	// Fullscreen rezim displeje
+	/*
+	Fullscreen rezim displeje
+	*/
 	struct DisplayMode {
 		int width;
 		int height;
@@ -74,7 +79,9 @@ namespace RenderInterface {
 		int refreshRateDenominator;
 	};
 
-	// Usage popisuje jakym zpusobem pristupuje GPU a CPU do bufferu
+	/*
+	Usage popisuje jakym zpusobem pristupuje GPU a CPU do bufferu
+	*/
 	enum class BufferUsage {
 		DRAW,		// GPU ma plny pristup do bufferu (CPU nema zadny pristup), typicke pouziti render target buffer
 		STATIC,		// GPU readonly, buffer musi byt inicializovan pri svem vytvoreni, obsah nemuze byt nijak zmenen
@@ -93,14 +100,9 @@ namespace RenderInterface {
 		READ_WRITE	= READ | WRITE
 	};
 
-	// Rozmery texture bufferu. Pokud neni rozmer definovan, je jeho hodnota 1.
-	struct TextureDimmensions {
-		int width;
-		int height;
-		int depth;
-	};
-	
-	// Typ bufferu
+	/*
+	Typ bufferu
+	*/
 	enum class BufferType {
 		UNDEFINED,
 		TEXTURE_1D,
@@ -114,25 +116,48 @@ namespace RenderInterface {
 		INDEX_BUFFER,
 		CONSTANT_BUFFER
 	};
+
+	/*
+	Informace o bufferu, parametry konkretnich bufferu (napr texture buffer) musi spravovat klient
+	*/
+	struct BufferInfo {
+		BufferType type;		// typ bufferu
+		int byteWidth;			// minimalni velikost bufferu v bytech, realna velikost bufferu muze byt vetsi
+		BufferUsage usage;		// zpusob pristupu do bufferu
+		BufferAccess access;	// cpu access
+	};
+
+	/*
+	Rozmery textury. Pokud neni rozmer definovan, ma hodnotu 1.
+	*/
+	struct TextureDimmensions {
+		int width;
+		int height;
+		int depth;
+	};
 	
 	/*
 	Parametry funkce Device::CreateTextureBuffer()
 	Generovani mipmap pri vytvareni texture bufferu je zakazane, pocet mip urovni musi byt znamy pred vytvorenim objektu.
 	*/
 	struct TextureBufferParams {
+		BufferType type;
 		Format format;
 		BufferUsage usage;
 		BufferAccess access;
-		BufferType type;
-		TextureDimmensions dimmensions;
-		int arraySize;
+		int width;
+		int height;
+		int depth;
 		int mipLevels;
+		int arraySize;
 		int samplesCount;
 		int samplesQuality;
 		bool renderTarget;
 	};
 
-	// Filtrovani textur
+	/*
+	Filtrovani textur
+	*/
 	enum class TextureFilter {
 		POINT,
 		POINT_MIP_LINEAR,
@@ -145,7 +170,9 @@ namespace RenderInterface {
 		ANISOTROPIC
 	};
 	
-	// Adresovani textur
+	/*
+	Adresovani textur
+	*/
 	enum class TextureAddressing {
 		WRAP,
 		MIRROR,
@@ -459,36 +486,12 @@ namespace RenderInterface {
 	*/
 	class Buffer: public DeviceObject {
 	public:
+		virtual void GetInfo( BufferInfo& result ) const = 0;
 		virtual BufferType GetType() const = 0;
-		virtual Format GetFormat() const = 0;
-		virtual int GetWidth() const = 0;
-		virtual int GetHeight() const = 0;
-		virtual int GetDepth() const = 0;
-		virtual int GetMipLevels() const = 0;
-		virtual int GetArraySize() const = 0;
-		virtual int GetSamplesCount() const = 0;
-		virtual int GetSamplesQuality() const = 0;
+		virtual int GetByteWidth() const = 0;
+		virtual BufferUsage GetUsage() const = 0;
+		virtual BufferAccess GetAccess() const = 0;
 	};
-
-	/*
-	Texture buffer je obecne blok pameti pro ukladani dat textur.
-	*/
-	/*
-	class TextureBuffer: public DeviceObject {
-	public:
-		// TextureBufferParams member getters
-		int GetDimmension() const;
-		TextureDimmensions GetDimmensions() const;
-		bool RenderTargetUsable() const;
-
-	protected:
-		// Odvozena trida nema pristup k privatni promenne desc, rozhrani proto poskytuje setter
-		void SetParams( const TextureBufferParams& params );
-
-	private:
-		TextureBufferParams params;
-	};
-	*/
 
 	/*
 	TextureDescriptor slouzi k bindovani textury do pipeline stage
@@ -523,55 +526,15 @@ namespace RenderInterface {
 	};
 
 	/*
-	Vertex buffer
-	*/
-	/*
-	class VertexBuffer: public DeviceObject {
-	public:
-		// Maximalni pocet vertexu ulozenych v bufferu
-		virtual int GetCapacity() const = 0;
-
-		// Velikost vertexu v bajtech
-		virtual int GetVertexSize() const = 0;
-
-		// Velikost bufferu v bajtech
-		virtual int GetByteSize() const = 0;
-	};
-	*/
-	/*
 	Vertex buffer descriptor umoznuje nabindovat VertexBuffer do pipeline.
 	*/
 	class VertexBufferDescriptor: public DeviceObject {};
 
 	/*
-	Index buffer, indexy jsou ve formatu Uint32
-	*/
-	/*
-	class IndexBuffer: public DeviceObject {
-	public:
-		// Maximalni pocet indexu ulozenych v bufferu
-		virtual int GetCapacity() const = 0;
-
-		// Velikost bufferu v bajtech
-		virtual int GetByteSize() const = 0;
-
-		// Format indexu
-		virtual IndexBufferFormat GetFormat() const = 0;
-	};
-	*/
-	/*
 	Index buffer descriptor umoznuje nabindovat IndexBuffer do pipeline.
 	*/
 	class IndexBufferDescriptor: public DeviceObject {};
 
-	/*
-	Constant buffer reprezentuje pouze datove uloziste, neobsahuje zadne informace o rozlozeni konstant apod.
-	*/
-	/*
-	class ConstantBuffer: public DeviceObject {
-	public:
-	};
-	*/
 	/*
 	Constant buffer descriptor popisuje format, umisteni a usporadani konstant v constant bufferu.
 	Pomoci tohoto objektu jsou data namapovana do bufferu tak, aby odpovidala shaderu.
