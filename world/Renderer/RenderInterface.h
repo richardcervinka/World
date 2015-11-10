@@ -232,18 +232,20 @@ namespace RenderInterface {
 	};
 
 	//Parametry funkce Device::CreateVertexBuffer()
+	/*
 	struct VertexBufferParams {
 		int vertexSize;
 		int capacity;
 		BufferUsage usage;
 		BufferAccess access;
 	};
+	*/
 
 	enum class IndexBufferFormat {
 		UINT_16,
 		UINT_32
 	};
-
+	/*
 	//Parametry funkce Device::CreateIndexBuffer()
 	struct IndexBufferParams {
 		IndexBufferFormat format;
@@ -251,13 +253,16 @@ namespace RenderInterface {
 		BufferUsage usage;
 		BufferAccess access;
 	};
-
+	*/
+	/*
 	//Parametry funkce Device::CreateConstantBuffer()
 	struct ConstantBufferParams {
 		int size;
 		BufferUsage usage;
 		BufferAccess access;
 	};
+	*/
+
 
 	/*
 	ShaderConstant (konstanta constant bufferu)
@@ -376,9 +381,9 @@ namespace RenderInterface {
 		// buffers
 		virtual BackBuffer* CreateBackBuffer( Window& window ) = 0;
 		virtual Buffer* CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) = 0;
-		virtual Buffer* CreateVertexBuffer( const VertexBufferParams& params, const void* const initialData  ) = 0;
-		virtual Buffer* CreateIndexBuffer( const IndexBufferParams& params, const void* const initialData  ) = 0;
-		virtual Buffer* CreateConstantBuffer( const ConstantBufferParams& params, const void* const initialData ) = 0;
+		virtual Buffer* CreateVertexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) = 0;
+		virtual Buffer* CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) = 0;
+		virtual Buffer* CreateConstantBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData ) = 0;
 
 		// descriptors
 		virtual TextureDescriptor* CreateTextureDescriptor( Buffer* const textureBuffer ) = 0;
