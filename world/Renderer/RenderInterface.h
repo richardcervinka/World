@@ -38,7 +38,19 @@ namespace RenderInterface {
 	// Vytvori device objekt implementovany v DirectX 11
 	Device* DX11CreateDevice( const DX11CreateDeviceParams& params );
 	
-	// Format dat ulozenych v bufferu
+	/*
+	Priznaky se doporucuje definovat nasledujicim zpusobem:
+
+	namespace CustomFlags {
+		const Flags FLAG1 = 0x01;
+		const Flags FLAG2 = 0x02;
+	}
+	*/
+	typedef uint32_t Flags;
+
+	/*
+	Format dat ulozenych v bufferu
+	*/
 	enum class Format {
 		UNKNOWN = 0,
 		R8G8B8A8_UNORM,
@@ -47,20 +59,20 @@ namespace RenderInterface {
 		R16G16_FLOAT,
 		R8_UNORM,
 		R16_FLOAT,
+		R16_UINT,
 		R32_FLOAT,
+		R32_UINT,
 		DEPTH_24_UNORM_STENCIL_8_UINT,
 		BC1,
 		BC3
 	};
 	
 	/*
-	Formaty, ktere maji ruzny pocet bitu na jednotlive kanaly vraceji hodnotu channels = 1
-	pozn.:
+	FormatInfo:
 	pointPitch = blockByteWidth / blockSize
 	rowPitch = pointPitch * textureWidth
 	*/
 	struct FormatInfo {
-		Format format;
 		int channelCount;		// pocet kanalu na pixel
 		int channelByteWidth;	// pocet bytes na kanal
 		int blockSize;			// velikost bloku
@@ -137,6 +149,13 @@ namespace RenderInterface {
 	};
 	
 	/*
+	Priznaky texture bufferu
+	*/
+	namespace TextureBufferFlags {
+		const Flags RENDER_TARGET = 0x01;
+	}
+
+	/*
 	Parametry funkce Device::CreateTextureBuffer()
 	Generovani mipmap pri vytvareni texture bufferu je zakazane, pocet mip urovni musi byt znamy pred vytvorenim objektu.
 	*/
@@ -152,7 +171,7 @@ namespace RenderInterface {
 		int arraySize;
 		int samplesCount;
 		int samplesQuality;
-		bool renderTarget;
+		Flags flags;
 	};
 
 	/*
@@ -169,7 +188,7 @@ namespace RenderInterface {
 		LINEAR,
 		ANISOTROPIC
 	};
-	
+
 	/*
 	Adresovani textur
 	*/
@@ -211,7 +230,7 @@ namespace RenderInterface {
 		DECR
 	};
 
-	enum DepthStencilUsage {
+	enum class DepthStencilUsage {
 		DISABLED,	// no depth or stencil tests performed
 		STANDARD,	// read write depth stencil usage
 		READONLY	// readonly depth stencil usage
@@ -231,38 +250,17 @@ namespace RenderInterface {
 		StencilOperation stencilDepthFailOp;	// default: KEEP
 	};
 
-	//Parametry funkce Device::CreateVertexBuffer()
-	/*
-	struct VertexBufferParams {
-		int vertexSize;
-		int capacity;
-		BufferUsage usage;
-		BufferAccess access;
+	struct VertexBufferDescriptorParams {
+		int vertexByteWidth;
+		int verticesOffset;
+		int verticesCount;
 	};
-	*/
 
-	enum class IndexBufferFormat {
-		UINT_16,
-		UINT_32
+	struct IndexBufferDescriptorParams {
+		Format format;
+		int indicesOffset;
+		int indicesCount;
 	};
-	/*
-	//Parametry funkce Device::CreateIndexBuffer()
-	struct IndexBufferParams {
-		IndexBufferFormat format;
-		int capacity;
-		BufferUsage usage;
-		BufferAccess access;
-	};
-	*/
-	/*
-	//Parametry funkce Device::CreateConstantBuffer()
-	struct ConstantBufferParams {
-		int size;
-		BufferUsage usage;
-		BufferAccess access;
-	};
-	*/
-
 
 	/*
 	ShaderConstant (konstanta constant bufferu)
@@ -294,6 +292,7 @@ namespace RenderInterface {
 		const char* bufferObject;
 		ShaderConstant* const constants;
 		int constantsCount;
+		int slot;
 	};
 
 	enum class ShaderType {
@@ -328,28 +327,17 @@ namespace RenderInterface {
 		ShaderOptimization optimization;
 	};
 
-	// Identifikace shader stag, hodnoty lze kombinovat operatorem OR
 	/*
-	typedef unsigned int ShaderStage;
-	const ShaderStage SHADER_STAGE_VERTEX_SHADER	= 0x0001;
-	const ShaderStage SHADER_STAGE_PIXEL_SHADER		= 0x0002;
-	const ShaderStage SHADER_STAGE_GEOMETRY_SHADER	= 0x0004;
+	Hodnoty vracene funkci CommandInterface::Map()
 	*/
-
-	/*
-	DEVICE CREATE TARGETS:
-
-	Counter
-	GeometryShaderWithStreamOutput
-	InputLayout
-	Predicate
-	Query
-	UnorderedAccessView
-	*/
+	struct BufferMap {
+		void* data;
+		int byteWidth;
+	};
 
 	/*
 	Zakladni trida pro vsechny objekty vytvarene tridou Device.
-	Objekt Device je factory vsech device objektu, device objekty se uvolnuji metodou Release()
+	Device objekty se uvolnuji metodou Release().
 	*/
 	class DeviceObject {
 	public:
@@ -375,26 +363,26 @@ namespace RenderInterface {
 	*/
 	class Device: public DeviceObject {
 	public:
-		virtual CommandInterface* CreateCommandInterface() = 0;
-		virtual Display* CreateDisplay( const int outputId ) = 0;
-
 		// buffers
 		virtual BackBuffer* CreateBackBuffer( Window& window ) = 0;
 		virtual Buffer* CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) = 0;
 		virtual Buffer* CreateVertexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) = 0;
 		virtual Buffer* CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) = 0;
 		virtual Buffer* CreateConstantBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData ) = 0;
+		// CreateTextureCubeBuffer
 
 		// descriptors
-		virtual TextureDescriptor* CreateTextureDescriptor( Buffer* const textureBuffer ) = 0;
 		virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( BackBuffer* const backBuffer ) = 0;
 		virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( Buffer* const textureBuffer ) = 0;
+		virtual TextureDescriptor* CreateTextureDescriptor( Buffer* const textureBuffer ) = 0;
 		virtual DepthStencilDescriptor* CreateDepthStencilDescriptor( Buffer* const textureBuffer, const DepthStencilDescriptorParams& params ) = 0;
-		virtual VertexBufferDescriptor* CreateVertexBufferDescriptor( Buffer* const vertexBuffer, const int vertexOffset ) = 0;
-		virtual IndexBufferDescriptor* CreateIndexBufferDescriptor( Buffer* const indexBuffer, const int indexOffset ) = 0;
+		virtual VertexBufferDescriptor* CreateVertexBufferDescriptor( Buffer* const vertexBuffer, const VertexBufferDescriptorParams& params ) = 0;
+		virtual IndexBufferDescriptor* CreateIndexBufferDescriptor( Buffer* const indexBuffer, const IndexBufferDescriptorParams& params ) = 0;
 		virtual ConstantBufferDescriptor* CreateConstantBufferDescriptor( Buffer* const constantBuffer, const ConstantBufferDescriptorParams& params ) = 0;
 
-		// shader objects
+		// objects
+		virtual CommandInterface* CreateCommandInterface() = 0;
+		virtual Display* CreateDisplay( const int outputId ) = 0;
 		virtual Shader* CreateShader( const ShaderParams& params ) = 0;
 		virtual Sampler* CreateSampler( const SamplerParams& params ) = 0;
 
@@ -443,6 +431,10 @@ namespace RenderInterface {
 
 		// Odesle obsah command bufferu do GPU
 		virtual void Flush() = 0;
+
+		// vrati ukazatel bufferu, parametr subresource se pouziva u texture bufferu, jinak musi byt 0
+		//virtual bool Map( Buffer* const buffer, const int subresource, const BufferMapType type, BufferMap& result ) = 0;
+
 	};
 	
 	/*
@@ -499,36 +491,27 @@ namespace RenderInterface {
 	};
 
 	/*
-	TextureDescriptor slouzi k bindovani textury do pipeline stage
-	*/
-	class TextureDescriptor: public DeviceObject {
-	public:
-		virtual Buffer* GetBuffer() = 0;
-	};
-	
-	/*
 	Umoznuje nabindovat texturu jako render target.
 	Pouze nasledujici textury muzou byt pouzity jako render target: TEXTURE_1D, TEXTURE_2D, TEXTURE_2D_MS
 	*/
-	class RenderTargetDescriptor: public DeviceObject {
-	public:
-		virtual Buffer* GetBuffer() = 0;
-	};
+	class RenderTargetDescriptor: public DeviceObject {};
 
+	/*
+	TextureDescriptor slouzi k bindovani textury do pipeline stage
+	*/
+	class TextureDescriptor: public DeviceObject {};
+	
 	/*
 	Umoznuje nabindovat DepthStencilBuffer do pipeline.
 	Popisuje konfiguraci depth stencil testu a pristup do texture bufferu.
 	Podporovane formaty asociovaneho texture bufferu: TEXTURE_2D a TEXTURE_2D_MS
 	*/
-	class DepthStencilDescriptor: public DeviceObject {
-	};
+	class DepthStencilDescriptor: public DeviceObject {};
 	
 	/*
 	TextureSampler
 	*/
-	class Sampler: public DeviceObject {
-	public:
-	};
+	class Sampler: public DeviceObject {};
 
 	/*
 	Vertex buffer descriptor umoznuje nabindovat VertexBuffer do pipeline.
@@ -547,7 +530,7 @@ namespace RenderInterface {
 	class ConstantBufferDescriptor: public DeviceObject {};
 
 	/*
-	Trida pro vsechny typy shaderu (VS, PS i GS)
+	Trida pro vsechny shadery (VS, PS i GS)
 	*/
 	class Shader: public DeviceObject {
 	public:
@@ -557,22 +540,13 @@ namespace RenderInterface {
 
 	//**************************************************
 
-
 	class BlendState {
 	};
 	
 	struct RasterizeStateDes {
 	};
 	
-	struct PipelineStateDescription {
-		//BlendStateDesc blendStateDesc;
-		//RasterizeStateDesc rasterizeStateDesc;
-	};
-	
 	class PipelineState: public DeviceObject {
-	public:
-	
-	private:
 	};
 	
 } // namespace RenderInterface

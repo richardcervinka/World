@@ -147,7 +147,7 @@ private:
 		SAMPLER_LINEAR,
 		SAMPLERS_COUNT
 	};
-	RenderInterface::TextureSampler *samplers[ SAMPLERS_COUNT ]; // [ default, point, linear ]
+	RenderInterface::Sampler *samplers[ SAMPLERS_COUNT ]; // [ default, point, linear ]
 
 	//////////////////////////////////////////////////////
 
