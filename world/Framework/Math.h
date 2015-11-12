@@ -6,7 +6,6 @@
 namespace Math {
 	
 	// constants
-
 	const float PI = DirectX::XM_PI;
 	const float PI2 = DirectX::XM_PI * 2.0f;
 	const float PIDIV2 = DirectX::XM_PIDIV2;
@@ -27,12 +26,12 @@ namespace Math {
 
 	template< typename T>
 	inline T Max( const T& a, const T& b, const T& c ) {
-		return Max( Max( a, b ), c );
+		return std::max( std::max( a, b ), c );
 	}
 
 	template< typename T>
 	inline T Max( const T& a, const T& b, const T& c, const T& d ) {
-		return Max( Max( a, b ), Max( c, d ) );
+		return std::max( std::max( a, b ), std::max( c, d ) );
 	}
 
 	template< typename T>
@@ -42,36 +41,36 @@ namespace Math {
 
 	template< typename T>
 	inline T Min( const T& a, const T& b, const T& c ) {
-		return Min( Min( a, b ), c );
+		return std::min( std::min( a, b ), c );
 	}
 
 	template< typename T>
 	inline T Min( const T& a, const T& b, const T& c, const T& d ) {
-		return Min( Min( a, b ), Min( c, d ) );
+		return std::min( std::min( a, b ), std::min( c, d ) );
 	}
 
 	inline float Max( const float a, const float b ) {
-		return fmaxf( a, b );
+		return std::fmax( a, b );
 	}
 	
 	inline float Max( const float a, const float b, const float c ) {
-		return fmaxf( fmaxf( a, b ), c );
+		return std::fmax( fmax( a, b ), c );
 	}
 	
 	inline float Max( const float a, const float b, const float c, const float d ) {
-		return fmaxf( fmaxf( a, b ), fmaxf( c, d ) );
+		return std::fmax( std::fmax( a, b ), std::fmax( c, d ) );
 	}
 	
 	inline float Min( const float a, const float b ) {
-		return fminf( a, b );
+		return std::fmin( a, b );
 	}
 	
 	inline float Min( const float a, const float b, const float c ) {
-		return fminf( fminf( a, b ), c );
+		return std::fmin( std::fmin( a, b ), c );
 	}
 	
 	inline float Min( const float a, const float b, const float c, const float d ) {
-		return fminf( fminf( a, b ), fminf( c, d ) );
+		return std::fmin( std::fmin( a, b ), std::fmin( c, d ) );
 	}
 
 	// goniometric functions
@@ -101,8 +100,16 @@ namespace Math {
 	inline float Log2( const float x ) {
 		return log2( x );
 	}
+	
+	inline float Pow( const float base, const float exponent ) {
+		return pow( base, exponent );
+	}
+	
+	inline int Pow2( const int exponent ) {
+		return 0x01 << static_cast< unsigned int >( exponent );
+	}
 
-
+	// help functions
 
 	inline bool IsPow2( const int value ) {
 		if ( value <= 0 ) {

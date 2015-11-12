@@ -352,98 +352,6 @@ ID3D11Device* DX11Device::GetDevice() {
 	return device;
 }
 
-// DX11CommandInterface
-
-DX11CommandInterface::DX11CommandInterface() {
-	context = nullptr;
-}
-
-DX11CommandInterface::~DX11CommandInterface() {
-	ReleaseCOM( &context );
-}
-
-bool DX11CommandInterface::Create() {
-	return true;
-}
-
-void DX11CommandInterface::Begin( Device* const device ) {
-	ASSERT_DOWNCAST( device, DX11Device );
-	context = static_cast< DX11Device* >( device )->GetContext();
-}
-
-void DX11CommandInterface::Begin( CommandList* const commandList ) {
-	// UNIMPLEMENTED
-}
-
-void DX11CommandInterface::End() {
-	context = nullptr;
-
-	// UNIMPLEMENTED command list!
-}
-
-void DX11CommandInterface::SetRenderTargets( RenderTargetDescriptor* const renderTargets[], const int count, DepthStencilDescriptor* const depthStencil ) {
-	if ( count > MAX_RENDER_TARGETS ) {
-		return;
-	}
-	ID3D11RenderTargetView* renderTargetViews[ MAX_RENDER_TARGETS ] = { NULL };
-	for ( int i = 0; i < count; i++ ) {
-		ASSERT_DOWNCAST( renderTargets[ i ], DX11RenderTargetDescriptor );
-		renderTargetViews[ i ] = static_cast< DX11RenderTargetDescriptor* >( renderTargets[ i ] )->GetView();
-	}
-	ID3D11DepthStencilView* depthStencilView = NULL;
-	if ( depthStencil != nullptr ) {
-		ASSERT_DOWNCAST( depthStencil, DX11DepthStencilDescriptor );
-		depthStencilView = static_cast< DX11DepthStencilDescriptor* >( depthStencil )->GetView();
-	}
-	context->OMSetRenderTargets( MAX_RENDER_TARGETS, renderTargetViews, depthStencilView );
-}
-
-void DX11CommandInterface::ClearRenderTarget( RenderTargetDescriptor* const renderTarget, const Color& color ) {
-	ASSERT_DOWNCAST( renderTarget, DX11RenderTargetDescriptor );
-	context->ClearRenderTargetView(
-		static_cast< DX11RenderTargetDescriptor* >( renderTarget )->GetView(),
-		reinterpret_cast< const FLOAT* >( &color )
-	);
-}
-
-void DX11CommandInterface::ClearDepthStencil( DepthStencilDescriptor* const descriptor, const float depth, const uint8_t stencil ) {
-	ASSERT_DOWNCAST( descriptor, DX11DepthStencilDescriptor );
-	context->ClearDepthStencilView(
-		static_cast< DX11DepthStencilDescriptor* >( descriptor )->GetView(),
-		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
-		static_cast< FLOAT >( depth ),
-		static_cast< UINT8 >( stencil )
-	);
-}
-
-void DX11CommandInterface::ClearDepth( DepthStencilDescriptor* const descriptor, const float depth ) {
-	ASSERT_DOWNCAST( descriptor, DX11DepthStencilDescriptor );
-	context->ClearDepthStencilView(
-		static_cast< DX11DepthStencilDescriptor* >( descriptor )->GetView(),
-		D3D11_CLEAR_DEPTH,
-		static_cast< FLOAT >( depth ),
-		0
-	);
-}
-
-void DX11CommandInterface::ClearStencil( DepthStencilDescriptor* const descriptor, const uint8_t stencil ) {
-	ASSERT_DOWNCAST( descriptor, DX11DepthStencilDescriptor );
-	context->ClearDepthStencilView(
-		static_cast< DX11DepthStencilDescriptor* >( descriptor )->GetView(),
-		D3D11_CLEAR_STENCIL,
-		0,
-		static_cast< UINT8 >( stencil )
-	);
-}
-
-void DX11CommandInterface::ClearState() {
-	context->ClearState();
-}
-
-void DX11CommandInterface::Flush() {
-	context->Flush();
-}
-
 // DX11Display
 
 DX11Display::~DX11Display() {
@@ -899,6 +807,13 @@ void DX11TextureBuffer::SetTextureBuffer( ID3D11Resource* const resource, const 
 	bufferInfo.access = params.access;
 	SetBuffer( resource, bufferInfo );
 }
+//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+int DX11TextureBuffer::GetSubresourceByteWidth( const int subresource ) const {
+	TextureDimmensions dimmensions;
+	GetMipDimmensions( width, height, depth, subresource % mipLevels, dimmensions );
+	FormatInfo formatInfo = GetFormatInfo( GetFormat() );
+	return ( dimmensions.width / formatInfo.blockSize ) * ( dimmensions.height / formatInfo.blockSize ) * dimmensions.depth * formatInfo.blockByteWidth;
+}
 
 Format DX11TextureBuffer::GetFormat() const {
 	return format;
@@ -979,6 +894,10 @@ bool DX11GenericBuffer::Create(
 	bufferInfo.access = access;
 	SetBuffer( buffer, bufferInfo );
 	return true;
+}
+//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+int DX11GenericBuffer::GetSubresourceByteWidth( const int subresource ) const {
+	return GetByteWidth();
 }
 
 // DX11RenderTargetDescriptor
@@ -1512,4 +1431,121 @@ bool DX11Sampler::Create( ID3D11Device* const device, const SamplerParams& param
 
 ID3D11SamplerState* DX11Sampler::GetSampler() {
 	return sampler;
+}
+
+// DX11CommandInterface
+
+DX11CommandInterface::DX11CommandInterface() {
+	context = nullptr;
+}
+
+DX11CommandInterface::~DX11CommandInterface() {
+	ReleaseCOM( &context );
+}
+
+bool DX11CommandInterface::Create() {
+	return true;
+}
+
+void DX11CommandInterface::Begin( Device* const device ) {
+	ASSERT_DOWNCAST( device, DX11Device );
+	context = static_cast< DX11Device* >( device )->GetContext();
+}
+
+void DX11CommandInterface::Begin( CommandList* const commandList ) {
+	// UNIMPLEMENTED
+}
+
+void DX11CommandInterface::End() {
+	context = nullptr;
+
+	// UNIMPLEMENTED command list!
+}
+
+void DX11CommandInterface::Flush() {
+	context->Flush();
+}
+
+void DX11CommandInterface::SetRenderTargets( RenderTargetDescriptor* const renderTargets[], const int count, DepthStencilDescriptor* const depthStencil ) {
+	if ( count > MAX_RENDER_TARGETS ) {
+		return;
+	}
+	ID3D11RenderTargetView* renderTargetViews[ MAX_RENDER_TARGETS ] = { NULL };
+	for ( int i = 0; i < count; i++ ) {
+		ASSERT_DOWNCAST( renderTargets[ i ], DX11RenderTargetDescriptor );
+		renderTargetViews[ i ] = static_cast< DX11RenderTargetDescriptor* >( renderTargets[ i ] )->GetView();
+	}
+	ID3D11DepthStencilView* depthStencilView = NULL;
+	if ( depthStencil != nullptr ) {
+		ASSERT_DOWNCAST( depthStencil, DX11DepthStencilDescriptor );
+		depthStencilView = static_cast< DX11DepthStencilDescriptor* >( depthStencil )->GetView();
+	}
+	context->OMSetRenderTargets( MAX_RENDER_TARGETS, renderTargetViews, depthStencilView );
+}
+
+void DX11CommandInterface::ClearRenderTarget( RenderTargetDescriptor* const renderTarget, const Color& color ) {
+	ASSERT_DOWNCAST( renderTarget, DX11RenderTargetDescriptor );
+	context->ClearRenderTargetView(
+		static_cast< DX11RenderTargetDescriptor* >( renderTarget )->GetView(),
+		reinterpret_cast< const FLOAT* >( &color )
+	);
+}
+
+void DX11CommandInterface::ClearDepthStencil( DepthStencilDescriptor* const descriptor, const float depth, const uint8_t stencil ) {
+	ASSERT_DOWNCAST( descriptor, DX11DepthStencilDescriptor );
+	context->ClearDepthStencilView(
+		static_cast< DX11DepthStencilDescriptor* >( descriptor )->GetView(),
+		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
+		static_cast< FLOAT >( depth ),
+		static_cast< UINT8 >( stencil )
+	);
+}
+
+void DX11CommandInterface::ClearDepth( DepthStencilDescriptor* const descriptor, const float depth ) {
+	ASSERT_DOWNCAST( descriptor, DX11DepthStencilDescriptor );
+	context->ClearDepthStencilView(
+		static_cast< DX11DepthStencilDescriptor* >( descriptor )->GetView(),
+		D3D11_CLEAR_DEPTH,
+		static_cast< FLOAT >( depth ),
+		0
+	);
+}
+
+void DX11CommandInterface::ClearStencil( DepthStencilDescriptor* const descriptor, const uint8_t stencil ) {
+	ASSERT_DOWNCAST( descriptor, DX11DepthStencilDescriptor );
+	context->ClearDepthStencilView(
+		static_cast< DX11DepthStencilDescriptor* >( descriptor )->GetView(),
+		D3D11_CLEAR_STENCIL,
+		0,
+		static_cast< UINT8 >( stencil )
+	);
+}
+
+void DX11CommandInterface::ClearState() {
+	context->ClearState();
+}
+
+bool DX11CommandInterface::Map( Buffer* const buffer, const int subresource, const MapPolicy policy, MappedBuffer& result ) {
+	D3D11_MAP type = D3D11_MAP::D3D11_MAP_READ;
+	switch ( policy ) {
+	case MapPolicy::READ_ONLY:		type = D3D11_MAP_READ;			break;
+	case MapPolicy::WRITE_ONLY:		type = D3D11_MAP_WRITE;			break;
+	case MapPolicy::READ_WRITE:		type = D3D11_MAP_READ_WRITE;	break;
+	case MapPolicy::WRITE_DISCARD:	type = D3D11_MAP_WRITE_DISCARD; break;
+	}
+	ASSERT_DOWNCAST( buffer, DX11Buffer );
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	HRESULT hresult = context->Map(
+		static_cast< DX11Buffer* >( buffer )->GetResource(),
+		static_cast< UINT >( subresource ),
+		type,
+		0,
+		&mappedResource
+	);
+	if ( FAILED( hresult ) ) {
+		return false;
+	}
+	result.data = mappedResource.pData;
+	result.byteWidth = static_cast< DX11Buffer* >( buffer )->GetSubresourceByteWidth( subresource );
+	return true;
 }

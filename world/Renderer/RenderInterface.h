@@ -328,12 +328,29 @@ namespace RenderInterface {
 	};
 
 	/*
-	Hodnoty vracene funkci CommandInterface::Map()
+	Zpusob pristupu do namapovaneho bufferu
 	*/
-	struct BufferMap {
-		void* data;
-		int byteWidth;
+	enum class MapPolicy {
+		READ_ONLY,
+		WRITE_ONLY,
+		READ_WRITE,
+		WRITE_DISCARD
 	};
+
+	/*
+	Data namapovaneho bufferu (funkce CommandInterface::Map())
+	*/
+	struct MappedBuffer {
+		void* data;
+		int rowPitch;	// sirka radku pameti v bajtech
+		int depthPitch;	// sirka depth urovne
+		int byteWidth;	// velikost mapovane pameti v bytech
+	};
+
+	// Helper function prototypes
+
+	// Vypocet rozmeru mipmapy
+	void GetMipDimmensions( const int width, const int height, const int depth, const int mipLevel, TextureDimmensions& result );
 
 	/*
 	Zakladni trida pro vsechny objekty vytvarene tridou Device.
@@ -402,14 +419,17 @@ namespace RenderInterface {
 	*/
 	class CommandInterface: public DeviceObject {
 	public:
-		// zahajeni posilani commanu primo do grafickeho zarizeni
+		// zahajeni posilani commanu primo do graficke karty
 		virtual void Begin( Device* const device ) = 0;
 	
-		// zahajeni ukladani commandu do CommandListu
+		// zahajeni posilani commandu do CommandListu
 		virtual void Begin( CommandList* const commandList ) = 0;
 	
 		// ukonceni sekvence commandu
 		virtual void End() = 0;
+
+		// Odesle obsah command bufferu do GPU
+		virtual void Flush() = 0;
 		
 		// Nastavi multiple render targets a depth stencil buffer (pokud je nullptr, pouzije se vychozi depth stencil state)
 		virtual void SetRenderTargets( RenderTargetDescriptor* const renderTargets[], const int count, DepthStencilDescriptor* const depthStencil ) = 0;
@@ -429,11 +449,8 @@ namespace RenderInterface {
 		// Nastavi objekt Device do vychoziho stavu
 		virtual void ClearState() = 0;
 
-		// Odesle obsah command bufferu do GPU
-		virtual void Flush() = 0;
-
-		// vrati ukazatel bufferu, parametr subresource se pouziva u texture bufferu, jinak musi byt 0
-		//virtual bool Map( Buffer* const buffer, const int subresource, const BufferMapType type, BufferMap& result ) = 0;
+		// vrati ukazatel bufferu, parametr subresource se pouziva jen u texture bufferu
+		virtual bool Map( Buffer* const buffer, const int subresource, const MapPolicy policy, MappedBuffer& result ) = 0;
 
 	};
 	

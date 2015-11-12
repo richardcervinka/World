@@ -115,13 +115,14 @@ public:
 	virtual void Begin( Device* const device ) override;
 	virtual void Begin( CommandList* const commandList ) override;
 	virtual void End() override;
+	virtual void Flush() override;
 	virtual void SetRenderTargets( RenderTargetDescriptor* const renderTargets[], const int count, DepthStencilDescriptor* const depthStencil ) override;
 	virtual void ClearRenderTarget( RenderTargetDescriptor* const renderTarget, const Color& color ) override;
 	virtual void ClearDepthStencil( DepthStencilDescriptor* const descriptor, const float depth, const uint8_t stencil ) override;
 	virtual void ClearDepth( DepthStencilDescriptor* const descriptor, const float depth ) override;
 	virtual void ClearStencil( DepthStencilDescriptor* const descriptor, const uint8_t stencil ) override;
 	virtual void ClearState() override;
-	virtual void Flush() override;
+	virtual bool Map( Buffer* const buffer, const int subresource, const MapPolicy policy, MappedBuffer& result ) override;
 
 private:
 	ID3D11DeviceContext* context;
