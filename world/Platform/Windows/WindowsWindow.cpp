@@ -144,7 +144,7 @@ void WindowsWindow::OnDestroy() {
 
 void WindowsWindow::OnPaint() {
 	// ponecha veskere vykreslovani na rendereru
-	if ( IsRenderTarget() ) {
+	if ( RendererDrawing() ) {
 		ValidateRect( hwnd, NULL );
 		return;
 	}

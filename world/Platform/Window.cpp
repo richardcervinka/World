@@ -46,7 +46,7 @@ void Window::ResizeBackBuffer() {
 	}
 }
 
-bool Window::RendererControlled() const {
+bool Window::RendererDrawing() const {
 	return renderer != nullptr;
 }
 

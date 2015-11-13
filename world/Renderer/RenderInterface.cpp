@@ -34,7 +34,7 @@ const FormatInfo RenderInterface::GetFormatInfo( const Format format ) {
 	return { 0, 0, 0, 0 };
 }
 
-void GetMipDimmensions( const int width, const int height, const int depth, const int mipLevel, TextureDimmensions& result ) {
+void RenderInterface::GetMipDimmensions( const int width, const int height, const int depth, const int mipLevel, TextureDimmensions& result ) {
 	const int denominator = Math::Pow2( mipLevel );
 	result.width = Math::Max( 1, width / denominator );
 	result.height = Math::Max( 1, height / denominator );

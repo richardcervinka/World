@@ -39,7 +39,7 @@ public:
 	// ResizeBackBuffer nevolat primo, pri zmene velikosti okna volat OnResized()
 	void ResizeBackBuffer();
 	RenderInterface::BackBuffer* GetBackBuffer();
-	bool RendererControlled() const;
+	bool RendererDrawing() const;
 
 protected:
 	// Pokud je okno render target, musi byt funkce OnResized() volana vzdy pri zmene velikosti okna

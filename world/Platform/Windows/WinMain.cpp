@@ -11,7 +11,7 @@ public:
 	
 private:
 	WindowsAppWindow window;
-	RenderInterface::Device *renderDevice;
+	RenderInterface::Device *device;
 	RenderInterface::CommandInterface *commandInterface;
 };
 
@@ -26,7 +26,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 // DevApp class implementation
 
 DevApp::DevApp() {
-	renderDevice = nullptr;
+	device = nullptr;
 }
 
 bool DevApp::Create( const HINSTANCE hInstance ) {
@@ -37,17 +37,22 @@ bool DevApp::Create( const HINSTANCE hInstance ) {
 	deviceParams.adapter = 0;
 	deviceParams.majorFeatureLevels = 11;
 	deviceParams.minorFeatureLevels = 0;
-	renderDevice = RenderInterface::DX11CreateDevice( deviceParams );
+	device = RenderInterface::DX11CreateDevice( deviceParams );
 	
 	window.CreateAppWindow( hInstance, 1024, 768 );
 	window.SetName( String( u"World" ) );
 	window.SetBackgroundColor( Color::BLACK );
-	window.SetRenderDevice( renderDevice );
+	//window.SetRenderer( nullptr )
+	//window.SetRenderDevice( renderDevice );
 
-	commandInterface = renderDevice->CreateCommandInterface();
-	commandInterface->Begin( renderDevice );
-	RenderInterface::BackBuffer *backBuffer = window.GetBackBuffer();
-	commandInterface->ClearRenderTarget( backBuffer->GetRenderTargetObject(), Color( 1.0f, 0.5f, 0, 1.0f ) );
+	commandInterface = device->CreateCommandInterface();
+	commandInterface->Begin( device );
+
+
+	//RenderInterface::BackBuffer *backBuffer = window.GetBackBuffer();
+	//commandInterface->ClearRenderTarget( backBuffer->GetRenderTargetObject(), Color( 1.0f, 0.5f, 0, 1.0f ) );
+
+
 	commandInterface->End();
 	window.PresentBackBuffer( 0 );
 
@@ -64,7 +69,3 @@ bool DevApp::Create( const HINSTANCE hInstance ) {
 	
 	return true;
 }
-/*
-void DevApp::Update() {	
-}
-*/
