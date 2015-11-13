@@ -1,5 +1,6 @@
 #pragma once
 
+#include "..\Framework\Math.h"
 #include "..\Framework\Color.h"
 
 // forward declarations
@@ -40,7 +41,6 @@ namespace RenderInterface {
 	
 	/*
 	Priznaky se doporucuje definovat nasledujicim zpusobem:
-
 	namespace CustomFlags {
 		const Flags FLAG1 = 0x01;
 		const Flags FLAG2 = 0x02;
@@ -68,7 +68,8 @@ namespace RenderInterface {
 	};
 	
 	/*
-	FormatInfo:
+	FormatInfo
+	pozn.:
 	pointPitch = blockByteWidth / blockSize
 	rowPitch = pointPitch * textureWidth
 	*/
@@ -329,6 +330,9 @@ namespace RenderInterface {
 
 	/*
 	Zpusob pristupu do namapovaneho bufferu
+	WRITE_DISCARD:
+	Obsah bufferu neni definovan, nemuze se proto aktualizovat jen cast bufferu. Protoze neni obsah bufferu definovan,
+	nemusi graficka karta vytvaret kopii nebo cekat na dokonceni operaci s bufferem. Buffer musi byt vytvoren jako BufferUsage::DYNAMIC
 	*/
 	enum class MapPolicy {
 		READ_ONLY,
@@ -339,12 +343,19 @@ namespace RenderInterface {
 
 	/*
 	Data namapovaneho bufferu (funkce CommandInterface::Map())
+	Data jsou ukladana po radcich (ale pouze 2D a 3D textury mohou mit vice nez jeden radek).
+	Velikost radku nemusi odpovidat ocekavane velikosti, protoze 3D api muze pridat na konec radku volny prostor.
+	Do tohoto prostoru je zakazano zapisovat. Protoze jsou data ulozena po radcich, je nutne pristupovat do
+	bufferu take po radcich.
 	*/
 	struct MappedBuffer {
 		void* data;
-		int rowPitch;	// sirka radku pameti v bajtech
-		int depthPitch;	// sirka depth urovne
-		int byteWidth;	// velikost mapovane pameti v bytech
+		int rowPitch;		// bytes vzdalenost mezi radky
+		int depthPitch;		// bytes vzdalenost mezi depth slices (pouze pro 3D textury)
+		int subresource;
+		int rowByteWidth;	// sirka radku dostupne casti pameti (rowPitch = rowByteWidth + row_padding)
+		int rowsCount;		// pocet radku ( >= 1 ) dostupne casti pameti (depth_slice_rows = rowsCount / depthsCount)
+		int depthsCount;	// pocet depth slices ( >= 1 ) dostupne casti pameti
 	};
 
 	// Helper function prototypes
@@ -449,9 +460,27 @@ namespace RenderInterface {
 		// Nastavi objekt Device do vychoziho stavu
 		virtual void ClearState() = 0;
 
-		// vrati ukazatel bufferu, parametr subresource se pouziva jen u texture bufferu
+		/*
+		Vrati ukazatel bufferu, parametr subresource se pouziva jen u textur.
+		Blizsi info o parametru result v popisu struktury MappedBuffer.
+		Vracene hodnoty parametru result jsou urcene jen pro cteni a nesmi byt upravovany (dokud neni zavolana funkce Unmap())
+		*/
 		virtual bool Map( Buffer* const buffer, const int subresource, const MapPolicy policy, MappedBuffer& result ) = 0;
 
+		/*
+		Uvolni namapovany buffer graficke karte.
+		Ukazatel na namapovana data nesmi byt dale pouzivan (ukazatel data parametru mappedBuffer je nastaven na nullptr).
+		*/
+		virtual void Unmap( Buffer* const buffer, MappedBuffer& mappedBuffer ) = 0;
+
+		/*
+		Updatuje cely obsah bufferu, resp. konkretni subresource.
+		Pokud je usage DYNAMIC, pouzije se sekvence Map ->memcpy -> Unmap
+		*/
+		virtual bool UpdateBuffer( Buffer* const buffer, const int subresource, const void* const data ) = 0;
+
+		//UpdateConstantBuffer
+		//UpdateSubresource
 	};
 	
 	/*
@@ -505,6 +534,7 @@ namespace RenderInterface {
 		virtual int GetByteWidth() const = 0;
 		virtual BufferUsage GetUsage() const = 0;
 		virtual BufferAccess GetAccess() const = 0;
+		virtual int GetSubresourcesCount() const = 0;
 	};
 
 	/*

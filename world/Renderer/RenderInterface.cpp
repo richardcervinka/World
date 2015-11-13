@@ -17,7 +17,7 @@ Device* RenderInterface::DX11CreateDevice( const DX11CreateDeviceParams& params 
 
 const FormatInfo RenderInterface::GetFormatInfo( const Format format ) {
 	switch ( format ) {									//channels	chan.bytes	blockSize	blockBytes
-	case Format::UNKNOWN:						return { 0,			0,			0,			0 };
+	case Format::UNKNOWN:						return { 0,			0,			1,			1 };
 	case Format::R8G8B8A8_UNORM:				return { 4,			1,			1,			4 };
 	case Format::R8G8B8A8_SNORM:				return { 4,			1,			1,			4 };
 	case Format::R16G16B16A16_FLOAT:			return { 4,			2,			1,			8 };

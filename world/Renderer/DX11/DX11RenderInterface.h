@@ -123,6 +123,8 @@ public:
 	virtual void ClearStencil( DepthStencilDescriptor* const descriptor, const uint8_t stencil ) override;
 	virtual void ClearState() override;
 	virtual bool Map( Buffer* const buffer, const int subresource, const MapPolicy policy, MappedBuffer& result ) override;
+	virtual void Unmap( Buffer* const buffer, MappedBuffer& mappedBuffer ) override;
+	virtual bool UpdateBuffer( Buffer* const buffer, const int subresource, const void* const data ) override;
 
 private:
 	ID3D11DeviceContext* context;
@@ -152,7 +154,7 @@ private:
 class DX11Buffer: public Buffer {
 public:
 	DX11Buffer();
-	~DX11Buffer();
+	~DX11Buffer() = 0;
 
 	// implementace rozhrani Buffer
 	virtual void GetInfo( BufferInfo& result ) const override;
@@ -160,9 +162,11 @@ public:
 	virtual int GetByteWidth() const override;
 	virtual BufferUsage GetUsage() const override;
 	virtual BufferAccess GetAccess() const override;
+	virtual int GetSubresourcesCount() const override;
 
 	// implementation interface
 	ID3D11Resource* GetResource();
+	virtual bool Map( ID3D11DeviceContext* const context, const int subresource, const D3D11_MAP mapType, MappedBuffer& result ) = 0;
 
 protected:
 	void SetBuffer( ID3D11Resource* const resource, const BufferInfo& bufferInfo );
@@ -177,6 +181,9 @@ public:
 	DX11TextureBuffer();
 	bool Create( ID3D11Device* const device, const TextureBufferParams& params, const void* const initialData[] );
 
+	// prekryti funkce GetSubresourcesCount, pouze texture buffery muzou mit vice subresources
+	virtual int GetSubresourcesCount() const override;
+
 	// implementation interface
 	Format GetFormat() const;
 	int GetWidth() const;
@@ -186,6 +193,9 @@ public:
 	int GetArraySize() const;
 	int GetSamplesCount() const;
 	int GetSamplesQuality() const;
+
+	// DX11Buffer implementation
+	virtual bool Map( ID3D11DeviceContext* const context, const int subresource, const D3D11_MAP mapType, MappedBuffer& result ) override;
 
 private:
 	void SetTextureBuffer( ID3D11Resource* const resource, const TextureBufferParams& params );
@@ -211,6 +221,8 @@ public:
 		const BufferAccess access,
 		const void* const initialData
 	);
+	// DX11Buffer implementation
+	virtual bool Map( ID3D11DeviceContext* const context, const int subresource, const D3D11_MAP mapType, MappedBuffer& result ) override;
 };
 
 class DX11RenderTargetDescriptor: public RenderTargetDescriptor {

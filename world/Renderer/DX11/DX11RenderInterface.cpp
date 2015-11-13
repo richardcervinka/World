@@ -626,6 +626,10 @@ ID3D11Resource* DX11Buffer::GetResource() {
 	return resource;
 }
 
+int DX11Buffer::GetSubresourcesCount() const {
+	return 0;
+}
+
 // DX11TextureBuffer
 
 DX11TextureBuffer::DX11TextureBuffer() {
@@ -807,12 +811,26 @@ void DX11TextureBuffer::SetTextureBuffer( ID3D11Resource* const resource, const 
 	bufferInfo.access = params.access;
 	SetBuffer( resource, bufferInfo );
 }
-//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-int DX11TextureBuffer::GetSubresourceByteWidth( const int subresource ) const {
+
+bool DX11TextureBuffer::Map( ID3D11DeviceContext* const context, const int subresource, const D3D11_MAP mapType, MappedBuffer& result ) {
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	HRESULT hresult = context->Map( GetResource(), static_cast< UINT >( subresource ), mapType, 0, &mappedResource );
+	if ( FAILED( hresult ) ) {
+		ZeroMemory( &result, sizeof( MappedBuffer ) );
+		return false;
+	}
 	TextureDimmensions dimmensions;
 	GetMipDimmensions( width, height, depth, subresource % mipLevels, dimmensions );
-	FormatInfo formatInfo = GetFormatInfo( GetFormat() );
-	return ( dimmensions.width / formatInfo.blockSize ) * ( dimmensions.height / formatInfo.blockSize ) * dimmensions.depth * formatInfo.blockByteWidth;
+	FormatInfo formatInfo = GetFormatInfo( format );
+
+	result.data = mappedResource.pData;
+	result.rowPitch = static_cast< int >( mappedResource.RowPitch );
+	result.depthPitch = static_cast< int >( mappedResource.DepthPitch );
+	result.subresource = subresource;
+	result.rowByteWidth = ( dimmensions.width / formatInfo.blockSize ) * formatInfo.blockByteWidth;
+	result.rowsCount = ( dimmensions.width / formatInfo.blockSize ) * ( dimmensions.height / formatInfo.blockSize ) * dimmensions.depth;
+	result.depthsCount = dimmensions.depth;
+	return true;
 }
 
 Format DX11TextureBuffer::GetFormat() const {
@@ -845,6 +863,10 @@ int DX11TextureBuffer::GetSamplesCount() const {
 
 int DX11TextureBuffer::GetSamplesQuality() const {
 	return samplesQuality;
+}
+
+int DX11TextureBuffer::GetSubresourcesCount() const {
+	return mipLevels * arraySize;
 }
 
 // DX11GenericBuffer
@@ -895,9 +917,22 @@ bool DX11GenericBuffer::Create(
 	SetBuffer( buffer, bufferInfo );
 	return true;
 }
-//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-int DX11GenericBuffer::GetSubresourceByteWidth( const int subresource ) const {
-	return GetByteWidth();
+
+bool DX11GenericBuffer::Map( ID3D11DeviceContext* const context, const int subresource, const D3D11_MAP mapType, MappedBuffer& result ) {
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	HRESULT hresult = context->Map( GetResource(), 0, mapType, 0, &mappedResource );
+	if ( FAILED( hresult ) ) {
+		ZeroMemory( &result, sizeof( MappedBuffer ) );
+		return false;
+	}
+	result.data = mappedResource.pData;
+	result.rowPitch = static_cast< int >( mappedResource.RowPitch );
+	result.depthPitch = static_cast< int >( mappedResource.DepthPitch );
+	result.subresource = 0;
+	result.rowByteWidth = GetByteWidth();
+	result.rowsCount = 1;
+	result.depthsCount = 1;
+	return true;
 }
 
 // DX11RenderTargetDescriptor
@@ -1216,7 +1251,7 @@ bool DX11ConstantBufferDescriptor::Create( Buffer* const constantBuffer, const C
 		if ( FAILED( hresult ) ) {
 			break;
 		}
-		// velikost konstanty musi souhlasit
+		// velikost konstanty musi byt shodna
 		if ( variableDesc.Size != static_cast< UINT >( constant.size ) ) {
 			break;
 		}
@@ -1534,18 +1569,35 @@ bool DX11CommandInterface::Map( Buffer* const buffer, const int subresource, con
 	case MapPolicy::WRITE_DISCARD:	type = D3D11_MAP_WRITE_DISCARD; break;
 	}
 	ASSERT_DOWNCAST( buffer, DX11Buffer );
-	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	HRESULT hresult = context->Map(
-		static_cast< DX11Buffer* >( buffer )->GetResource(),
-		static_cast< UINT >( subresource ),
-		type,
-		0,
-		&mappedResource
-	);
-	if ( FAILED( hresult ) ) {
+	return static_cast< DX11Buffer* >( buffer )->Map( context, subresource, type, result );
+}
+
+void DX11CommandInterface::Unmap( Buffer* const buffer, MappedBuffer& mappedBuffer ) {
+	mappedBuffer.data = nullptr;
+	ASSERT_DOWNCAST( buffer, DX11Buffer );
+	context->Unmap( static_cast< DX11Buffer* >( buffer )->GetResource(), static_cast< UINT >( mappedBuffer.subresource ) );
+}
+
+bool DX11CommandInterface::UpdateBuffer( Buffer* const buffer, const int subresource, const void* const data ) {
+	// map
+	MapPolicy policy = ( buffer->GetUsage() == BufferUsage::DYNAMIC ? MapPolicy::WRITE_DISCARD : MapPolicy::WRITE_ONLY );
+	MappedBuffer mappedBuffer;
+	if ( !Map( buffer, subresource, policy, mappedBuffer ) ) {
 		return false;
 	}
-	result.data = mappedResource.pData;
-	result.byteWidth = static_cast< DX11Buffer* >( buffer )->GetSubresourceByteWidth( subresource );
+	// update
+	const Byte* src = static_cast< const Byte* >( data );
+	Byte* dest = static_cast< Byte* >( mappedBuffer.data );
+	const int depthSliceRows = mappedBuffer.rowsCount / mappedBuffer.depthsCount;
+	for ( int depth = 0; depth < mappedBuffer.depthsCount; depth++ ) {
+		for ( int row = 0; row < depthSliceRows; row++ ) {
+			memcpy( dest, src, mappedBuffer.rowByteWidth );
+			dest += mappedBuffer.rowPitch;
+			src += mappedBuffer.rowByteWidth;
+		}
+		dest = static_cast< Byte* >( mappedBuffer.data ) + ( depth * mappedBuffer.depthPitch );
+	}
+	// unmap
+	Unmap( buffer, mappedBuffer );
 	return true;
 }
