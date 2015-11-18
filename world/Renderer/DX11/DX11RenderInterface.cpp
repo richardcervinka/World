@@ -11,20 +11,46 @@ void AbortDXInvalidCall( const HRESULT hresult ) {
 	Application::Abort();
 }
 
-// RenderInterface enum to DX11 enum wrappers
+// RenderInterface to DX11 enum wrappers
 
 DXGI_FORMAT GetDXGIFormat(const Format format) {
 	switch ( format ) {
 	case Format::UNKNOWN:						return DXGI_FORMAT_UNKNOWN;
-	case Format::R8G8B8A8_UNORM:				return DXGI_FORMAT_R8G8B8A8_UNORM;
-	case Format::R8G8B8A8_SNORM:				return DXGI_FORMAT_R8G8B8A8_SNORM;
-	case Format::R16G16B16A16_FLOAT:			return DXGI_FORMAT_R16G16B16A16_FLOAT;
-	case Format::R16G16_FLOAT:					return DXGI_FORMAT_R16G16_FLOAT;
-	case Format::R8_UNORM:						return DXGI_FORMAT_R8_UNORM;
-	case Format::R16_FLOAT:						return DXGI_FORMAT_R16_FLOAT;
-	case Format::R16_UINT:						return DXGI_FORMAT_R16_UINT;
+	case Format::R32G32B32A32_FLOAT:			return DXGI_FORMAT_R32G32B32A32_FLOAT;
+	case Format::R32G32B32A32_UINT:				return DXGI_FORMAT_R32G32B32A32_UINT;
+	case Format::R32G32B32_FLOAT:				return DXGI_FORMAT_R32G32B32_FLOAT;
+	case Format::R32G32B32_UINT:				return DXGI_FORMAT_R32G32B32_UINT;
+	case Format::R32G32_FLOAT:					return DXGI_FORMAT_R32G32_FLOAT;
+	case Format::R32G32_UINT:					return DXGI_FORMAT_R32G32_UINT;
 	case Format::R32_FLOAT:						return DXGI_FORMAT_R32_FLOAT;
 	case Format::R32_UINT:						return DXGI_FORMAT_R32_UINT;
+	case Format::R16G16B16A16_FLOAT:			return DXGI_FORMAT_R16G16B16A16_FLOAT;
+	case Format::R16G16B16A16_UINT:				return DXGI_FORMAT_R16G16B16A16_UINT;
+	case Format::R16G16B16A16_UNORM:			return DXGI_FORMAT_R16G16B16A16_UNORM;
+	case Format::R16G16B16A16_SINT:				return DXGI_FORMAT_R16G16B16A16_SINT;
+	case Format::R16G16B16A16_SNORM:			return DXGI_FORMAT_R16G16B16A16_SNORM;
+	case Format::R16G16_FLOAT:					return DXGI_FORMAT_R16G16_FLOAT;
+	case Format::R16G16_UINT:					return DXGI_FORMAT_R16G16_UINT;
+	case Format::R16G16_UNORM:					return DXGI_FORMAT_R16G16_UNORM;
+	case Format::R16G16_SINT:					return DXGI_FORMAT_R16G16_SINT;
+	case Format::R16G16_SNORM:					return DXGI_FORMAT_R16G16_SNORM;
+	case Format::R16_FLOAT:						return DXGI_FORMAT_R16_FLOAT;
+	case Format::R16_UINT:						return DXGI_FORMAT_R16_UINT;
+	case Format::R16_UNORM:						return DXGI_FORMAT_R16_UNORM;
+	case Format::R16_SINT:						return DXGI_FORMAT_R16_SINT;
+	case Format::R16_SNORM:						return DXGI_FORMAT_R16_SNORM;
+	case Format::R8G8B8A8_UINT:					return DXGI_FORMAT_R8G8B8A8_UINT;
+	case Format::R8G8B8A8_UNORM:				return DXGI_FORMAT_R8G8B8A8_UNORM;
+	case Format::R8G8B8A8_SINT:					return DXGI_FORMAT_R8G8B8A8_SINT;
+	case Format::R8G8B8A8_SNORM:				return DXGI_FORMAT_R8G8B8A8_SNORM;
+	case Format::R8G8_UINT:						return DXGI_FORMAT_R8G8_UINT;
+	case Format::R8G8_UNORM:					return DXGI_FORMAT_R8G8_UNORM;
+	case Format::R8G8_SINT:						return DXGI_FORMAT_R8G8_SINT;
+	case Format::R8G8_SNORM:					return DXGI_FORMAT_R8G8_SNORM;
+	case Format::R8_UINT:						return DXGI_FORMAT_R8_UINT;
+	case Format::R8_UNORM:						return DXGI_FORMAT_R8_UNORM;
+	case Format::R8_SINT:						return DXGI_FORMAT_R8_SINT;
+	case Format::R8_SNORM:						return DXGI_FORMAT_R8_SNORM;
 	case Format::DEPTH_24_UNORM_STENCIL_8_UINT:	return DXGI_FORMAT_D24_UNORM_S8_UINT;
 	case Format::BC1:							return DXGI_FORMAT_BC1_UNORM;
 	case Format::BC3:							return DXGI_FORMAT_BC3_UNORM;
@@ -269,24 +295,6 @@ TextureDescriptor* DX11Device::CreateTextureDescriptor( Buffer* const textureBuf
 DepthStencilDescriptor* DX11Device::CreateDepthStencilDescriptor( Buffer* const textureBuffer, const DepthStencilDescriptorParams& params ) {
 	DX11DepthStencilDescriptor* descriptor = new DX11DepthStencilDescriptor();
 	if ( !descriptor->Create( device, textureBuffer, params ) ) {
-		delete descriptor;
-		return nullptr;
-	}
-	return descriptor;
-}
-
-VertexBufferDescriptor*	DX11Device::CreateVertexBufferDescriptor( Buffer* const vertexBuffer, const VertexBufferDescriptorParams& params ) {
-	DX11VertexBufferDescriptor* descriptor = new DX11VertexBufferDescriptor();
-	if ( !descriptor->Create( vertexBuffer, params ) ) {
-		delete descriptor;
-		return nullptr;
-	}
-	return descriptor;
-}
-
-IndexBufferDescriptor* DX11Device::CreateIndexBufferDescriptor( Buffer* const indexBuffer, const IndexBufferDescriptorParams& params ) {
-	DX11IndexBufferDescriptor* descriptor = new DX11IndexBufferDescriptor();
-	if ( !descriptor->Create( indexBuffer, params ) ) {
 		delete descriptor;
 		return nullptr;
 	}
@@ -1109,91 +1117,6 @@ ID3D11DepthStencilState* DX11DepthStencilDescriptor::GetState() {
 	return state;
 }
 
-// DX11VertexBufferDescriptor
-
-DX11VertexBufferDescriptor::DX11VertexBufferDescriptor() {
-	resource = nullptr;
-	offset = 0;
-	stride = 0;
-	verticesCount = 0;
-}
-
-DX11VertexBufferDescriptor::~DX11VertexBufferDescriptor() {
-	ReleaseCOM( &resource );
-}
-
-bool DX11VertexBufferDescriptor::Create( Buffer* const vertexBuffer, const VertexBufferDescriptorParams& params ) {
-	if ( vertexBuffer->GetType() != BufferType::VERTEX_BUFFER ) {
-		return false;
-	}
-	ASSERT_DOWNCAST( vertexBuffer, DX11Buffer );
-	resource = static_cast< DX11Buffer* >( vertexBuffer )->GetResource();
-	resource->AddRef();
-	stride = static_cast< UINT >( params.vertexByteWidth );
-	offset = static_cast< UINT >( params.verticesOffset ) * stride;
-	verticesCount = params.verticesCount;
-	return true;
-}
-
-ID3D11Resource* DX11VertexBufferDescriptor::GetResource() {
-	return resource;
-}
-
-UINT DX11VertexBufferDescriptor::GetOffset() const {
-	return offset;
-}
-
-UINT DX11VertexBufferDescriptor::GetStride() const {
-	return stride;
-}
-
-// DX11IndexBufferDescriptor
-
-DX11IndexBufferDescriptor::DX11IndexBufferDescriptor() {
-	resource = nullptr;
-	offset = 0;
-	indicesCount = 0;
-	format = DXGI_FORMAT_UNKNOWN;
-}
-
-DX11IndexBufferDescriptor::~DX11IndexBufferDescriptor() {
-	ReleaseCOM( &resource );
-}
-
-bool DX11IndexBufferDescriptor::Create( Buffer* const indexBuffer, const IndexBufferDescriptorParams& params ) {
-	if ( indexBuffer->GetType() != BufferType::INDEX_BUFFER ) {
-		return false;
-	}
-	if ( params.format == Format::R16_UINT ) {
-		offset = params.indicesOffset * 2;
-		format = DXGI_FORMAT_R16_UINT;
-
-	} else if ( params.format == Format::R16_UINT ) {
-		offset = params.indicesOffset * 4;
-		format = DXGI_FORMAT_R32_UINT;
-
-	} else {
-		return false;
-	}
-	ASSERT_DOWNCAST( indexBuffer, DX11Buffer );
-	resource = static_cast< DX11Buffer* >( indexBuffer )->GetResource();
-	resource->AddRef();
-	indicesCount = params.indicesCount;
-	return true;
-}
-
-ID3D11Resource* DX11IndexBufferDescriptor::GetResource() {
-	return resource;
-}
-
-UINT DX11IndexBufferDescriptor::GetOffset() const {
-	return offset;
-}
-
-DXGI_FORMAT DX11IndexBufferDescriptor::GetDXGIFormat() const {
-	return format;
-}
-
 // DX11ConstantBufferDescriptor
 
 DX11ConstantBufferDescriptor::DX11ConstantBufferDescriptor() {
@@ -1295,7 +1218,7 @@ bool DX11ConstantBufferDescriptor::Create( Buffer* const constantBuffer, const C
 	return true;
 }
 
-void DX11ConstantBufferDescriptor::UpdateConstants( void* const src, void* const dest ) const {
+void DX11ConstantBufferDescriptor::UpdateConstants( const void* const src, void* const dest ) const {
 	// zarovnani systemove pameti odpovida zarovnani constant bufferu
 	if ( !map ) {
 		memcpy( dest, src, constantsSize );
@@ -1306,10 +1229,14 @@ void DX11ConstantBufferDescriptor::UpdateConstants( void* const src, void* const
 		ConstantPlacement& constant = map[ i ];
 		memcpy(
 			static_cast< Byte* >( dest ) + constant.bufferOffset,
-			static_cast< Byte* >( src ) + constant.sysMemOffset,
+			static_cast< const Byte* >( src ) + constant.sysMemOffset,
 			constant.size
 		);
 	}
+}
+
+ID3D11Buffer* DX11ConstantBufferDescriptor::GetBuffer() {
+	return buffer;
 }
 
 // DXShader
@@ -1468,6 +1395,113 @@ ID3D11SamplerState* DX11Sampler::GetSampler() {
 	return sampler;
 }
 
+// DX11VertexLayout
+
+DX11VertexLayout::DX11VertexLayout() {
+	inputLayout = nullptr;
+}
+
+DX11VertexLayout::~DX11VertexLayout() {
+	ReleaseCOM( &inputLayout );
+}
+
+bool DX11VertexLayout::Create( ID3D11Device* const device, const VertexAttribute* const attributes, const int attributesCount, Shader* const shader ) {
+	ASSERT_DOWNCAST( shader, DX11Shader );
+	ID3DBlob* const shaderCode = static_cast< DX11Shader* >( shader )->GetBlob();
+
+	Array< D3D11_INPUT_ELEMENT_DESC > elements;
+	elements.Reserve( attributesCount );
+
+	// initialize elements
+	for ( int attributeIndex = 0; attributeIndex < attributesCount; attributeIndex++ ) {
+		const VertexAttribute& attribute = attributes[ attributeIndex ];
+		const FormatInfo formatInfo = GetFormatInfo( attribute.format );
+
+		D3D11_INPUT_ELEMENT_DESC desc;
+		desc.SemanticName			= attribute.semantic;
+		desc.SemanticIndex			= 0; // only default value here
+		desc.Format					= GetDXGIFormat( attribute.format );
+		desc.InputSlot				= static_cast< UINT >( attribute.slot );
+		desc.AlignedByteOffset		= 0; // only default value here
+		desc.InputSlotClass			= ( attribute.instanceCount == 0 ? D3D11_INPUT_PER_VERTEX_DATA : D3D11_INPUT_PER_INSTANCE_DATA );
+		desc.InstanceDataStepRate	= static_cast< UINT >( attribute.instanceCount );
+
+		for ( int i = 0; i < attribute.elementsCount; i++ ) {
+			desc.SemanticIndex		= static_cast< UINT >( attribute.semanticIndex + i );
+			desc.AlignedByteOffset	= static_cast< UINT >( attribute.offset + i * formatInfo.blockByteWidth );
+			elements.Push( desc );
+		}
+	}
+	// create input layout
+	ID3D11InputLayout* inputLayout;
+	HRESULT hresult = device->CreateInputLayout(
+		elements.Raw(),
+		static_cast< UINT >( elements.Length() ),
+		shaderCode->GetBufferPointer(),
+		static_cast< SIZE_T >( shaderCode->GetBufferSize() ),
+		&inputLayout
+	);
+	if ( FAILED( hresult ) ) {
+		return false;
+	}
+	this->inputLayout = inputLayout;
+	return true;
+}
+
+ID3D11InputLayout* DX11VertexLayout::GetInputLayout() {
+	return inputLayout;
+}
+
+// DX11VertexDescriptor
+
+DX11VertexDescriptor::DX11VertexDescriptor() {
+	ZeroMemory( vertexBuffers, sizeof( vertexBuffers ) );
+	indexBuffer = nullptr;
+	inputLayout = nullptr;
+}
+
+DX11VertexDescriptor::~DX11VertexDescriptor() {
+	for ( int i = 0; i < MAX_VERTEX_INPUT_SLOTS; i++ ) {
+		ReleaseCOM( &vertexBuffers[ i ] );
+	}
+	ReleaseCOM( &indexBuffer );
+	ReleaseCOM( &inputLayout );
+}
+
+bool DX11VertexDescriptor::Create( const VertexDescriptorParams& params ) {
+	// save index buffer
+	if ( params.indexBuffer != nullptr ) {
+		if ( params.indexBuffer->GetType() != BufferType::INDEX_BUFFER ) {
+			return false;
+		}
+		ASSERT_DOWNCAST( params.indexBuffer, DX11Buffer );
+		DX11Buffer* const buffer = static_cast< DX11Buffer* >( params.indexBuffer );
+		ID3D11Resource* const resource = static_cast< ID3D11Buffer* >( buffer->GetResource() );
+		ASSERT_DOWNCAST( resource, ID3D11Buffer );
+		indexBuffer = static_cast< ID3D11Buffer* >( resource );
+	}
+	// save vertex buffers
+	for ( int i = 0; i < MAX_VERTEX_INPUT_SLOTS; i++ ) {
+		Buffer* const buffer = params.vertexBuffers[ i ];
+		if ( buffer == nullptr ) {
+			continue;
+		}
+		if ( buffer->GetType() != BufferType::VERTEX_BUFFER ) {
+			return false;
+		}
+		ASSERT_DOWNCAST( buffer, DX11Buffer );
+		ID3D11Resource* resource = static_cast< ID3D11Buffer* >( static_cast< DX11Buffer* >( buffer )->GetResource() );
+		ASSERT_DOWNCAST( resource, ID3D11Buffer );
+		vertexBuffers[ i ] = static_cast< ID3D11Buffer* >( resource );
+		vertexBuffers[ i ]->AddRef();
+	}
+	// save input layout
+	ASSERT_DOWNCAST( params.vertexLayout, DX11VertexLayout );
+	inputLayout = static_cast< DX11VertexLayout* >( params.vertexLayout )->GetInputLayout();
+
+	return true;
+}
+
 // DX11CommandInterface
 
 DX11CommandInterface::DX11CommandInterface() {
@@ -1585,7 +1619,7 @@ bool DX11CommandInterface::UpdateBuffer( Buffer* const buffer, const int subreso
 	if ( !Map( buffer, subresource, policy, mappedBuffer ) ) {
 		return false;
 	}
-	// update
+	// memcpy
 	const Byte* src = static_cast< const Byte* >( data );
 	Byte* dest = static_cast< Byte* >( mappedBuffer.data );
 	const int depthSliceRows = mappedBuffer.rowsCount / mappedBuffer.depthsCount;
@@ -1599,5 +1633,69 @@ bool DX11CommandInterface::UpdateBuffer( Buffer* const buffer, const int subreso
 	}
 	// unmap
 	Unmap( buffer, mappedBuffer );
+	return true;
+}
+
+bool DX11CommandInterface::UpdateConstantBuffer( ConstantBufferDescriptor* const descriptor, const void* const data ) {
+	ASSERT_DOWNCAST( descriptor, DX11ConstantBufferDescriptor );
+	ID3D11Buffer* buffer = static_cast< DX11ConstantBufferDescriptor* >( descriptor )->GetBuffer();
+	D3D11_MAPPED_SUBRESOURCE mappedSubresource;
+	HRESULT hresult = context->Map( buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubresource );
+	if ( FAILED( hresult ) ) {
+		return false;
+	}
+	static_cast< DX11ConstantBufferDescriptor* >( descriptor )->UpdateConstants( data, mappedSubresource.pData );
+	context->Unmap( buffer, 0 );
+	return true;
+}
+
+void DX11CommandInterface::CopyBuffer( Buffer* const src, Buffer* const dest ) {
+	ASSERT_DOWNCAST( src, DX11Buffer );
+	ASSERT_DOWNCAST( dest, DX11Buffer );
+	context->CopyResource(
+		static_cast< DX11Buffer* >( dest )->GetResource(),
+		static_cast< DX11Buffer* >( src )->GetResource()
+	);
+}
+
+// DX11PipelineState
+
+DX11PipelineState::DX11PipelineState() {
+	vs = nullptr;
+	ps = nullptr;
+	gs = nullptr;
+	inputLayout = nullptr;
+}
+
+DX11PipelineState::~DX11PipelineState() {
+	ReleaseCOM( &vs );
+	ReleaseCOM( &ps );
+	ReleaseCOM( &gs );
+	ReleaseCOM( &inputLayout );
+}
+
+bool DX11PipelineState::Create( const PipelineStateParams& params ) {
+	ASSERT_DOWNCAST( params.vs, DX11Shader );
+	ASSERT_DOWNCAST( params.ps, DX11Shader );
+	ASSERT_DOWNCAST( params.gs, DX11Shader );
+	ASSERT_DOWNCAST( params.vertexLayout, DX11VertexLayout );
+
+	// overit typ shaderu
+	if ( static_cast< DX11Shader* >( params.vs )->GetType() != ShaderType::VERTEX_SHADER ) {
+		return false;
+	}
+	if ( static_cast< DX11Shader* >( params.ps )->GetType() != ShaderType::PIXEL_SHADER ) {
+		return false;
+	}
+	if ( static_cast< DX11Shader* >( params.gs )->GetType() != ShaderType::GEOMETRY_SHADER ) {
+		return false;
+	}
+	// ulozit shadery
+	vs = static_cast< ID3D11VertexShader* >( static_cast< DX11Shader* >( params.vs )->GetShader() );
+	ps = static_cast< ID3D11PixelShader* >( static_cast< DX11Shader* >( params.ps )->GetShader() );
+	gs = static_cast< ID3D11GeometryShader* >( static_cast< DX11Shader* >( params.gs )->GetShader() );
+
+	inputLayout = static_cast< DX11VertexLayout* >( params.vertexLayout )->GetInputLayout();
+
 	return true;
 }

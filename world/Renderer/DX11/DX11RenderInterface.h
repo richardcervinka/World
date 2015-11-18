@@ -17,8 +17,6 @@ class DX11TextureBuffer;
 class DX11GenericBuffer;
 class DX11RenderTargetDescriptor;
 class DX11TextureDescriptor;
-class DX11VertexBufferDescriptor;
-class DX11IndexBufferDescriptor;
 class DX11ConstantBufferDescriptor;
 class DX11Shader;
 class DX11Sampler;
@@ -61,8 +59,6 @@ public:
 	virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( Buffer* const textureBuffer ) override;
 	virtual TextureDescriptor* CreateTextureDescriptor( Buffer* const textureBuffer ) override;
 	virtual DepthStencilDescriptor* CreateDepthStencilDescriptor( Buffer* const textureBuffer, const DepthStencilDescriptorParams& params ) override;
-	virtual VertexBufferDescriptor* CreateVertexBufferDescriptor( Buffer* const vertexBuffer, const VertexBufferDescriptorParams& params ) override;
-	virtual IndexBufferDescriptor* CreateIndexBufferDescriptor( Buffer* const indexBuffer, const IndexBufferDescriptorParams& params ) override;
 	virtual ConstantBufferDescriptor* CreateConstantBufferDescriptor( Buffer* const constantBuffer, const ConstantBufferDescriptorParams& params ) override;
 
 	virtual CommandInterface* CreateCommandInterface() override;
@@ -125,6 +121,8 @@ public:
 	virtual bool Map( Buffer* const buffer, const int subresource, const MapPolicy policy, MappedBuffer& result ) override;
 	virtual void Unmap( Buffer* const buffer, MappedBuffer& mappedBuffer ) override;
 	virtual bool UpdateBuffer( Buffer* const buffer, const int subresource, const void* const data ) override;
+	virtual bool UpdateConstantBuffer( ConstantBufferDescriptor* const descriptor, const void* const data ) override;
+	virtual void CopyBuffer( Buffer* const src, Buffer* const dest ) override;
 
 private:
 	ID3D11DeviceContext* context;
@@ -267,42 +265,6 @@ private:
 	ID3D11DepthStencilState* state;
 };
 
-class DX11VertexBufferDescriptor: public VertexBufferDescriptor {
-public:
-	DX11VertexBufferDescriptor();
-	~DX11VertexBufferDescriptor();
-	bool Create( Buffer* const vertexBuffer, const VertexBufferDescriptorParams& params );
-
-	// implementation interface
-	ID3D11Resource* GetResource();
-	UINT GetOffset() const;
-	UINT GetStride() const;
-
-private:
-	ID3D11Resource* resource;
-	UINT offset;
-	UINT stride;
-	int verticesCount;
-};
-
-class DX11IndexBufferDescriptor: public IndexBufferDescriptor {
-public:
-	DX11IndexBufferDescriptor();
-	~DX11IndexBufferDescriptor();
-	bool Create( Buffer* const indexBuffer, const IndexBufferDescriptorParams& params );
-
-	// implementation interface
-	ID3D11Resource* GetResource();
-	UINT GetOffset() const;
-	DXGI_FORMAT GetDXGIFormat() const;
-
-private:
-	ID3D11Resource* resource;
-	UINT offset;
-	int indicesCount;
-	DXGI_FORMAT format;
-};
-
 class DX11ConstantBufferDescriptor: public ConstantBufferDescriptor {
 public:
 	DX11ConstantBufferDescriptor();
@@ -310,7 +272,8 @@ public:
 	bool Create( Buffer* const constantBuffer, const ConstantBufferDescriptorParams &params );
 
 	// pouze pro interni uziti, zkopiruje data ze systemove pameti (src) do bufferu (dest)
-	void UpdateConstants( void* const src, void* const dest ) const;
+	void UpdateConstants( const void* const src, void* const dest ) const;
+	ID3D11Buffer* GetBuffer();
 
 private:
 	// mapovani konstant ze systemove pameti do bufferu
@@ -358,4 +321,59 @@ public:
 
 private:
 	ID3D11SamplerState* sampler;
+};
+
+class DX11VertexLayout: public VertexLayout {
+public:
+	DX11VertexLayout();
+	~DX11VertexLayout();
+	bool Create( ID3D11Device* const device, const VertexAttribute* const attributes, const int attributesCount, Shader* const shader );
+
+	// implementation interface
+	ID3D11InputLayout* GetInputLayout();
+
+private:
+	ID3D11InputLayout* inputLayout;
+};
+
+struct VertexDescriptorParams {
+	Buffer* vertexBuffers[ MAX_VERTEX_INPUT_SLOTS ];
+	Buffer* indexBuffer;
+	VertexLayout* vertexLayout;
+};
+
+class DX11VertexDescriptor: public VertexDescriptor {
+public:
+	DX11VertexDescriptor();
+	~DX11VertexDescriptor();
+	bool Create( const VertexDescriptorParams& params );
+
+private:
+	ID3D11Buffer* vertexBuffers[ MAX_VERTEX_INPUT_SLOTS ];
+	ID3D11Buffer* indexBuffer;
+	ID3D11InputLayout* inputLayout;
+};
+
+struct PipelineStateParams {
+	Shader* vs;
+	Shader* ps;
+	Shader* gs;
+	VertexLayout* vertexLayout;
+};
+
+class DX11PipelineState: public PipelineState {
+public:
+	DX11PipelineState();
+	~DX11PipelineState();
+	bool Create( const PipelineStateParams& params );
+
+	// implementation interface
+	// GetVS()
+	// GetPS()
+	// GetGS()
+private:
+	ID3D11VertexShader* vs;
+	ID3D11PixelShader* ps;
+	ID3D11GeometryShader* gs;
+	ID3D11InputLayout* inputLayout;
 };

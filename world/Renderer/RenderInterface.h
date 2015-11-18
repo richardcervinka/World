@@ -18,16 +18,15 @@ namespace RenderInterface {
 	class TextureDescriptor;
 	class RenderTargetDescriptor;
 	class DepthStencilDescriptor;
-	class VertexBufferDescriptor;
-	class IndexBufferDescriptor;
 	class ConstantBufferDescriptor;
 	class Shader;
 	class Sampler;
 
 	// Render Interface constants
-	const int MAX_RENDER_TARGETS = 8;
 	const int MAX_MULTISAMPLE_QUALITY = -1;
 	const int MAX_TEXTURE_LOD = -1;
+	const int MAX_RENDER_TARGETS = 8;
+	const int MAX_VERTEX_INPUT_SLOTS = 16;
 	
 	// Informace potrebne k vytvoreni objektu DX11Device
 	struct DX11CreateDeviceParams {
@@ -53,23 +52,58 @@ namespace RenderInterface {
 	*/
 	enum class Format {
 		UNKNOWN = 0,
-		R8G8B8A8_UNORM,
-		R8G8B8A8_SNORM,
-		R16G16B16A16_FLOAT,
-		R16G16_FLOAT,
-		R8_UNORM,
-		R16_FLOAT,
-		R16_UINT,
+
+		// 32 bit component
+		R32G32B32A32_FLOAT,
+		R32G32B32A32_UINT,
+		R32G32B32_FLOAT,
+		R32G32B32_UINT,
+		R32G32_FLOAT,
+		R32G32_UINT,
 		R32_FLOAT,
 		R32_UINT,
+
+		// 16 bit component
+		R16G16B16A16_FLOAT,
+		R16G16B16A16_UINT,
+		R16G16B16A16_UNORM,
+		R16G16B16A16_SINT,
+		R16G16B16A16_SNORM,
+		R16G16_FLOAT,
+		R16G16_UINT,
+		R16G16_UNORM,
+		R16G16_SINT,
+		R16G16_SNORM,
+		R16_FLOAT,
+		R16_UINT,
+		R16_UNORM,
+		R16_SINT,
+		R16_SNORM,
+
+		// 8 bit component
+		R8G8B8A8_UINT,
+		R8G8B8A8_UNORM,
+		R8G8B8A8_SINT,
+		R8G8B8A8_SNORM,
+		R8G8_UINT,
+		R8G8_UNORM,
+		R8G8_SINT,
+		R8G8_SNORM,
+		R8_UINT,
+		R8_UNORM,
+		R8_SINT,
+		R8_SNORM,
+
+		// packed
 		DEPTH_24_UNORM_STENCIL_8_UINT,
+
+		// block compression
 		BC1,
 		BC3
 	};
 	
 	/*
 	FormatInfo
-	pozn.:
 	pointPitch = blockByteWidth / blockSize
 	rowPitch = pointPitch * textureWidth
 	*/
@@ -251,18 +285,6 @@ namespace RenderInterface {
 		StencilOperation stencilDepthFailOp;	// default: KEEP
 	};
 
-	struct VertexBufferDescriptorParams {
-		int vertexByteWidth;
-		int verticesOffset;
-		int verticesCount;
-	};
-
-	struct IndexBufferDescriptorParams {
-		Format format;
-		int indicesOffset;
-		int indicesCount;
-	};
-
 	/*
 	ShaderConstant (konstanta constant bufferu)
 
@@ -327,6 +349,18 @@ namespace RenderInterface {
 		ShaderCompileFlags flags;
 		ShaderOptimization optimization;
 	};
+	
+	// Popisuje vstupni atribut vertex shaderu
+	struct VertexAttribute {
+		const char* attribute;		// nazev atributu (HLSL parametr nepouziva,musi byt ale platny)
+		const char* semantic;
+		int semanticIndex;
+		Format format;
+		int offset;					// vzdalenost atributu (v bytech) od zacatku bufferu
+		int elementsCount;			// pocet elementu (4 pro matice apod.)
+		int slot;					// id vstupniho slotu (bufferu)
+		int instanceCount;			// pocet instanci se stejnym atributem (0 pro per vertex attribute; >0 pro per instance attribute)
+	};
 
 	/*
 	Zpusob pristupu do namapovaneho bufferu
@@ -365,7 +399,11 @@ namespace RenderInterface {
 
 	/*
 	Zakladni trida pro vsechny objekty vytvarene tridou Device.
-	Device objekty se uvolnuji metodou Release().
+	Objekty DeviceObject nejsou thread safe.
+	Uvolnovani a vytvareni device objektu je nutne synchronizovat v jednom vlakne:
+
+	thread 0:  create -> draw commands ---> synchronize ------> release
+	thread 1:         -> draw commands --------> synchronize ->
 	*/
 	class DeviceObject {
 	public:
@@ -404,8 +442,6 @@ namespace RenderInterface {
 		virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( Buffer* const textureBuffer ) = 0;
 		virtual TextureDescriptor* CreateTextureDescriptor( Buffer* const textureBuffer ) = 0;
 		virtual DepthStencilDescriptor* CreateDepthStencilDescriptor( Buffer* const textureBuffer, const DepthStencilDescriptorParams& params ) = 0;
-		virtual VertexBufferDescriptor* CreateVertexBufferDescriptor( Buffer* const vertexBuffer, const VertexBufferDescriptorParams& params ) = 0;
-		virtual IndexBufferDescriptor* CreateIndexBufferDescriptor( Buffer* const indexBuffer, const IndexBufferDescriptorParams& params ) = 0;
 		virtual ConstantBufferDescriptor* CreateConstantBufferDescriptor( Buffer* const constantBuffer, const ConstantBufferDescriptorParams& params ) = 0;
 
 		// objects
@@ -479,8 +515,24 @@ namespace RenderInterface {
 		*/
 		virtual bool UpdateBuffer( Buffer* const buffer, const int subresource, const void* const data ) = 0;
 
-		//UpdateConstantBuffer
-		//UpdateSubresource
+		/*
+		Konstant buffer by nemel byt mapovan primo, ale radeji pomoci funkce UpdateConstantBuffer.
+		Objekt ConstantBufferDescriptor obsahuje vsechny potrebne informace o umisteni konstant (byte offset).
+		*/
+		virtual bool UpdateConstantBuffer( ConstantBufferDescriptor* const descriptor, const void* const data ) = 0;
+
+		//Kopirovani obsahu bufferu pomoci GPU. Cilovy buffer musi mit shodnou velikost a kompatibilni format
+		virtual void CopyBuffer( Buffer* const src, Buffer* const dest ) = 0;
+
+		virtual void SetPipelineState( PipelineState* const state );
+
+		// Draw( VertexDescriptor )
+
+		// DrawIndexed( VertexDescriptor )
+
+		// DrawInstanced( VertexDescriptor, count )
+
+		// DrawIndexedInstanced( VertexDescriptor, count )
 	};
 	
 	/*
@@ -561,29 +613,64 @@ namespace RenderInterface {
 	class Sampler: public DeviceObject {};
 
 	/*
-	Vertex buffer descriptor umoznuje nabindovat VertexBuffer do pipeline.
-	*/
-	class VertexBufferDescriptor: public DeviceObject {};
-
-	/*
-	Index buffer descriptor umoznuje nabindovat IndexBuffer do pipeline.
-	*/
-	class IndexBufferDescriptor: public DeviceObject {};
-
-	/*
 	Constant buffer descriptor popisuje format, umisteni a usporadani konstant v constant bufferu.
 	Pomoci tohoto objektu jsou data namapovana do bufferu tak, aby odpovidala shaderu.
 	*/
 	class ConstantBufferDescriptor: public DeviceObject {};
 
 	/*
-	Trida pro vsechny shadery (VS, PS i GS)
+	Shader program (VS, PS i GS)
+	Shader jazyk je podmnozina HLSL. Pri OpenGL implementaci je HLSL kod preveden na GLSL kod.
 	*/
 	class Shader: public DeviceObject {
 	public:
 		virtual ShaderType GetType() const = 0;
 		virtual ShaderVersion GetVersion() const = 0;
 	};
+
+	/*
+	VertexLayout:
+
+	HLSL
+	struct VS_INPUT {
+		float4 position: POSITION;
+		float4x4 matrix: MATRIX;
+	}
+
+	GLSL
+	struct VS_INPUT {
+		vec4 position;
+		mat4 matrix;
+	}
+
+	C++
+	const VertexLayoutAttribute layout[] = {
+		{ "position",	"POSITION",	0, Format::R32G32B32A32_FLOAT, ... },
+		{ "matrix",		"MATRIX",	0, Format::R32G32B32A32_FLOAT, ... }
+	}
+	*/
+	class VertexLayout: public DeviceObject {
+	public:
+		//bool CheckInputSignature( Shader* const vertexShader );
+	};
+
+	/*
+	Podobne jako texture descriptor slouzi k nabindovani texture bufferu do pipeline stage,
+	slouzi vertex descriptor k nabindovani vertex bufferu a index bufferu.
+	K vytvoreni vertex descriptoru je potreba vertex layout objekt.
+	Objekt vznikl kvuli podpore Vertex Arrays Object (VAO) v OpenGL.
+	*/
+	class VertexDescriptor: public DeviceObject {};
+
+	/*
+	Atributy:
+	- vertex shader
+	- pixel shader
+	- geometry shader
+	- vertex layout
+	*/
+	class PipelineState: public DeviceObject {};
+
 
 	//**************************************************
 
@@ -593,9 +680,4 @@ namespace RenderInterface {
 	struct RasterizeStateDes {
 	};
 	
-	class PipelineState: public DeviceObject {
-	};
-	
 } // namespace RenderInterface
-
-
