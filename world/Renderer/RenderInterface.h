@@ -20,36 +20,44 @@ namespace RenderInterface {
 	class DepthStencilDescriptor;
 	class ConstantBufferDescriptor;
 	class Shader;
+	class RenderProgram;
 	class Sampler;
+	class BlendState;
+	class RasterizerState;
+	class VertexLayout;
+	class VertexDescriptor;
+	class PipelineState;
 
 	// Render Interface constants
 	const int MAX_MULTISAMPLE_QUALITY = -1;
 	const int MAX_TEXTURE_LOD = -1;
 	const int MAX_RENDER_TARGETS = 8;
 	const int MAX_VERTEX_INPUT_SLOTS = 16;
+	const int MAX_SAMPLERS = 8;
 	
-	// Informace potrebne k vytvoreni objektu DX11Device
+	/*
+	Informace potrebne k vytvoreni objektu DX11Device
+	*/
 	struct DX11CreateDeviceParams {
 		int adapter;				// id adapteru, 0 je vychozi adapter
 		int majorFeatureLevels;
 		int minorFeatureLevels;
 	};
 	
-	// Vytvori device objekt implementovany v DirectX 11
+	// Vytvori device objekt DirectX implementace
 	Device* DX11CreateDevice( const DX11CreateDeviceParams& params );
-	
-	/*
-	Priznaky se doporucuje definovat nasledujicim zpusobem:
-	namespace CustomFlags {
-		const Flags FLAG1 = 0x01;
-		const Flags FLAG2 = 0x02;
+
+	template < typename T >
+	inline void ReleaseDeviceObject( T** target ) {
+		if ( *target != nullptr ) {
+			( *target )->Release();
+			*target = nullptr;
+		}
 	}
-	*/
+
+	// Flags: datovy typ pro bitove priznaky. Priznaky se doporucuje definovat ve vlastnim namespace.
 	typedef uint32_t Flags;
 
-	/*
-	Format dat ulozenych v bufferu
-	*/
 	enum class Format {
 		UNKNOWN = 0,
 
@@ -103,7 +111,8 @@ namespace RenderInterface {
 	};
 	
 	/*
-	FormatInfo
+	FormatInfo: informace o hodnote typu Format
+	pozn.:
 	pointPitch = blockByteWidth / blockSize
 	rowPitch = pointPitch * textureWidth
 	*/
@@ -127,7 +136,7 @@ namespace RenderInterface {
 	};
 
 	/*
-	Usage popisuje jakym zpusobem pristupuje GPU a CPU do bufferu
+	Usage popisuje pristup do bufferu
 	*/
 	enum class BufferUsage {
 		DRAW,		// GPU ma plny pristup do bufferu (CPU nema zadny pristup), typicke pouziti render target buffer
@@ -137,7 +146,7 @@ namespace RenderInterface {
 	};
 
 	/*
-	CPU pristupova prava do bufferu, konkretizuje hodnotu BufferUsage.
+	Pristupova prava CPU do bufferu, blize specifikuje BufferUsage.
 	Hodnoty je mozne prevest na uint a pracovat s nimi jako s priznaky (flags)
 	*/
 	enum class BufferAccess {
@@ -165,7 +174,7 @@ namespace RenderInterface {
 	};
 
 	/*
-	Informace o bufferu, parametry konkretnich bufferu (napr texture buffer) musi spravovat klient
+	Informace o bufferu
 	*/
 	struct BufferInfo {
 		BufferType type;		// typ bufferu
@@ -175,7 +184,7 @@ namespace RenderInterface {
 	};
 
 	/*
-	Rozmery textury. Pokud neni rozmer definovan, ma hodnotu 1.
+	Rozmery textury. Vsechny hodnoty museji byt >= 1
 	*/
 	struct TextureDimmensions {
 		int width;
@@ -192,7 +201,6 @@ namespace RenderInterface {
 
 	/*
 	Parametry funkce Device::CreateTextureBuffer()
-	Generovani mipmap pri vytvareni texture bufferu je zakazane, pocet mip urovni musi byt znamy pred vytvorenim objektu.
 	*/
 	struct TextureBufferParams {
 		BufferType type;
@@ -233,14 +241,17 @@ namespace RenderInterface {
 		CLAMP
 	};
 	
+	/*
+	Parametry objektu Sampler
+	*/
 	struct SamplerParams {
 		TextureFilter filter;
 		TextureAddressing uAddressing;
 		TextureAddressing vAddressing;
 		TextureAddressing wAddressing;
 		int maxAnisotropy;
-		float minLOD;	// hodnota >= 0
-		float maxLOD;	// hodnota v rozsahu <0; MAX_TEXTURE_LOD>
+		float minLOD;	// >= 0
+		float maxLOD;	// <0; MAX_TEXTURE_LOD>
 	};
 
 	enum class DepthStencilComparsion {
@@ -273,7 +284,6 @@ namespace RenderInterface {
 
 	/*
 	Parametry funkce Device::CreateDepthStencilDescriptor()
-	Stejne nastaveni pro front i back face
 	*/
 	struct DepthStencilDescriptorParams {
 		DepthStencilUsage depthUsage;			// default: STANDARD
@@ -286,14 +296,13 @@ namespace RenderInterface {
 	};
 
 	/*
-	ShaderConstant (konstanta constant bufferu)
-
-	// HLSL
+	ShaderConstant: popisuje konstantu v constant bufferu
+	HLSL
 	cbuffer Constants {
 		float3 color;
 		float4 position;
 	}
-	// C++
+	C++
 	struct Constants {
 		Float3 color;
 		Float4 position;
@@ -309,7 +318,9 @@ namespace RenderInterface {
 		int align;
 	};
 
-	// parametry funkce CreateConstantBufferDescriptor
+	/*
+	parametry funkce Device::CreateConstantBufferDescriptor()
+	*/
 	struct ConstantBufferDescriptorParams {
 		Shader* shader;
 		const char* bufferObject;
@@ -350,7 +361,9 @@ namespace RenderInterface {
 		ShaderOptimization optimization;
 	};
 	
-	// Popisuje vstupni atribut vertex shaderu
+	/*
+	Popisuje atribut vertexu ve vertex shaderu
+	*/
 	struct VertexAttribute {
 		const char* attribute;		// nazev atributu (HLSL parametr nepouziva,musi byt ale platny)
 		const char* semantic;
@@ -362,11 +375,95 @@ namespace RenderInterface {
 		int instanceCount;			// pocet instanci se stejnym atributem (0 pro per vertex attribute; >0 pro per instance attribute)
 	};
 
+	enum class PrimitiveTopology {
+		DEFAULT,
+		POINTLIST,
+		LINELIST,
+		LINESTRIP,
+		TRIANGLELIST,
+		TRIANGLESTRIP
+	};
+
+	struct VertexDescriptorParams {
+		Buffer* vertexBuffers[ MAX_VERTEX_INPUT_SLOTS ];
+		Buffer* indexBuffer;
+		VertexLayout* vertexLayout;
+	};
+
+	enum class Blend {
+		ZERO,
+		ONE,
+		SRC_COLOR,
+		INV_SRC_COLOR,
+		SRC_ALPHA,
+		INV_SRC_ALPHA,
+		DEST_ALPHA,
+		INV_DEST_ALPHA,
+		DEST_COLOR,
+		INV_DEST_COLOR,
+		SRC_ALPHA_SAT,
+		BLEND_FACTOR,
+		INV_BLEND_FACTOR,
+		SRC1_COLOR,
+		INV_SRC1_COLOR,
+		SRC1_ALPHA,
+		INV_SRC1_ALPHA
+	};
+
+	enum class BlendOp {
+		ADD,
+		SUBTRACT,
+		REV_SUBTRACT,
+		MIN,
+		MAX
+	};
+
+	struct RenderTargetBlend {
+		bool enable;
+		Blend srcRGB;
+		Blend destRGB;
+		BlendOp opRGB;
+		Blend srcAlpha;
+		Blend destAlpha;
+		BlendOp opAlpha;
+	};
+
 	/*
-	Zpusob pristupu do namapovaneho bufferu
+	Parametry funkce Device::CreateBlendState()
+	Pokud ma atribut uniformBlending hodnotu true, pouzije se renderTargets[ 0 ] pro vsechny render targets.
+	*/
+	struct BlendStateParams {
+		RenderTargetBlend renderTargets[ MAX_RENDER_TARGETS ];
+		bool uniformBlending;
+	};
+
+	enum class CullMode {
+		DISABLED,
+		FRONT_FACE,
+		BACK_FACE
+	};
+
+	/*
+	Parametry funkce Device::CreateRasterizerState()
+	*/
+	struct RasterizerStateParams {
+		bool wireframe;
+		CullMode cullMode;
+		bool frontCounterClockwise;
+		int depthBias;
+		float depthBiasClamp;
+		float slopeScaledDepthBias;
+		bool depthClipping;
+		bool scissorCulling;
+		bool multisampling;
+		bool antialiasedLines;
+	};
+
+	/*
+	Zpusob pristupu do namapovaneho bufferu.
 	WRITE_DISCARD:
-	Obsah bufferu neni definovan, nemuze se proto aktualizovat jen cast bufferu. Protoze neni obsah bufferu definovan,
-	nemusi graficka karta vytvaret kopii nebo cekat na dokonceni operaci s bufferem. Buffer musi byt vytvoren jako BufferUsage::DYNAMIC
+	Predchozi obsah bufferu neni definovan, nemuze se proto aktualizovat jen cast bufferu.
+	Graficka karta nemusi vytvaret kopii bufferu. Buffer musi byt vytvoren jako BufferUsage::DYNAMIC.
 	*/
 	enum class MapPolicy {
 		READ_ONLY,
@@ -392,14 +489,11 @@ namespace RenderInterface {
 		int depthsCount;	// pocet depth slices ( >= 1 ) dostupne casti pameti
 	};
 
-	// Helper function prototypes
-
 	// Vypocet rozmeru mipmapy
 	void GetMipDimmensions( const int width, const int height, const int depth, const int mipLevel, TextureDimmensions& result );
 
 	/*
-	Zakladni trida pro vsechny objekty vytvarene tridou Device.
-	Objekty DeviceObject nejsou thread safe.
+	DeviceObject: Zakladni trida pro vsechny objekty vytvarene tridou Device.
 	Uvolnovani a vytvareni device objektu je nutne synchronizovat v jednom vlakne:
 
 	thread 0:  create -> draw commands ---> synchronize ------> release
@@ -425,7 +519,7 @@ namespace RenderInterface {
 	};
 	
 	/*
-	Reprezentuje grafickou kartu, vytvari veskere zdroje.
+	Device reprezentuje grafickou kartu; vytvari veskere zdroje.
 	*/
 	class Device: public DeviceObject {
 	public:
@@ -443,17 +537,22 @@ namespace RenderInterface {
 		virtual TextureDescriptor* CreateTextureDescriptor( Buffer* const textureBuffer ) = 0;
 		virtual DepthStencilDescriptor* CreateDepthStencilDescriptor( Buffer* const textureBuffer, const DepthStencilDescriptorParams& params ) = 0;
 		virtual ConstantBufferDescriptor* CreateConstantBufferDescriptor( Buffer* const constantBuffer, const ConstantBufferDescriptorParams& params ) = 0;
+		virtual VertexDescriptor* CreateVertexDescriptor( const VertexDescriptorParams& params ) = 0;
 
 		// objects
 		virtual CommandInterface* CreateCommandInterface() = 0;
 		virtual Display* CreateDisplay( const int outputId ) = 0;
 		virtual Shader* CreateShader( const ShaderParams& params ) = 0;
+		virtual RenderProgram* CreateRenderProgram( Shader* const vs, Shader* const ps, Shader* const gs ) = 0;
 		virtual Sampler* CreateSampler( const SamplerParams& params ) = 0;
+		virtual VertexLayout* CreateVertexLayout( const VertexAttribute* const attributes, const int attributesCount, RenderProgram* const program ) = 0;
+		virtual BlendState* CreateBlendState( const BlendStateParams& params ) = 0;
+		virtual RasterizerState* CreateRasterizerState( const RasterizerStateParams& params ) = 0;
 
 		/*
-		vrati max quality pro pozadovany pocet msaa level.
-		Ne vsechny karty a ne vsechna api museji podporovat tuto vlastnost, pak musi funkce vracet 1.
-		Pokud neni msaa level podporovan, funkce vraci 0;
+		Vrati max quality pro pozadovany pocet samplu.
+		Pokud neni vlastnost quality podporovana, vraci funkce hodnotu 1.
+		Pokud neni msaa level podporovan, vraci hodnotu 0.
 		*/
 		virtual int GetMultisampleQuality( const int samplesCount ) const = 0;
 
@@ -511,7 +610,7 @@ namespace RenderInterface {
 
 		/*
 		Updatuje cely obsah bufferu, resp. konkretni subresource.
-		Pokud je usage DYNAMIC, pouzije se sekvence Map ->memcpy -> Unmap
+		Pokud ma atribut usage hodnotu DYNAMIC, pouzije se sekvence Map ->memcpy -> Unmap
 		*/
 		virtual bool UpdateBuffer( Buffer* const buffer, const int subresource, const void* const data ) = 0;
 
@@ -536,20 +635,19 @@ namespace RenderInterface {
 	};
 	
 	/*
-	Slouzi k zaznemenani commandu a jejich jednorazovemu prehrani. Po prehrani je obsah command listu vyprazdnen.
+	Slouzi k ukladani GPU commandu. Po prehrani commandu je obsah command listu vyprazdnen.
 	*/
-	class CommandList: public DeviceObject {
-	public:
-		//virtual void ExecuteCommandBatch( CommandBatch *batch );
-	};
+	class CommandList: public DeviceObject {};
 	
 	/*
-	Monitor pripojeny k vystupu graficke karty (Device)
+	Displej pripojeny k vystupu graficke karty
 	*/
 	class Display: public DeviceObject {
 	public:
-		// Nastavi rezim co nejvice odpovidajici pozadavku (na desktopu prepne do rezimu cele obrazovky)
-		// U zarizeni, ktera maji jediny mozny rezim obrazovky (mobilni zarizeni...), nedela nic
+		/*
+		Nastavi rezim co nejvice odpovidajici pozadavku (na desktopu prepne do rezimu cele obrazovky)
+		U zarizeni, ktera maji jediny mozny rezim obrazovky (mobilni zarizeni...), nedela nic
+		*/
 		virtual bool SetMode( const DisplayMode& mode, Window& window ) = 0;
 		
 		// Nastavi vychozi rezim pro danou platformu (napr. na windows prepne z celoobrazovkoveho rezimu)
@@ -566,7 +664,7 @@ namespace RenderInterface {
 	};
 	
 	/*
-	Umoznuje zobrazeni obsahu back bufferu do klientske oblasti okna. Objekt je asociovan s oknem pri svem vytvoreni.
+	Umoznuje zobrazit obsahu back bufferu do klientske oblasti okna. Objekt je asociovan s oknem pri vytvoreni.
 	*/
 	class BackBuffer: public DeviceObject {
 	public:
@@ -577,7 +675,8 @@ namespace RenderInterface {
 	};
 
 	/*
-	Buffer je blok pameti rezervovany v pameti graficke karty
+	Buffer je blok pameti rezervovany v pameti graficke karty.
+	Veskera data jsou do graficke karty posilana pomoci bufferu.
 	*/
 	class Buffer: public DeviceObject {
 	public:
@@ -608,25 +707,41 @@ namespace RenderInterface {
 	class DepthStencilDescriptor: public DeviceObject {};
 	
 	/*
-	TextureSampler
+	Sampler
 	*/
 	class Sampler: public DeviceObject {};
 
 	/*
 	Constant buffer descriptor popisuje format, umisteni a usporadani konstant v constant bufferu.
-	Pomoci tohoto objektu jsou data namapovana do bufferu tak, aby odpovidala shaderu.
+	Pomoci tohoto objektu jsou data mapovana do bufferu.
 	*/
 	class ConstantBufferDescriptor: public DeviceObject {};
 
 	/*
-	Shader program (VS, PS i GS)
-	Shader jazyk je podmnozina HLSL. Pri OpenGL implementaci je HLSL kod preveden na GLSL kod.
+	Shader (VS, PS nebo GS)
+	Shader jazyk je podmnozina HLSL. OpenGL implementace prevadi HLSL kod na GLSL kod.
 	*/
 	class Shader: public DeviceObject {
 	public:
 		virtual ShaderType GetType() const = 0;
 		virtual ShaderVersion GetVersion() const = 0;
 	};
+
+	/*
+	Seskupuje vertex shader, pixel shader a geometry shader do jednoho objektu.
+	Neudrzuje ukazatel na objekty Shader, po vytvoreni objektu RenderProgram muzou byt objekty Shader uvolneny.
+	*/
+	class RenderProgram: public DeviceObject {};
+
+	/*
+	Render target blending
+	*/
+	class BlendState: public DeviceObject {};
+
+	/*
+	RasterizerState
+	*/
+	class RasterizerState: public DeviceObject {};
 
 	/*
 	VertexLayout:
@@ -668,16 +783,12 @@ namespace RenderInterface {
 	- pixel shader
 	- geometry shader
 	- vertex layout
+
+
+	- blendState
+	- rasterize state
+	- primitive topology
 	*/
 	class PipelineState: public DeviceObject {};
-
-
-	//**************************************************
-
-	class BlendState {
-	};
-	
-	struct RasterizeStateDes {
-	};
 	
 } // namespace RenderInterface

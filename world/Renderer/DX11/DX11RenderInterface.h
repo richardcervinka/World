@@ -19,7 +19,12 @@ class DX11RenderTargetDescriptor;
 class DX11TextureDescriptor;
 class DX11ConstantBufferDescriptor;
 class DX11Shader;
+class DX11RenderProgram;
 class DX11Sampler;
+class DX11BlendState;
+class DX11RasterizerState;
+class DX11VertexLayout;
+class DX11VertexDescriptor;
 
 using namespace RenderInterface;
 
@@ -60,11 +65,16 @@ public:
 	virtual TextureDescriptor* CreateTextureDescriptor( Buffer* const textureBuffer ) override;
 	virtual DepthStencilDescriptor* CreateDepthStencilDescriptor( Buffer* const textureBuffer, const DepthStencilDescriptorParams& params ) override;
 	virtual ConstantBufferDescriptor* CreateConstantBufferDescriptor( Buffer* const constantBuffer, const ConstantBufferDescriptorParams& params ) override;
+	virtual VertexDescriptor* CreateVertexDescriptor( const VertexDescriptorParams& params ) override;
 
 	virtual CommandInterface* CreateCommandInterface() override;
 	virtual Display* CreateDisplay( const int outputId ) override;
 	virtual Shader* CreateShader( const ShaderParams& params ) override;
+	virtual RenderProgram* CreateRenderProgram( Shader* const vs, Shader* const ps, Shader* const gs ) override;
 	virtual Sampler* CreateSampler( const SamplerParams& params ) override;
+	virtual VertexLayout* CreateVertexLayout( const VertexAttribute* const attributes, const int attributesCount, RenderProgram* const program ) override;
+	virtual BlendState* CreateBlendState( const BlendStateParams& params ) override;
+	virtual RasterizerState* CreateRasterizerState( const RasterizerStateParams& params ) override;
 
 	virtual int GetMultisampleQuality( const int samplesCount ) const override;
 
@@ -302,12 +312,38 @@ public:
 	// implementation interface
 	ID3DBlob* GetBlob();
 	ID3D11DeviceChild* GetShader();
+	ID3D11VertexShader* GetD3D11VertexShader();
+	ID3D11PixelShader* GetD3D11PixelShader();
+	ID3D11GeometryShader* GetD3D11GeometryShader();
 
 private:
 	ID3DBlob* code;
 	ID3D11DeviceChild* shader;
 	ShaderType type;
 	ShaderVersion version;
+};
+
+class DX11RenderProgram: public RenderProgram {
+public:
+	DX11RenderProgram();
+	~DX11RenderProgram();
+	bool Create( Shader* const vs, Shader* const ps, Shader* const gs );
+
+	// implementation interface
+	ID3D11VertexShader* GetD3D11VertexShader();
+	ID3D11PixelShader* GetD3D11PixelShader();
+	ID3D11GeometryShader* GetD3D11GeometryShader();
+	ID3DBlob* GetVertexShaderByteCode();
+	ID3DBlob* GetPixelShaderByteCode();
+	ID3DBlob* GetGeometryShaderByteCode();
+
+private:
+	ID3D11VertexShader* vs;
+	ID3D11PixelShader* ps;
+	ID3D11GeometryShader* gs;
+	ID3DBlob* vsByteCode;
+	ID3DBlob* psByteCode;
+	ID3DBlob* gsByteCode;
 };
 
 class DX11Sampler: public Sampler {
@@ -323,23 +359,43 @@ private:
 	ID3D11SamplerState* sampler;
 };
 
+class DX11BlendState: public BlendState {
+public:
+	DX11BlendState();
+	~DX11BlendState();
+	bool Create( ID3D11Device* const device, const BlendStateParams& params );
+
+	// implementation interface
+	ID3D11BlendState* GetD3D11BlendState();
+
+private:
+	ID3D11BlendState* state;
+};
+
+class DX11RasterizerState: public RasterizerState {
+public:
+	DX11RasterizerState();
+	~DX11RasterizerState();
+	bool Create( ID3D11Device* const device, const RasterizerStateParams& params );
+
+	// implementation interface
+	ID3D11RasterizerState* GetD3D11RasterizerState();
+
+private:
+	ID3D11RasterizerState* state;
+};
+
 class DX11VertexLayout: public VertexLayout {
 public:
 	DX11VertexLayout();
 	~DX11VertexLayout();
-	bool Create( ID3D11Device* const device, const VertexAttribute* const attributes, const int attributesCount, Shader* const shader );
+	bool Create( ID3D11Device* const device, const VertexAttribute* const attributes, const int attributesCount, RenderProgram* const program );
 
 	// implementation interface
 	ID3D11InputLayout* GetInputLayout();
 
 private:
 	ID3D11InputLayout* inputLayout;
-};
-
-struct VertexDescriptorParams {
-	Buffer* vertexBuffers[ MAX_VERTEX_INPUT_SLOTS ];
-	Buffer* indexBuffer;
-	VertexLayout* vertexLayout;
 };
 
 class DX11VertexDescriptor: public VertexDescriptor {
@@ -355,10 +411,9 @@ private:
 };
 
 struct PipelineStateParams {
-	Shader* vs;
-	Shader* ps;
-	Shader* gs;
 	VertexLayout* vertexLayout;
+	PrimitiveTopology topology;
+	//Sampler* samplers[ MAX_SAMPLERS ];
 };
 
 class DX11PipelineState: public PipelineState {
@@ -368,12 +423,10 @@ public:
 	bool Create( const PipelineStateParams& params );
 
 	// implementation interface
-	// GetVS()
-	// GetPS()
-	// GetGS()
+	void SetState( ID3D11DeviceContext* const context, const DX11PipelineState* const current );
+
 private:
-	ID3D11VertexShader* vs;
-	ID3D11PixelShader* ps;
-	ID3D11GeometryShader* gs;
 	ID3D11InputLayout* inputLayout;
+	D3D11_PRIMITIVE_TOPOLOGY topology;
+	//ID3D11SamplerState* samplerStates[ MAX_SAMPLERS ];
 };
