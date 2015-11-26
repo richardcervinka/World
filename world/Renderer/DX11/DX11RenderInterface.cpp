@@ -11,6 +11,76 @@ void AbortD3D11InvalidCall( const HRESULT hresult ) {
 	Application::Abort();
 }
 */
+
+/*
+Smart pointer (Pouze pro interni pouziti).
+Slouzi ke sprave ukazatelu na COM interface.
+*/
+template <typename T>
+class ComPtr {
+public:
+	ComPtr() {
+		ptr = nullptr;
+	}
+	
+	~ComPtr() {
+		Release();
+	}
+	
+	explicit ComPtr( T* const ptr ) {
+		this->ptr = ptr;
+		if ( ptr != nullptr ) {
+			ptr->AddRef();
+		}
+	}
+	
+	ComPtr( const ComPtr& comPtr ) {
+		ptr = comPtr.GetRef();
+	}
+	
+	ComPtr& operator=( const ComPtr& comPtr ) {
+		if ( this == &comPtr ) {
+			return *this;
+		}
+		Release();
+		ptr = comPtr.ptr;
+		if ( ptr != nullptr ) {
+			ptr->AddRef();
+		}
+		return *this;
+	}
+
+	T* operator->() {
+		return ptr;
+	}
+	
+	T** operator&() {
+		Release();
+		return &ptr;
+	}
+
+	void Release() {
+		if ( ptr != nullptr ) {
+			ptr->Release();
+			ptr = nullptr;
+		}
+	}
+	
+	T* GetRef() {
+		if ( ptr != nullptr ) {
+			ptr->AddRef();
+		}
+		return ptr;
+	}
+
+	T* Get() {
+		return ptr;
+	}
+
+private:
+	T* ptr;
+};
+
 // RenderInterface to DX11 enum wrappers
 
 DXGI_FORMAT GetDXGIFormat(const Format format) {
@@ -175,23 +245,23 @@ DX11Device::DX11Device() {
 }
 
 DX11Device::~DX11Device() {
-	ReleaseCOM( &dxgiAdapter );
-	ReleaseCOM( &dxgiFactory );
-	ReleaseCOM( &context );
-	ReleaseCOM( &device );
+	ReleaseCom( &dxgiAdapter );
+	ReleaseCom( &dxgiFactory );
+	ReleaseCom( &context );
+	ReleaseCom( &device );
 }
 
 bool DX11Device::Create( const DX11CreateDeviceParams& params ) {
 	HRESULT hresult = 0;
 
 	// vytvorit DXGIFactory1
-	IDXGIFactory1* factory = nullptr;
-	hresult = CreateDXGIFactory1( __uuidof( IDXGIFactory1 ), ( void** )( &factory ) );
+	ComPtr< IDXGIFactory1 > factory;
+	hresult = CreateDXGIFactory1( __uuidof( IDXGIFactory1 ), reinterpret_cast< void** >( &factory ) );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
 	// pokusit se ziskat pozadovany adapter
-	IDXGIAdapter* adapter = nullptr;
+	ComPtr< IDXGIAdapter > adapter;
 	hresult = factory->EnumAdapters( static_cast< UINT >( params.adapter ), &adapter );
 
 	// selhani, zkusit ziskat vychozi adapter
@@ -200,7 +270,6 @@ bool DX11Device::Create( const DX11CreateDeviceParams& params ) {
 	}
 	// nebyl nalezen zadny adapter
 	if ( FAILED( hresult ) ) {
-		factory->Release();
 		return false;
 	}
 	// feature levels
@@ -231,7 +300,7 @@ bool DX11Device::Create( const DX11CreateDeviceParams& params ) {
 	UINT flags = 0
 #endif
 	hresult = D3D11CreateDevice(
-		adapter,
+		adapter.Get(),
 		D3D_DRIVER_TYPE_UNKNOWN,
 		NULL,
 		flags,
@@ -243,12 +312,10 @@ bool DX11Device::Create( const DX11CreateDeviceParams& params ) {
 		&context
 	);
 	if ( FAILED( hresult ) ) {
-		factory->Release();
-		adapter->Release();
 		return false;
 	}
-	this->dxgiFactory = factory;
-	this->dxgiAdapter = adapter;
+	this->dxgiFactory = factory.GetRef();
+	this->dxgiAdapter = adapter.GetRef();
 	return true;
 }
 
@@ -447,18 +514,14 @@ DX11Display::~DX11Display() {
 }
 
 bool DX11Display::Create( ID3D11Device* const device, IDXGIAdapter* const adapter, const int outputId ) {
-	HRESULT hresult = 0;
-
 	// ziskat output s pozadovanym id
-	IDXGIOutput* output = nullptr;
-	hresult = adapter->EnumOutputs( static_cast< UINT >( outputId ), &output );
+	ComPtr< IDXGIOutput > output;
+	HRESULT hresult = adapter->EnumOutputs( static_cast< UINT >( outputId ), &output );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	// Zjistit dostupne rezimy
-	this->dxgiOutput = output;
+	this->dxgiOutput = output.GetRef();
 	EnumDisplayModes();
-
 	return true;
 }
 
@@ -486,8 +549,10 @@ void DX11Display::EnumDisplayModes() {
 }
 
 void DX11Display::SetSystemMode() {
-	// Pri vstupu do fullscreenu je predan ukazatel na window,
-	// pokud neni dostupny neni okno ve fullscreen rezimu
+	/*
+	Pri vstupu do fullscreenu je predan ukazatel na window,
+	pokud neni dostupny neni okno ve fullscreen rezimu
+	*/
 	if ( window == nullptr ) {
 		return;
 	}
@@ -610,8 +675,8 @@ DX11BackBuffer::DX11BackBuffer() {
 }
 
 DX11BackBuffer::~DX11BackBuffer() {
-	ReleaseCOM( &dxgiSwapChain );
-	ReleaseCOM( &device );
+	ReleaseCom( &dxgiSwapChain );
+	ReleaseCom( &device );
 }
 
 bool DX11BackBuffer::Create( ID3D11Device* const device, IDXGIFactory1* const factory, Window& window ) {
@@ -638,7 +703,7 @@ bool DX11BackBuffer::Create( ID3D11Device* const device, IDXGIFactory1* const fa
 	desc.BufferDesc.Scaling					= DXGI_MODE_SCALING_STRETCHED;
 	desc.Flags								= DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
-	IDXGISwapChain* swapChain = nullptr;
+	ComPtr< IDXGISwapChain > swapChain;
 	hresult = factory->CreateSwapChain( device, &desc, &swapChain );
 	if ( FAILED( hresult ) ) {
 		return false;
@@ -648,10 +713,10 @@ bool DX11BackBuffer::Create( ID3D11Device* const device, IDXGIFactory1* const fa
 	factory->MakeWindowAssociation( hwnd, DXGI_MWA_NO_ALT_ENTER  );
 
 	// ulozit objekty
+	this->window = &window;
 	this->device = device;
 	device->AddRef();
-	this->window = &window;
-	this->dxgiSwapChain = swapChain;
+	this->dxgiSwapChain = swapChain.GetRef();
 
 	return true;
 }
@@ -680,7 +745,7 @@ DX11Buffer::DX11Buffer() {
 }
 
 DX11Buffer::~DX11Buffer() {
-	ReleaseCOM( &resource );
+	ReleaseCom( &resource );
 }
 
 void DX11Buffer::SetBuffer( ID3D11Resource* const resource, const BufferInfo& bufferInfo ) {
@@ -736,7 +801,7 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferP
 
 	UINT bindFlags = D3D11_BIND_SHADER_RESOURCE;
 	// set render target bind flag
-	if ( params.flags & TextureBufferFlags::RENDER_TARGET ) {
+	if ( params.flags & TextureBufferFlags::TEXTURE_BUFFER_FLAG_RENDER_TARGET ) {
 		bindFlags |= D3D11_BIND_RENDER_TARGET;
 	}
 	// set depth stencil bind flag
@@ -793,12 +858,12 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferP
 		textureDesc.CPUAccessFlags		= CPUAccessFlags;
 		textureDesc.MiscFlags			= 0;
 		
-		ID3D11Texture1D* texture = nullptr;
+		ComPtr< ID3D11Texture1D > texture;
 		HRESULT hresult = device->CreateTexture1D( &textureDesc, subresources.get(), &texture );
 		if ( FAILED( hresult ) ) {
 			return false;
 		}
-		SetTextureBuffer( texture, params );
+		SetTextureBuffer( texture.GetRef(), params );
 		return true;
 	}
 
@@ -821,12 +886,12 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferP
 		textureDesc.CPUAccessFlags		= CPUAccessFlags;
 		textureDesc.MiscFlags			= 0;
 		
-		ID3D11Texture2D* texture = nullptr;
+		ComPtr< ID3D11Texture2D > texture;
 		HRESULT hresult = device->CreateTexture2D( &textureDesc, subresources.get(), &texture );
 		if ( FAILED( hresult ) ) {
 			return false;
 		}
-		SetTextureBuffer( texture, params );
+		SetTextureBuffer( texture.GetRef(), params );
 		return true;
 	}
 
@@ -843,12 +908,12 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferP
 		textureDesc.CPUAccessFlags		= CPUAccessFlags;
 		textureDesc.MiscFlags			= 0;
 
-		ID3D11Texture3D* texture = nullptr;
+		ComPtr< ID3D11Texture3D > texture;
 		HRESULT hresult = device->CreateTexture3D( &textureDesc, subresources.get(), &texture );
 		if ( FAILED( hresult ) ) {
 			return false;
 		}
-		SetTextureBuffer( texture, params );
+		SetTextureBuffer( texture.GetRef(), params );
 		return true;
 	}
 
@@ -990,7 +1055,7 @@ bool DX11GenericBuffer::Create(
 		pData = &data;
 	}
 	// create buffer
-	ID3D11Buffer* buffer = nullptr;
+	ComPtr< ID3D11Buffer > buffer;
 	HRESULT hresult = device->CreateBuffer( &bufferDesc, pData, &buffer );
 	if ( FAILED( hresult ) ) {
 		return false;
@@ -1001,7 +1066,7 @@ bool DX11GenericBuffer::Create(
 	bufferInfo.byteWidth = byteWidth;
 	bufferInfo.usage = usage;
 	bufferInfo.access = access;
-	SetBuffer( buffer, bufferInfo );
+	SetBuffer( buffer.GetRef(), bufferInfo );
 	return true;
 }
 
@@ -1022,6 +1087,10 @@ bool DX11GenericBuffer::Map( ID3D11DeviceContext* const context, const int subre
 	return true;
 }
 
+ID3D11Buffer* DX11GenericBuffer::GetD3D11Buffer() {
+	return static_cast< ID3D11Buffer* >( GetResource() );
+}
+
 // DX11RenderTargetDescriptor
 
 DX11RenderTargetDescriptor::DX11RenderTargetDescriptor() {
@@ -1029,7 +1098,7 @@ DX11RenderTargetDescriptor::DX11RenderTargetDescriptor() {
 }
 
 DX11RenderTargetDescriptor::~DX11RenderTargetDescriptor() {
-	ReleaseCOM( &view );
+	ReleaseCom( &view );
 }
 
 bool DX11RenderTargetDescriptor::Create( ID3D11Device* const device, BackBuffer* const backBuffer ) {
@@ -1038,31 +1107,30 @@ bool DX11RenderTargetDescriptor::Create( ID3D11Device* const device, BackBuffer*
 	// get back buffer texture
 	ASSERT_DOWNCAST( backBuffer, DX11BackBuffer );
 	IDXGISwapChain* swapChain = static_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
-	ID3D11Texture2D* texture = nullptr;
+	ComPtr< ID3D11Texture2D > texture;
 	hresult = swapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &texture ) );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
 	// create RTV
-	ID3D11RenderTargetView* view = nullptr;
-	hresult = device->CreateRenderTargetView( texture, NULL, &view );
-	texture->Release();
+	ComPtr< ID3D11RenderTargetView > view;
+	hresult = device->CreateRenderTargetView( texture.Get(), NULL, &view );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	this->view = view;
+	this->view = view.GetRef();
 	return true;
 }
 
 bool DX11RenderTargetDescriptor::Create( ID3D11Device* const device, Buffer* const textureBuffer ) {
 	ASSERT_DOWNCAST( textureBuffer, DX11TextureBuffer );
 	ID3D11Resource* resource = static_cast< DX11TextureBuffer* >( textureBuffer )->GetResource();
-	ID3D11RenderTargetView* view = nullptr;
+	ComPtr< ID3D11RenderTargetView > view;
 	HRESULT hresult = device->CreateRenderTargetView ( resource, NULL, &view );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	this->view = view;
+	this->view = view.GetRef();
 	return true;
 }
 
@@ -1076,18 +1144,18 @@ DX11TextureDescriptor::DX11TextureDescriptor() {
 	view = nullptr;
 }
 DX11TextureDescriptor::~DX11TextureDescriptor() {
-	ReleaseCOM( &view );
+	ReleaseCom( &view );
 }
 
 bool DX11TextureDescriptor::Create( ID3D11Device* const device, Buffer* const textureBuffer ) {
 	ASSERT_DOWNCAST( textureBuffer, DX11TextureBuffer );
 	ID3D11Resource* resource = static_cast< DX11TextureBuffer* >( textureBuffer )->GetResource();
-	ID3D11ShaderResourceView* view = nullptr;
+	ComPtr< ID3D11ShaderResourceView > view;
 	HRESULT hresult = device->CreateShaderResourceView( resource, NULL, &view );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	this->view = view;
+	this->view = view.GetRef();
 	return true;
 }
 
@@ -1103,8 +1171,8 @@ DX11DepthStencilDescriptor::DX11DepthStencilDescriptor() {
 }
 
 DX11DepthStencilDescriptor::~DX11DepthStencilDescriptor() {
-	ReleaseCOM( &state );
-	ReleaseCOM( &view );
+	ReleaseCom( &state );
+	ReleaseCom( &view );
 }
 
 bool DX11DepthStencilDescriptor::Create( ID3D11Device* const device, Buffer* const textureBuffer, const DepthStencilDescriptorParams& params ) {
@@ -1150,7 +1218,7 @@ bool DX11DepthStencilDescriptor::Create( ID3D11Device* const device, Buffer* con
 		viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
 	} 
 	// create view
-	ID3D11DepthStencilView* view = nullptr;
+	ComPtr< ID3D11DepthStencilView > view;
 	hresult = device->CreateDepthStencilView( texture, &viewDesc, &view );
 	if ( FAILED( hresult )  ) {
 		return false;
@@ -1175,16 +1243,15 @@ bool DX11DepthStencilDescriptor::Create( ID3D11Device* const device, Buffer* con
 	stateDesc.FrontFace.StencilDepthFailOp	= GetD3D11StencilOp( params.stencilDepthFailOp );
 	stateDesc.BackFace						= stateDesc.FrontFace;
 
-	ID3D11DepthStencilState* state = nullptr;
+	ComPtr< ID3D11DepthStencilState > state;
 	hresult = device->CreateDepthStencilState( &stateDesc, &state );
 	if ( FAILED( hresult )  ) {
-		view->Release();
 		return false;
 	}
 
 	// ulozit objekty
-	this->view = view;
-	this->state = state;
+	this->view = view.GetRef();
+	this->state = state.GetRef();
 	return true;
 }
 
@@ -1199,40 +1266,96 @@ ID3D11DepthStencilState* DX11DepthStencilDescriptor::GetState() {
 // DX11ConstantBufferDescriptor
 
 DX11ConstantBufferDescriptor::DX11ConstantBufferDescriptor() {
+	buffer = nullptr;
 	constantsCount = 0;
 	constantsSize = 0;
-	slot = 0;
-	buffer = nullptr;
+	ZeroMemory( slots, sizeof( slots ) );
 }
 
 DX11ConstantBufferDescriptor::~DX11ConstantBufferDescriptor() {
-	ReleaseCOM( &buffer );
+	ReleaseCom( &buffer );
 }
 
+/*
+Pozn.: Funkce Create() nekontroluje signaturu konstant!
+*/
 bool DX11ConstantBufferDescriptor::Create( Buffer* const constantBuffer, const ConstantBufferDescriptorParams &params ) {
 	HRESULT hresult = 0;
 
-	// get shader code
-	ASSERT_DOWNCAST( params.shader, DX11Shader )
-	ID3DBlob* blob = static_cast< DX11Shader* >( params.shader )->GetBlob();
-	if ( blob == nullptr ) {
+	ASSERT_DOWNCAST( params.program, DX11RenderProgram );
+	DX11RenderProgram* const program = static_cast< DX11RenderProgram* >( params.program );
+
+	ID3DBlob* shaderBytecode = nullptr;
+	ID3DBlob* shaders[ SHADER_STAGES_COUNT ] = { nullptr };
+	shaders[ static_cast< int >( ShaderStage::VS ) ] = program->GetVertexShaderByteCode();
+	shaders[ static_cast< int >( ShaderStage::PS ) ] = program->GetPixelShaderByteCode();
+	shaders[ static_cast< int >( ShaderStage::GS ) ] = program->GetGeometryShaderByteCode();
+
+	// cisla slotu indexovat od 1 (DirerectX indexuje od 0)! Hodnota 0 indikuje nepouzity slot.
+	int slots[ SHADER_STAGES_COUNT ] = { 0 };
+
+	// najit sloty pro vsechny shadery
+	for ( int i = 0; i < SHADER_STAGES_COUNT; i++ ) {
+		ID3DBlob* const shader = shaders[ i ];
+		if ( shader == nullptr ) {
+			continue;
+		}
+		// reflection
+		ComPtr< ID3D11ShaderReflection > reflector;
+		hresult = D3DReflect(
+			shader->GetBufferPointer(),
+			shader->GetBufferSize(),
+			IID_ID3D11ShaderReflection,
+			reinterpret_cast< void** >( &reflector )
+		);
+		if ( FAILED( hresult ) ) {
+			return false;
+		}
+		// reflect constant buffer, pokud neni definovan, vrati nasledujici volani GetDesc() chybu
+		ID3D11ShaderReflectionConstantBuffer* cbufferReflector = nullptr;
+		cbufferReflector = reflector->GetConstantBufferByName( params.name );
+
+		// konstant buffer description
+		D3D11_SHADER_BUFFER_DESC bufferDesc;
+		hresult = cbufferReflector->GetDesc( &bufferDesc );
+
+		// failed, shader neobsahuje definici pozadovaneho bufferu
+		if ( FAILED( hresult ) ) {
+			continue;
+		}
+		// index slotu
+		D3D11_SHADER_INPUT_BIND_DESC inputBindDesc;
+		hresult = reflector->GetResourceBindingDescByName( params.name, &inputBindDesc );
+		if ( FAILED( hresult ) ) {
+			return false;
+		}
+		slots[ i ] = 1 + static_cast< int >( inputBindDesc.BindPoint );
+
+		// referencni bytecode
+		shaderBytecode = shader;
+		break;
+	}
+
+	// v zadnem shaderu neni buffer s pozadovanym nazvem definovan
+	if ( shaderBytecode == nullptr ) {
 		return false;
 	}
-	// shader code reflection
-	ID3D11ShaderReflection* reflector = nullptr; 
+	// reflect shader
+	ComPtr< ID3D11ShaderReflection > reflector;
 	hresult = D3DReflect(
-		blob->GetBufferPointer(),
-		blob->GetBufferSize(),
+		shaderBytecode->GetBufferPointer(),
+		shaderBytecode->GetBufferSize(),
 		IID_ID3D11ShaderReflection,
-		reinterpret_cast<void** >( &reflector )
+		reinterpret_cast< void** >( &reflector )
 	);
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
 	// reflect constant buffer
 	ID3D11ShaderReflectionConstantBuffer* cbufferReflector = nullptr;
-	cbufferReflector = reflector->GetConstantBufferByName( params.bufferObject );
+	cbufferReflector = reflector->GetConstantBufferByName( params.name );
 
+	// mapovani konstant
 	std::unique_ptr< ConstantPlacement[] > map( new ConstantPlacement[ params.constantsCount ] );
 	int mapped = 0;
 	int offset = 0;
@@ -1273,27 +1396,25 @@ bool DX11ConstantBufferDescriptor::Create( Buffer* const constantBuffer, const C
 		}
 		mapped += 1;
 	}
-	// release reflectors
-	reflector->Release();
 
 	// nepodarilo se namapovat vsechny konstanty
 	if ( mapped != params.constantsCount ) {
 		return false;
 	}
-	// ulozit vysledky
-	ASSERT_DOWNCAST( constantBuffer, DX11Buffer );
-	ID3D11Resource* resource = static_cast< DX11Buffer* >( constantBuffer )->GetResource();
-	ASSERT_DOWNCAST( resource, ID3D11Buffer );
-	this->buffer = static_cast< ID3D11Buffer* >( resource );
-	this->buffer->AddRef();
-	this->constantsCount = params.constantsCount;
-	this->constantsSize = offset;
-	this->slot = params.slot;
-
 	// nesouhlasi zarovnani pameti, ulozit mapu
 	if ( !aligned ) {
 		this->map = std::move( map );
 	}
+	// ulozit vysledky
+	ASSERT_DOWNCAST( constantBuffer, DX11GenericBuffer );
+	this->buffer = static_cast< DX11GenericBuffer* >( constantBuffer )->GetD3D11Buffer();
+	this->buffer->AddRef();
+	this->constantsCount = params.constantsCount;
+	this->constantsSize = offset;
+	this->slots[ 0 ] = slots[ 0 ];	// vs
+	this->slots[ 1 ] = slots[ 1 ];	// ps
+	this->slots[ 2 ] = slots[ 2 ];	// gs
+
 	return true;
 }
 
@@ -1318,6 +1439,18 @@ ID3D11Buffer* DX11ConstantBufferDescriptor::GetBuffer() {
 	return buffer;
 }
 
+int DX11ConstantBufferDescriptor::GetVSSlot() const {
+	return slots[ static_cast< int >( ShaderStage::VS ) ];
+}
+
+int DX11ConstantBufferDescriptor::GetPSSlot() const {
+	return slots[ static_cast< int >( ShaderStage::PS ) ];
+}
+
+int DX11ConstantBufferDescriptor::GetGSSlot() const {
+	return slots[ static_cast< int >( ShaderStage::GS ) ];
+}
+
 // DXShader
 
 DX11Shader::DX11Shader() {
@@ -1328,8 +1461,8 @@ DX11Shader::DX11Shader() {
 }
 
 DX11Shader::~DX11Shader() {
-	ReleaseCOM( &shader );
-	ReleaseCOM( &code );
+	ReleaseCom( &shader );
+	ReleaseCom( &code );
 }
 
 bool DX11Shader::Compile( ID3D11Device* const device, const ShaderParams& params ) {
@@ -1351,7 +1484,7 @@ bool DX11Shader::Compile( ID3D11Device* const device, const ShaderParams& params
 		macros[ i ].Name = params.defines[ i ];
 		macros[ i ].Definition = "0";
 	}
-	// shader target
+	// shader target (type and version)
 	const char* target = nullptr;
 	switch ( params.type ) {
 	case ShaderType::VERTEX_SHADER:		target = "vs_5_0"; break;
@@ -1360,11 +1493,11 @@ bool DX11Shader::Compile( ID3D11Device* const device, const ShaderParams& params
 	}
 	// flags
 	UINT flags = 0;
-	if ( params.flags & SHADER_COMPILE_WARNINGS_AS_ERRRORS ) {
+	if ( params.flags & SHADER_COMPILE_FLAG_WARNINGS_AS_ERRRORS ) {
 		flags |= D3DCOMPILE_WARNINGS_ARE_ERRORS;
 	}
-	if ( params.flags & SHADER_COMPILE_DEBUG ) {
-		flags |= D3DCOMPILE_DEBUG;
+	if ( params.flags & SHADER_COMPILE_FLAG_DEBUG ) {
+		flags |= SHADER_COMPILE_FLAG_DEBUG;
 	}
 	// optimization flags
 	switch ( params.optimization ) {
@@ -1374,7 +1507,7 @@ bool DX11Shader::Compile( ID3D11Device* const device, const ShaderParams& params
 	case ShaderOptimization::HIGH:		flags |= D3DCOMPILE_OPTIMIZATION_LEVEL2; break;
 	}
 	// compile
-	ID3DBlob* code = nullptr;
+	ComPtr< ID3DBlob > code;
 	HRESULT hresult = D3DCompile(
 		params.string,
 		strlen( params.string ),
@@ -1409,11 +1542,10 @@ bool DX11Shader::Compile( ID3D11Device* const device, const ShaderParams& params
 		shader = gs;
 	}
 	if ( shader == nullptr ) {
-		ReleaseCOM( &code );
 		return false;
 	}
 	// ulozit vysledek
-	this->code = code;
+	this->code = code.GetRef();
 	this->shader = shader;
 	this->type = params.type;
 	this->version = params.version;
@@ -1470,12 +1602,12 @@ DX11RenderProgram::DX11RenderProgram() {
 }
 
 DX11RenderProgram::~DX11RenderProgram() {
-	ReleaseCOM( &vs );
-	ReleaseCOM( &ps );
-	ReleaseCOM( &gs );
-	ReleaseCOM( &vsByteCode );
-	ReleaseCOM( &psByteCode );
-	ReleaseCOM( &gsByteCode );
+	ReleaseCom( &vs );
+	ReleaseCom( &ps );
+	ReleaseCom( &gs );
+	ReleaseCom( &vsByteCode );
+	ReleaseCom( &psByteCode );
+	ReleaseCom( &gsByteCode );
 }
 
 bool DX11RenderProgram::Create( Shader* const vs, Shader* const ps, Shader* const gs ) {
@@ -1551,7 +1683,7 @@ DX11Sampler::DX11Sampler() {
 }
 
 DX11Sampler::~DX11Sampler() {
-	ReleaseCOM( &sampler );
+	ReleaseCom( &sampler );
 }
 
 bool DX11Sampler::Create( ID3D11Device* const device, const SamplerParams& params ) {
@@ -1567,12 +1699,12 @@ bool DX11Sampler::Create( ID3D11Device* const device, const SamplerParams& param
 	samplerDesc.MinLOD			= params.minLOD;
 	samplerDesc.MaxLOD			= ( params.maxLOD == MAX_TEXTURE_LOD ? D3D11_FLOAT32_MAX : params.maxLOD );
 
-	ID3D11SamplerState* sampler = nullptr;
+	ComPtr< ID3D11SamplerState > sampler;
 	HRESULT hresult = device->CreateSamplerState( &samplerDesc, &sampler );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	this->sampler = sampler;
+	this->sampler = sampler.GetRef();
 	return true;
 }
 
@@ -1587,7 +1719,7 @@ DX11BlendState::DX11BlendState() {
 }
 
 DX11BlendState::~DX11BlendState() {
-	ReleaseCOM( &state );
+	ReleaseCom( &state );
 }
 
 bool DX11BlendState::Create( ID3D11Device* const device, const BlendStateParams& params ) {
@@ -1608,12 +1740,12 @@ bool DX11BlendState::Create( ID3D11Device* const device, const BlendStateParams&
 		rtDesc.BlendOpAlpha			 = GetD3D11BlendOp( rtParam.opAlpha );
 		rtDesc.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	}
-	ID3D11BlendState* state = nullptr;
+	ComPtr< ID3D11BlendState > state;
 	HRESULT hresult = device->CreateBlendState( &desc, &state );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	this->state = state;
+	this->state = state.GetRef();
 	return true;
 }
 
@@ -1628,7 +1760,7 @@ DX11RasterizerState::DX11RasterizerState() {
 }
 
 DX11RasterizerState::~DX11RasterizerState() {
-	ReleaseCOM( &state );
+	ReleaseCom( &state );
 }
 
 bool DX11RasterizerState::Create( ID3D11Device* const device, const RasterizerStateParams& params ) {
@@ -1650,12 +1782,12 @@ bool DX11RasterizerState::Create( ID3D11Device* const device, const RasterizerSt
 	desc.MultisampleEnable		= ( params.multisampling ? TRUE : FALSE );
 	desc.AntialiasedLineEnable	= ( params.antialiasedLines ? TRUE : FALSE );
 
-	ID3D11RasterizerState* state = nullptr;
+	ComPtr< ID3D11RasterizerState > state;
 	HRESULT hresult = device->CreateRasterizerState( &desc, &state );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	this->state = state;
+	this->state = state.GetRef();
 	return true;
 }
 
@@ -1670,7 +1802,7 @@ DX11VertexLayout::DX11VertexLayout() {
 }
 
 DX11VertexLayout::~DX11VertexLayout() {
-	ReleaseCOM( &inputLayout );
+	ReleaseCom( &inputLayout );
 }
 
 bool DX11VertexLayout::Create( ID3D11Device* const device, const VertexAttribute* const attributes, const int attributesCount, RenderProgram* const program ) {
@@ -1701,7 +1833,7 @@ bool DX11VertexLayout::Create( ID3D11Device* const device, const VertexAttribute
 		}
 	}
 	// create input layout
-	ID3D11InputLayout* inputLayout;
+	ComPtr< ID3D11InputLayout > inputLayout;
 	HRESULT hresult = device->CreateInputLayout(
 		elements.Raw(),
 		static_cast< UINT >( elements.Length() ),
@@ -1712,7 +1844,7 @@ bool DX11VertexLayout::Create( ID3D11Device* const device, const VertexAttribute
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	this->inputLayout = inputLayout;
+	this->inputLayout = inputLayout.GetRef();
 	return true;
 }
 
@@ -1730,10 +1862,10 @@ DX11VertexDescriptor::DX11VertexDescriptor() {
 
 DX11VertexDescriptor::~DX11VertexDescriptor() {
 	for ( int i = 0; i < MAX_VERTEX_INPUT_SLOTS; i++ ) {
-		ReleaseCOM( &vertexBuffers[ i ] );
+		ReleaseCom( &vertexBuffers[ i ] );
 	}
-	ReleaseCOM( &indexBuffer );
-	ReleaseCOM( &inputLayout );
+	ReleaseCom( &indexBuffer );
+	ReleaseCom( &inputLayout );
 }
 
 bool DX11VertexDescriptor::Create( const VertexDescriptorParams& params ) {
@@ -1770,6 +1902,18 @@ bool DX11VertexDescriptor::Create( const VertexDescriptorParams& params ) {
 	return true;
 }
 
+ID3D11Buffer** DX11VertexDescriptor::GetVertexBuffers() {
+	return vertexBuffers;
+}
+
+ID3D11Buffer* DX11VertexDescriptor::GetIndexBuffer() {
+	return indexBuffer;
+}
+
+ID3D11InputLayout* DX11VertexDescriptor::GetInputLayout() {
+	return inputLayout;
+}
+
 // DX11CommandInterface
 
 DX11CommandInterface::DX11CommandInterface() {
@@ -1777,7 +1921,7 @@ DX11CommandInterface::DX11CommandInterface() {
 }
 
 DX11CommandInterface::~DX11CommandInterface() {
-	ReleaseCOM( &context );
+	ReleaseCom( &context );
 }
 
 bool DX11CommandInterface::Create() {
@@ -1926,15 +2070,55 @@ void DX11CommandInterface::CopyBuffer( Buffer* const src, Buffer* const dest ) {
 	);
 }
 
-// DX11PipelineState
+void DX11CommandInterface::SetConstantBuffers( ConstantBufferDescriptor* const descriptors[], const int count ) {
+	const UINT MAX_SLOTS = 8;
 
+	// deaktivovat vsechny sloty
+	if ( descriptors == nullptr ) {
+		ID3D11Buffer* buffers[ MAX_SLOTS ] = { nullptr };
+		context->VSSetConstantBuffers( 0, MAX_SLOTS, buffers );
+		context->PSSetConstantBuffers( 0, MAX_SLOTS, buffers );
+		context->GSSetConstantBuffers( 0, MAX_SLOTS, buffers );
+		return;
+	}
+	ID3D11Buffer* vsBuffers[ MAX_SLOTS + 1 ] = { nullptr };
+	ID3D11Buffer* psBuffers[ MAX_SLOTS + 1 ] = { nullptr };
+	ID3D11Buffer* gsBuffers[ MAX_SLOTS + 1 ] = { nullptr };
+
+	for ( int i = 0; i < count; i++ ) {
+		ASSERT_DOWNCAST( descriptors[ i ], DX11ConstantBufferDescriptor );
+		DX11ConstantBufferDescriptor* descriptor = static_cast< DX11ConstantBufferDescriptor* >( descriptors[ i ] );
+		vsBuffers[ descriptor->GetVSSlot() ] = descriptor->GetBuffer();
+		psBuffers[ descriptor->GetPSSlot() ] = descriptor->GetBuffer();
+		gsBuffers[ descriptor->GetGSSlot() ] = descriptor->GetBuffer();
+	}
+	context->VSSetConstantBuffers( 0, MAX_SLOTS, vsBuffers + 1 );
+	context->PSSetConstantBuffers( 0, MAX_SLOTS, psBuffers + 1 );
+	context->GSSetConstantBuffers( 0, MAX_SLOTS, gsBuffers + 1 );
+}
+
+void DX11CommandInterface::SetVertexInput( VertexDescriptor* descriptor ) {
+	ASSERT_DOWNCAST( descriptor, DX11VertexDescriptor );
+	context->IASetInputLayout( static_cast< DX11VertexDescriptor* >( descriptor )->GetInputLayout() );
+	context->IASetVertexBuffers(
+		0,
+		MAX_VERTEX_INPUT_SLOTS,
+		static_cast< DX11VertexDescriptor* >( descriptor )->GetVertexBuffers(),
+		NULL,
+		NULL
+	);
+	context->IASetIndexBuffer( static_cast< DX11VertexDescriptor* >( descriptor )->GetIndexBuffer(), ... );
+}
+
+// DX11PipelineState
+/*
 DX11PipelineState::DX11PipelineState() {
 	inputLayout = nullptr;
 	topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 }
 
 DX11PipelineState::~DX11PipelineState() {
-	ReleaseCOM( &inputLayout );
+	ReleaseCom( &inputLayout );
 }
 
 bool DX11PipelineState::Create( const PipelineStateParams& params ) {
@@ -1955,16 +2139,16 @@ bool DX11PipelineState::Create( const PipelineStateParams& params ) {
 
 void DX11PipelineState::SetState( ID3D11DeviceContext* const context, const DX11PipelineState* const current ) {
 	if ( current == nullptr ) {
-		/*
+		
 		context->VSSetShader( vs, NULL, 0 );
 		context->PSSetShader( ps, NULL, 0 );
 		context->GSSetShader( gs, NULL, 0 );
-		*/
+	
 		context->IASetInputLayout( inputLayout );
 		//context->IAGetPrimitiveTopology( topology );
 		return;
 	}
-	/*
+	
 	if ( vs != current->vs ) {
 		context->VSSetShader( vs, NULL, 0 );
 	}
@@ -1974,7 +2158,7 @@ void DX11PipelineState::SetState( ID3D11DeviceContext* const context, const DX11
 	if ( gs != current->gs ) {
 		context->GSSetShader( gs, NULL, 0 );
 	}
-	*/
+	
 	if ( inputLayout != current->inputLayout ) {
 		context->IASetInputLayout( inputLayout );
 	}
@@ -1982,3 +2166,4 @@ void DX11PipelineState::SetState( ID3D11DeviceContext* const context, const DX11
 		//context->IAGetPrimitiveTopology( topology );
 	//}
 }
+*/

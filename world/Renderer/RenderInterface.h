@@ -55,9 +55,6 @@ namespace RenderInterface {
 		}
 	}
 
-	// Flags: datovy typ pro bitove priznaky. Priznaky se doporucuje definovat ve vlastnim namespace.
-	typedef uint32_t Flags;
-
 	enum class Format {
 		UNKNOWN = 0,
 
@@ -195,9 +192,9 @@ namespace RenderInterface {
 	/*
 	Priznaky texture bufferu
 	*/
-	namespace TextureBufferFlags {
-		const Flags RENDER_TARGET = 0x01;
-	}
+	enum TextureBufferFlags {
+		TEXTURE_BUFFER_FLAG_RENDER_TARGET = 0x01
+	};
 
 	/*
 	Parametry funkce Device::CreateTextureBuffer()
@@ -214,7 +211,7 @@ namespace RenderInterface {
 		int arraySize;
 		int samplesCount;
 		int samplesQuality;
-		Flags flags;
+		TextureBufferFlags flags;
 	};
 
 	/*
@@ -317,16 +314,22 @@ namespace RenderInterface {
 		int size;
 		int align;
 	};
-
+	/*
+	// shader stage, je mozne kombinovat operatorem OR
+	enum ShaderStage {
+		SHADER_STAGE_VS = 1 << 0,
+		SHADER_STAGE_PS = 1 << 1,
+		SHADER_STAGE_GS = 1 << 2
+	};
+	*/
 	/*
 	parametry funkce Device::CreateConstantBufferDescriptor()
 	*/
 	struct ConstantBufferDescriptorParams {
-		Shader* shader;
-		const char* bufferObject;
-		ShaderConstant* const constants;
-		int constantsCount;
-		int slot;
+		const char* name;					// nazev konstant bufferu
+		RenderProgram* program;
+		ShaderConstant* const constants;	// popis konstant
+		int constantsCount;					// pocet konstant
 	};
 
 	enum class ShaderType {
@@ -336,9 +339,10 @@ namespace RenderInterface {
 		GEOMETRY_SHADER
 	};
 
-	typedef unsigned int ShaderCompileFlags;
-	const ShaderCompileFlags SHADER_COMPILE_WARNINGS_AS_ERRRORS	= ( 0x01 );
-	const ShaderCompileFlags SHADER_COMPILE_DEBUG				= ( 0x01 << 1 );
+	enum ShaderCompileFlags {
+		SHADER_COMPILE_FLAG_WARNINGS_AS_ERRRORS	= 1 << 0,
+		SHADER_COMPILE_FLAG_DEBUG				= 1 << 1
+	};
 
 	enum class ShaderOptimization {
 		DISABLED,	// optimalizace vypnuta (nejrychlejsi kompilace)
@@ -350,6 +354,12 @@ namespace RenderInterface {
 	enum class ShaderVersion {
 		UNDEFINED,
 		HLSL_50_GLSL_430	// HLSL 5.0, GLSL 4.30
+	};
+
+	enum class ShaderStage {
+		VS = 0,
+		PS = 1,
+		GS = 2
 	};
 
 	struct ShaderParams {
@@ -623,7 +633,12 @@ namespace RenderInterface {
 		//Kopirovani obsahu bufferu pomoci GPU. Cilovy buffer musi mit shodnou velikost a kompatibilni format
 		virtual void CopyBuffer( Buffer* const src, Buffer* const dest ) = 0;
 
-		virtual void SetPipelineState( PipelineState* const state );
+		// Binduje konstant buffery do odpovidajicich slotu. Pokud je parametr descriptors nullptr, jsou vsechny buffery odpojeny.
+		virtual void SetConstantBuffers( ConstantBufferDescriptor* const descriptors[], const int count ) = 0;
+
+		virtual void SetVertexInput( VertexDescriptor* descriptor ) = 0;
+
+		//virtual void SetPipelineState( PipelineState* const state );
 
 		// Draw( VertexDescriptor )
 
@@ -714,9 +729,11 @@ namespace RenderInterface {
 	/*
 	Constant buffer descriptor popisuje format, umisteni a usporadani konstant v constant bufferu.
 	Pomoci tohoto objektu jsou data mapovana do bufferu.
+	Descriptor je vytvoren pro konkretni render program, objekt je ovsem mozne pouzit pro vice render programu,
+	pokud je dodrzen stejny layout constant bufferu.
 	*/
 	class ConstantBufferDescriptor: public DeviceObject {};
-
+	
 	/*
 	Shader (VS, PS nebo GS)
 	Shader jazyk je podmnozina HLSL. OpenGL implementace prevadi HLSL kod na GLSL kod.
@@ -770,7 +787,7 @@ namespace RenderInterface {
 	};
 
 	/*
-	Podobne jako texture descriptor slouzi k nabindovani texture bufferu do pipeline stage,
+	Podobne, jako texture descriptor slouzi k nabindovani texture bufferu do pipeline stage,
 	slouzi vertex descriptor k nabindovani vertex bufferu a index bufferu.
 	K vytvoreni vertex descriptoru je potreba vertex layout objekt.
 	Objekt vznikl kvuli podpore Vertex Arrays Object (VAO) v OpenGL.
@@ -789,6 +806,6 @@ namespace RenderInterface {
 	- rasterize state
 	- primitive topology
 	*/
-	class PipelineState: public DeviceObject {};
+	//class PipelineState: public DeviceObject {};
 	
 } // namespace RenderInterface

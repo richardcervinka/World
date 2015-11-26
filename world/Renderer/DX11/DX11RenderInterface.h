@@ -30,7 +30,7 @@ using namespace RenderInterface;
 
 // uvolneni COM objektu
 template < typename T >
-inline void ReleaseCOM( T** target ) {
+inline void ReleaseCom( T** target ) {
 	if ( *target != nullptr ) {
 		( *target )->Release();
 		*target = nullptr;
@@ -133,6 +133,8 @@ public:
 	virtual bool UpdateBuffer( Buffer* const buffer, const int subresource, const void* const data ) override;
 	virtual bool UpdateConstantBuffer( ConstantBufferDescriptor* const descriptor, const void* const data ) override;
 	virtual void CopyBuffer( Buffer* const src, Buffer* const dest ) override;
+	virtual void SetConstantBuffers( ConstantBufferDescriptor* const descriptors[], const int count ) override;
+	virtual void SetVertexInput( VertexDescriptor* descriptor ) override;
 
 private:
 	ID3D11DeviceContext* context;
@@ -231,6 +233,9 @@ public:
 	);
 	// DX11Buffer implementation
 	virtual bool Map( ID3D11DeviceContext* const context, const int subresource, const D3D11_MAP mapType, MappedBuffer& result ) override;
+
+	// implementation interface
+	ID3D11Buffer* GetD3D11Buffer();
 };
 
 class DX11RenderTargetDescriptor: public RenderTargetDescriptor {
@@ -283,9 +288,26 @@ public:
 
 	// pouze pro interni uziti, zkopiruje data ze systemove pameti (src) do bufferu (dest)
 	void UpdateConstants( const void* const src, void* const dest ) const;
+
+	// implementation interface
 	ID3D11Buffer* GetBuffer();
+	int GetVSSlot() const;
+	int GetPSSlot() const;
+	int GetGSSlot() const;
 
 private:
+	ID3D11Buffer* buffer;
+	int constantsCount;
+	int constantsSize;
+
+	/*
+	Indexy slotu pro jednotlive shadery, ke kterym je buffer pripojen.
+	Indexovani zacina hodnotou 1, index 0 je vyhrazen pro nepouzivany slot!
+	Indexovani od 1 eliminuje potrebu vyhodnocovat podminkou index slotu pri bindovani bufferu.
+	*/
+	enum { SHADER_STAGES_COUNT = 3 };
+	int slots[ SHADER_STAGES_COUNT ];
+
 	// mapovani konstant ze systemove pameti do bufferu
 	struct ConstantPlacement {
 		int sysMemOffset;
@@ -293,10 +315,6 @@ private:
 		int size;
 	};
 	std::unique_ptr< ConstantPlacement[] > map;
-	int constantsCount;
-	int constantsSize;
-	int slot;
-	ID3D11Buffer* buffer;
 };
 
 class DX11Shader: public Shader {
@@ -404,12 +422,17 @@ public:
 	~DX11VertexDescriptor();
 	bool Create( const VertexDescriptorParams& params );
 
+	// implementation interface
+	ID3D11Buffer** GetVertexBuffers();
+	ID3D11Buffer* GetIndexBuffer();
+	ID3D11InputLayout* GetInputLayout();
+
 private:
 	ID3D11Buffer* vertexBuffers[ MAX_VERTEX_INPUT_SLOTS ];
 	ID3D11Buffer* indexBuffer;
 	ID3D11InputLayout* inputLayout;
 };
-
+/*
 struct PipelineStateParams {
 	VertexLayout* vertexLayout;
 	PrimitiveTopology topology;
@@ -430,3 +453,4 @@ private:
 	D3D11_PRIMITIVE_TOPOLOGY topology;
 	//ID3D11SamplerState* samplerStates[ MAX_SAMPLERS ];
 };
+*/
