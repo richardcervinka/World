@@ -18,11 +18,13 @@ class DX11GenericBuffer;
 class DX11RenderTargetDescriptor;
 class DX11TextureDescriptor;
 class DX11ConstantBufferDescriptor;
+class DX11DepthStencilBufferDescriptor;
 class DX11Shader;
 class DX11RenderProgram;
 class DX11Sampler;
 class DX11BlendState;
 class DX11RasterizerState;
+class DX11DepthStencilState;
 class DX11VertexLayout;
 class DX11VertexDescriptor;
 
@@ -36,15 +38,6 @@ inline void ReleaseCom( T** target ) {
 		*target = nullptr;
 	}
 }
-
-/*
-Ukonci aplikaci v dusledku chyby volani DirectX
-Funkce nesmi byt volana pri vytvareni RenderDevice objektu
-*/
-void AbortDXInvalidCall( const HRESULT hresult );
-
-// prevede typ Format na DXGI_FORMAT
-DXGI_FORMAT GetDXGIFormat( const Format format );
 
 class DX11Device: public Device {
 public:
@@ -62,8 +55,8 @@ public:
 
 	virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( BackBuffer* const backBuffer ) override;
 	virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( Buffer* const textureBuffer ) override;
-	virtual TextureDescriptor* CreateTextureDescriptor( Buffer* const textureBuffer ) override;
-	virtual DepthStencilDescriptor* CreateDepthStencilDescriptor( Buffer* const textureBuffer, const DepthStencilDescriptorParams& params ) override;
+	virtual TextureDescriptor* CreateTextureDescriptor( Buffer* const textureBuffer, Sampler* const sampler ) override;
+	virtual DepthStencilBufferDescriptor* CreateDepthStencilBufferDescriptor( Buffer* const textureBuffer ) override;
 	virtual ConstantBufferDescriptor* CreateConstantBufferDescriptor( Buffer* const constantBuffer, const ConstantBufferDescriptorParams& params ) override;
 	virtual VertexDescriptor* CreateVertexDescriptor( const VertexDescriptorParams& params ) override;
 
@@ -75,12 +68,12 @@ public:
 	virtual VertexLayout* CreateVertexLayout( const VertexAttribute* const attributes, const int attributesCount, RenderProgram* const program ) override;
 	virtual BlendState* CreateBlendState( const BlendStateParams& params ) override;
 	virtual RasterizerState* CreateRasterizerState( const RasterizerStateParams& params ) override;
+	virtual DepthStencilState* CreateDepthStencilState( const DepthStencilStateParams& params ) override;
 
 	virtual int GetMultisampleQuality( const int samplesCount ) const override;
 
 	// implementation interface
 	ID3D11DeviceContext* GetContext();
-	ID3D11Device* GetDevice();
 
 private:
 	IDXGIFactory1* dxgiFactory;
@@ -95,7 +88,7 @@ public:
 	
 	bool Create( ID3D11Device* const device, IDXGIAdapter* const adapter, const int outputId );
 
-	// implementace rozhrani Display
+	// Display implementation
 	virtual bool SetMode( const DisplayMode& mode, Window& window ) override;
 	virtual void SetSystemMode() override;
 	virtual bool GetMode( const int id, DisplayMode& result ) const override;
@@ -117,16 +110,16 @@ public:
 	~DX11CommandInterface();
 	bool Create();
 
-	// implementace rozhrani CommandInterface
+	// CommandInterface implementation
 	virtual void Begin( Device* const device ) override;
 	virtual void Begin( CommandList* const commandList ) override;
 	virtual void End() override;
 	virtual void Flush() override;
-	virtual void SetRenderTargets( RenderTargetDescriptor* const renderTargets[], const int count, DepthStencilDescriptor* const depthStencil ) override;
+	virtual void SetRenderTargets( RenderTargetDescriptor* const renderTargets[], const int count, DepthStencilBufferDescriptor* const depthStencilBuffer ) override;
 	virtual void ClearRenderTarget( RenderTargetDescriptor* const renderTarget, const Color& color ) override;
-	virtual void ClearDepthStencil( DepthStencilDescriptor* const descriptor, const float depth, const uint8_t stencil ) override;
-	virtual void ClearDepth( DepthStencilDescriptor* const descriptor, const float depth ) override;
-	virtual void ClearStencil( DepthStencilDescriptor* const descriptor, const uint8_t stencil ) override;
+	virtual void ClearDepthStencil( DepthStencilBufferDescriptor* const descriptor, const float depth, const uint8_t stencil ) override;
+	virtual void ClearDepth( DepthStencilBufferDescriptor* const descriptor, const float depth ) override;
+	virtual void ClearStencil( DepthStencilBufferDescriptor* const descriptor, const uint8_t stencil ) override;
 	virtual void ClearState() override;
 	virtual bool Map( Buffer* const buffer, const int subresource, const MapPolicy policy, MappedBuffer& result ) override;
 	virtual void Unmap( Buffer* const buffer, MappedBuffer& mappedBuffer ) override;
@@ -134,7 +127,19 @@ public:
 	virtual bool UpdateConstantBuffer( ConstantBufferDescriptor* const descriptor, const void* const data ) override;
 	virtual void CopyBuffer( Buffer* const src, Buffer* const dest ) override;
 	virtual void SetConstantBuffers( ConstantBufferDescriptor* const descriptors[], const int count ) override;
-	virtual void SetVertexInput( VertexDescriptor* descriptor ) override;
+	virtual void SetVertexInput( VertexDescriptor* const descriptor ) override;
+	virtual void SetRenderProgram( RenderProgram* const program ) override;
+	virtual void Draw( const int verticesCount, const int startVertex ) override;
+	virtual void DrawIndexed( const int indicesCount, const int startIndex ) override;
+	virtual void DrawInstanced( const int verticesCount, const int startVertex, const int instancesCount, const int startInstance ) override;
+	virtual void DrawIndexedInstanced( const int indicesCount, const int startIndex, const int instancesCount, const int startInstance ) override;
+	virtual void SetPrimitiveTopology( const PrimitiveTopology topology ) override;
+	virtual void SetBlendState( BlendState* const state ) override;
+	virtual void SetDepthStencilState( DepthStencilState* const state, const uint32_t stencilRef ) override;
+	virtual void SetRasterizerState( RasterizerState* const state ) override;
+	virtual void SetVSTextures( TextureDescriptor* const descriptors[], const int count ) override;
+	virtual void SetPSTextures( TextureDescriptor* const descriptors[], const int count ) override;
+	virtual void SetGSTextures( TextureDescriptor* const descriptors[], const int count ) override;
 
 private:
 	ID3D11DeviceContext* context;
@@ -146,7 +151,7 @@ public:
 	virtual ~DX11BackBuffer();
 	bool Create( ID3D11Device* const device, IDXGIFactory1* const factory, Window& window );
 
-	// implementace rozhrani BackBuffer
+	// BackBuffer implementation
 	virtual void Present( const int vsync ) override;
 	virtual void Resize() override;
 	
@@ -166,7 +171,7 @@ public:
 	DX11Buffer();
 	~DX11Buffer() = 0;
 
-	// implementace rozhrani Buffer
+	// Buffer implementation
 	virtual void GetInfo( BufferInfo& result ) const override;
 	virtual BufferType GetType() const override;
 	virtual int GetByteWidth() const override;
@@ -259,25 +264,23 @@ public:
 	bool Create( ID3D11Device* const device, Buffer* const textureBuffer );
 
 	// implementation interface
-	ID3D11ShaderResourceView* GetView();
+	ID3D11ShaderResourceView* GetD3D11ShaderResourceView();
 
 private:
 	ID3D11ShaderResourceView* view;
 };
 
-class DX11DepthStencilDescriptor: public DepthStencilDescriptor {
+class DX11DepthStencilBufferDescriptor: public DepthStencilBufferDescriptor {
 public:
-	DX11DepthStencilDescriptor();
-	~DX11DepthStencilDescriptor();
-	bool Create( ID3D11Device* const device, Buffer* const textureBuffer, const DepthStencilDescriptorParams& params );
+	DX11DepthStencilBufferDescriptor();
+	~DX11DepthStencilBufferDescriptor();
+	bool Create( ID3D11Device* const device, Buffer* const textureBuffer );
 
 	// implementation interface
-	ID3D11DepthStencilView* GetView();
-	ID3D11DepthStencilState* GetState();
+	ID3D11DepthStencilView* GetD3D11DepthStencilView();
 
 private:
 	ID3D11DepthStencilView* view;
-	ID3D11DepthStencilState* state;
 };
 
 class DX11ConstantBufferDescriptor: public ConstantBufferDescriptor {
@@ -300,13 +303,10 @@ private:
 	int constantsCount;
 	int constantsSize;
 
-	/*
-	Indexy slotu pro jednotlive shadery, ke kterym je buffer pripojen.
-	Indexovani zacina hodnotou 1, index 0 je vyhrazen pro nepouzivany slot!
-	Indexovani od 1 eliminuje potrebu vyhodnocovat podminkou index slotu pri bindovani bufferu.
-	*/
-	enum { SHADER_STAGES_COUNT = 3 };
-	int slots[ SHADER_STAGES_COUNT ];
+	// Indexy cbuffer slotu pro shadery
+	int vsSlot;
+	int psSlot;
+	int gsSlot;
 
 	// mapovani konstant ze systemove pameti do bufferu
 	struct ConstantPlacement {
@@ -323,7 +323,7 @@ public:
 	~DX11Shader();
 	bool Compile( ID3D11Device* const device, const ShaderParams& params );
 
-	// implementace rozhrani Shader
+	// Shader implementation
 	virtual ShaderType GetType() const override;
 	virtual ShaderVersion GetVersion() const override;
 
@@ -403,6 +403,19 @@ private:
 	ID3D11RasterizerState* state;
 };
 
+class DX11DepthStencilState: public DepthStencilState {
+public:
+	DX11DepthStencilState();
+	~DX11DepthStencilState();
+	bool Create( ID3D11Device* const device, const DepthStencilStateParams& params );
+
+	// implementation interface
+	ID3D11DepthStencilState* GetD3D11DepthStencilState();
+
+private:
+	ID3D11DepthStencilState* state;
+};
+
 class DX11VertexLayout: public VertexLayout {
 public:
 	DX11VertexLayout();
@@ -426,31 +439,11 @@ public:
 	ID3D11Buffer** GetVertexBuffers();
 	ID3D11Buffer* GetIndexBuffer();
 	ID3D11InputLayout* GetInputLayout();
+	DXGI_FORMAT GetIndexBufferDXGIFormat() const;
 
 private:
 	ID3D11Buffer* vertexBuffers[ MAX_VERTEX_INPUT_SLOTS ];
 	ID3D11Buffer* indexBuffer;
+	DXGI_FORMAT indexBufferFormat;
 	ID3D11InputLayout* inputLayout;
 };
-/*
-struct PipelineStateParams {
-	VertexLayout* vertexLayout;
-	PrimitiveTopology topology;
-	//Sampler* samplers[ MAX_SAMPLERS ];
-};
-
-class DX11PipelineState: public PipelineState {
-public:
-	DX11PipelineState();
-	~DX11PipelineState();
-	bool Create( const PipelineStateParams& params );
-
-	// implementation interface
-	void SetState( ID3D11DeviceContext* const context, const DX11PipelineState* const current );
-
-private:
-	ID3D11InputLayout* inputLayout;
-	D3D11_PRIMITIVE_TOPOLOGY topology;
-	//ID3D11SamplerState* samplerStates[ MAX_SAMPLERS ];
-};
-*/

@@ -17,23 +17,40 @@ namespace RenderInterface {
 	class Buffer;
 	class TextureDescriptor;
 	class RenderTargetDescriptor;
-	class DepthStencilDescriptor;
+	class DepthStencilBufferDescriptor;
 	class ConstantBufferDescriptor;
 	class Shader;
 	class RenderProgram;
 	class Sampler;
 	class BlendState;
 	class RasterizerState;
+	class DepthStencilState;
 	class VertexLayout;
 	class VertexDescriptor;
 	class PipelineState;
 
-	// Render Interface constants
+	// Render Interface constants:
+
+	// Maximalni kvalita multisample algoritmu
 	const int MAX_MULTISAMPLE_QUALITY = -1;
+
+	// max texture lod
 	const int MAX_TEXTURE_LOD = -1;
+
+	// maximalni pocettextur nabindovanych shaderu
+	const int MAX_TEXTURES = 32;
+
+	// maximalni pocet aktivnich render targets
 	const int MAX_RENDER_TARGETS = 8;
+
+	// maximalni pocet slotu, na ktere se pripojuje vertex buffer
 	const int MAX_VERTEX_INPUT_SLOTS = 16;
+
+	// maximalni pocet aktivnich sampleru
 	const int MAX_SAMPLERS = 8;
+
+	// Maximalni pocet aktivnich konstant bufferu
+	const int MAX_CBUFFER_SLOTS = 8;
 	
 	/*
 	Informace potrebne k vytvoreni objektu DX11Device
@@ -44,7 +61,7 @@ namespace RenderInterface {
 		int minorFeatureLevels;
 	};
 	
-	// Vytvori device objekt DirectX implementace
+	// Vytvori Device objekt (DirectX implementace)
 	Device* DX11CreateDevice( const DX11CreateDeviceParams& params );
 
 	template < typename T >
@@ -108,8 +125,8 @@ namespace RenderInterface {
 	};
 	
 	/*
-	FormatInfo: informace o hodnote typu Format
-	pozn.:
+	FormatInfo: informace o typu Format
+	nektere vypocty:
 	pointPitch = blockByteWidth / blockSize
 	rowPitch = pointPitch * textureWidth
 	*/
@@ -181,17 +198,14 @@ namespace RenderInterface {
 	};
 
 	/*
-	Rozmery textury. Vsechny hodnoty museji byt >= 1
+	Rozmery textury, hodnoty >= 1
 	*/
 	struct TextureDimmensions {
 		int width;
 		int height;
 		int depth;
 	};
-	
-	/*
-	Priznaky texture bufferu
-	*/
+
 	enum TextureBufferFlags {
 		TEXTURE_BUFFER_FLAG_RENDER_TARGET = 0x01
 	};
@@ -215,7 +229,7 @@ namespace RenderInterface {
 	};
 
 	/*
-	Filtrovani textur
+	Rezim filtrovani textur
 	*/
 	enum class TextureFilter {
 		POINT,
@@ -239,7 +253,7 @@ namespace RenderInterface {
 	};
 	
 	/*
-	Parametry objektu Sampler
+	Parametry funkce Device::CreateSampler()
 	*/
 	struct SamplerParams {
 		TextureFilter filter;
@@ -280,11 +294,18 @@ namespace RenderInterface {
 	};
 
 	/*
-	Parametry funkce Device::CreateDepthStencilDescriptor()
-	*/
-	struct DepthStencilDescriptorParams {
+	struct DepthStencilBufferDescriptorParams {
 		DepthStencilUsage depthUsage;			// default: STANDARD
 		DepthStencilUsage stencilUsage;			// default: STANDARD
+	};
+	*/
+
+	/*
+	Parametry funkce Device::CreateDepthStencilState()
+	*/
+	struct DepthStencilStateParams {
+		bool enableDepth;
+		bool enableStencil;
 		DepthStencilComparsion depthFunc;		// default: LESS
 		DepthStencilComparsion stencilFunc;		// default: ALWAYS
 		StencilOperation stencilPassOp;			// default: KEEP
@@ -314,14 +335,7 @@ namespace RenderInterface {
 		int size;
 		int align;
 	};
-	/*
-	// shader stage, je mozne kombinovat operatorem OR
-	enum ShaderStage {
-		SHADER_STAGE_VS = 1 << 0,
-		SHADER_STAGE_PS = 1 << 1,
-		SHADER_STAGE_GS = 1 << 2
-	};
-	*/
+
 	/*
 	parametry funkce Device::CreateConstantBufferDescriptor()
 	*/
@@ -344,6 +358,9 @@ namespace RenderInterface {
 		SHADER_COMPILE_FLAG_DEBUG				= 1 << 1
 	};
 
+	/*
+	Nastaveni kompilatoru shaderu
+	*/
 	enum class ShaderOptimization {
 		DISABLED,	// optimalizace vypnuta (nejrychlejsi kompilace)
 		LOW,
@@ -354,12 +371,6 @@ namespace RenderInterface {
 	enum class ShaderVersion {
 		UNDEFINED,
 		HLSL_50_GLSL_430	// HLSL 5.0, GLSL 4.30
-	};
-
-	enum class ShaderStage {
-		VS = 0,
-		PS = 1,
-		GS = 2
 	};
 
 	struct ShaderParams {
@@ -385,6 +396,13 @@ namespace RenderInterface {
 		int instanceCount;			// pocet instanci se stejnym atributem (0 pro per vertex attribute; >0 pro per instance attribute)
 	};
 
+	struct VertexDescriptorParams {
+		Buffer* vertexBuffers[ MAX_VERTEX_INPUT_SLOTS ];
+		Buffer* indexBuffer;
+		Format indexBufferFormat;
+		VertexLayout* vertexLayout;
+	};
+
 	enum class PrimitiveTopology {
 		DEFAULT,
 		POINTLIST,
@@ -392,12 +410,6 @@ namespace RenderInterface {
 		LINESTRIP,
 		TRIANGLELIST,
 		TRIANGLESTRIP
-	};
-
-	struct VertexDescriptorParams {
-		Buffer* vertexBuffers[ MAX_VERTEX_INPUT_SLOTS ];
-		Buffer* indexBuffer;
-		VertexLayout* vertexLayout;
 	};
 
 	enum class Blend {
@@ -539,13 +551,12 @@ namespace RenderInterface {
 		virtual Buffer* CreateVertexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) = 0;
 		virtual Buffer* CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) = 0;
 		virtual Buffer* CreateConstantBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData ) = 0;
-		// CreateTextureCubeBuffer
 
 		// descriptors
 		virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( BackBuffer* const backBuffer ) = 0;
 		virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( Buffer* const textureBuffer ) = 0;
-		virtual TextureDescriptor* CreateTextureDescriptor( Buffer* const textureBuffer ) = 0;
-		virtual DepthStencilDescriptor* CreateDepthStencilDescriptor( Buffer* const textureBuffer, const DepthStencilDescriptorParams& params ) = 0;
+		virtual TextureDescriptor* CreateTextureDescriptor( Buffer* const textureBuffer, Sampler* const sampler ) = 0;
+		virtual DepthStencilBufferDescriptor* CreateDepthStencilBufferDescriptor( Buffer* const textureBuffer ) = 0;
 		virtual ConstantBufferDescriptor* CreateConstantBufferDescriptor( Buffer* const constantBuffer, const ConstantBufferDescriptorParams& params ) = 0;
 		virtual VertexDescriptor* CreateVertexDescriptor( const VertexDescriptorParams& params ) = 0;
 
@@ -558,6 +569,7 @@ namespace RenderInterface {
 		virtual VertexLayout* CreateVertexLayout( const VertexAttribute* const attributes, const int attributesCount, RenderProgram* const program ) = 0;
 		virtual BlendState* CreateBlendState( const BlendStateParams& params ) = 0;
 		virtual RasterizerState* CreateRasterizerState( const RasterizerStateParams& params ) = 0;
+		virtual DepthStencilState* CreateDepthStencilState( const DepthStencilStateParams& params ) = 0;
 
 		/*
 		Vrati max quality pro pozadovany pocet samplu.
@@ -567,7 +579,7 @@ namespace RenderInterface {
 		virtual int GetMultisampleQuality( const int samplesCount ) const = 0;
 
 		// Vraci pocet zobrazovacich zarizeni pripojenych na vystup graficke karty
-		// virtual int GetOutputCount() const;
+		// virtual int GetOutputsCount() const;
 	};
 	
 	/*
@@ -588,19 +600,19 @@ namespace RenderInterface {
 		virtual void Flush() = 0;
 		
 		// Nastavi multiple render targets a depth stencil buffer (pokud je nullptr, pouzije se vychozi depth stencil state)
-		virtual void SetRenderTargets( RenderTargetDescriptor* const renderTargets[], const int count, DepthStencilDescriptor* const depthStencil ) = 0;
+		virtual void SetRenderTargets( RenderTargetDescriptor* const renderTargets[], const int count, DepthStencilBufferDescriptor* const depthStencilBuffer ) = 0;
 		
 		// Vyplni render target barvou
 		virtual void ClearRenderTarget( RenderTargetDescriptor* const renderTarget, const Color& color ) = 0;
 
 		// nastavi depth i stencil buffer na pozadovanou hodnotu
-		virtual void ClearDepthStencil( DepthStencilDescriptor* const descriptor, const float depth, const uint8_t stencil ) = 0;
+		virtual void ClearDepthStencil( DepthStencilBufferDescriptor* const descriptor, const float depth, const uint8_t stencil ) = 0;
 
 		// nastavi depth buffer na hodnotu depth
-		virtual void ClearDepth( DepthStencilDescriptor* const descriptor, const float depth ) = 0;
+		virtual void ClearDepth( DepthStencilBufferDescriptor* const descriptor, const float depth ) = 0;
 
 		// nastavi stencil buffer na hodnotu stencil
-		virtual void ClearStencil( DepthStencilDescriptor* const descriptor, const uint8_t stencil ) = 0;
+		virtual void ClearStencil( DepthStencilBufferDescriptor* const descriptor, const uint8_t stencil ) = 0;
 
 		// Nastavi objekt Device do vychoziho stavu
 		virtual void ClearState() = 0;
@@ -636,17 +648,44 @@ namespace RenderInterface {
 		// Binduje konstant buffery do odpovidajicich slotu. Pokud je parametr descriptors nullptr, jsou vsechny buffery odpojeny.
 		virtual void SetConstantBuffers( ConstantBufferDescriptor* const descriptors[], const int count ) = 0;
 
-		virtual void SetVertexInput( VertexDescriptor* descriptor ) = 0;
+		// Nastavi vertex buffer, index buffer a input layout (podobne jako OpenGL VAO)
+		virtual void SetVertexInput( VertexDescriptor* const descriptor ) = 0;
 
-		//virtual void SetPipelineState( PipelineState* const state );
+		// nastavi render program (vertex shader, pixel shader a geometry shader)
+		virtual void SetRenderProgram( RenderProgram* const program ) = 0;
 
-		// Draw( VertexDescriptor )
+		virtual void SetPrimitiveTopology( const PrimitiveTopology topology ) = 0;
 
-		// DrawIndexed( VertexDescriptor )
+		// Pokud je parametr state nullptr, pouzije se vychozi state.
+		virtual void SetBlendState( BlendState* const state ) = 0;
 
-		// DrawInstanced( VertexDescriptor, count )
+		// Pokud je parametr state nullptr, pouzije se vychozi state.
+		virtual void SetDepthStencilState( DepthStencilState* const state, const uint32_t stencilRef ) = 0;
 
-		// DrawIndexedInstanced( VertexDescriptor, count )
+		// Pokud je parametr state nullptr, pouzije se vychozi state.
+		virtual void SetRasterizerState( RasterizerState* const state ) = 0;
+
+		/*
+		Nabinduje textury pro vybrany shader stage. V shaderu je nutne specifikovat slot (bind point).
+		Odpoji vsechny predchozi nabindovane sloty.
+		Pokud je parametr descriptors nullptr, pouze odpoji vsechny sloty a parametr count se ignoruje.
+		*/
+		virtual void SetVSTextures( TextureDescriptor* const descriptors[], const int count ) = 0;
+		virtual void SetPSTextures( TextureDescriptor* const descriptors[], const int count ) = 0;
+		virtual void SetGSTextures( TextureDescriptor* const descriptors[], const int count ) = 0;
+
+		/*
+		Nabinduje samplery pro vybrany shader stage.
+		*/
+		//virtual void SetVSSamplers( Samplers* const samplers[], const int count ) = 0;
+		//virtual void SetPSSamplers( Samplers* const samplers[], const int count ) = 0;
+		//virtual void SetGSSamplers( Samplers* const samplers[], const int count ) = 0;
+
+		// Draw commands
+		virtual void Draw( const int verticesCount, const int startVertex ) = 0;
+		virtual void DrawIndexed( const int indicesCount, const int startIndex ) = 0;
+		virtual void DrawInstanced( const int verticesCount, const int startVertex, const int instancesCount, const int startInstance ) = 0;
+		virtual void DrawIndexedInstanced( const int indicesCount, const int startIndex, const int instancesCount, const int startInstance ) = 0;
 	};
 	
 	/*
@@ -710,16 +749,17 @@ namespace RenderInterface {
 	class RenderTargetDescriptor: public DeviceObject {};
 
 	/*
-	TextureDescriptor slouzi k bindovani textury do pipeline stage
+	TextureDescriptor slouzi k bindovani textury do pipeline stage.
+	Ke svemu vytvoreni potrebuje Sampler objekt. To zavazuje klienta, ze bude textura samplovana timto samplerem.
+	Hlavne v HLSL implementaci je nutne dbat na dodrzeni tohoto pravidla (neexistuje kontrolni mechanismus)
 	*/
 	class TextureDescriptor: public DeviceObject {};
 	
 	/*
 	Umoznuje nabindovat DepthStencilBuffer do pipeline.
-	Popisuje konfiguraci depth stencil testu a pristup do texture bufferu.
 	Podporovane formaty asociovaneho texture bufferu: TEXTURE_2D a TEXTURE_2D_MS
 	*/
-	class DepthStencilDescriptor: public DeviceObject {};
+	class DepthStencilBufferDescriptor: public DeviceObject {};
 	
 	/*
 	Sampler
@@ -761,6 +801,11 @@ namespace RenderInterface {
 	class RasterizerState: public DeviceObject {};
 
 	/*
+	DepthStencilState
+	*/
+	class DepthStencilState: public DeviceObject {};
+
+	/*
 	VertexLayout:
 
 	HLSL
@@ -768,13 +813,11 @@ namespace RenderInterface {
 		float4 position: POSITION;
 		float4x4 matrix: MATRIX;
 	}
-
 	GLSL
 	struct VS_INPUT {
 		vec4 position;
 		mat4 matrix;
 	}
-
 	C++
 	const VertexLayoutAttribute layout[] = {
 		{ "position",	"POSITION",	0, Format::R32G32B32A32_FLOAT, ... },
@@ -793,19 +836,5 @@ namespace RenderInterface {
 	Objekt vznikl kvuli podpore Vertex Arrays Object (VAO) v OpenGL.
 	*/
 	class VertexDescriptor: public DeviceObject {};
-
-	/*
-	Atributy:
-	- vertex shader
-	- pixel shader
-	- geometry shader
-	- vertex layout
-
-
-	- blendState
-	- rasterize state
-	- primitive topology
-	*/
-	//class PipelineState: public DeviceObject {};
 	
 } // namespace RenderInterface
