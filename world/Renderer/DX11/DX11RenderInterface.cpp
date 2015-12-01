@@ -275,7 +275,7 @@ bool DX11Device::Create( const DX11CreateDeviceParams& params ) {
 	if ( FAILED( hresult ) ) {
 		hresult = factory->EnumAdapters( 0, &adapter );
 	}
-	// nebyl nalezen zadny adapter
+	// nebyl ziskan zadny adapter
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
@@ -373,58 +373,58 @@ Buffer* DX11Device::CreateConstantBuffer( const int byteWidth, const BufferUsage
 	return CreateGenericBuffer( device, BufferType::CONSTANT_BUFFER, byteWidth, usage, access, initialData );
 }
 
-RenderTargetDescriptor* DX11Device::CreateRenderTargetDescriptor( BackBuffer* const backBuffer ) {
-	DX11RenderTargetDescriptor* descriptor = new DX11RenderTargetDescriptor();
-	if ( !descriptor->Create( device, backBuffer ) ) {
-		delete descriptor;
+RenderTargetView* DX11Device::CreateRenderTargetView( BackBuffer* const backBuffer ) {
+	DX11RenderTargetView* view = new DX11RenderTargetView();
+	if ( !view->Create( device, backBuffer ) ) {
+		delete view;
 		return nullptr;
 	}
-	return descriptor;
+	return view;
 }
 
-RenderTargetDescriptor* DX11Device::CreateRenderTargetDescriptor( Buffer* const textureBuffer ) {
-	DX11RenderTargetDescriptor* descriptor = new DX11RenderTargetDescriptor();
-	if ( !descriptor->Create( device, textureBuffer ) ) {
-		delete descriptor;
+RenderTargetView* DX11Device::CreateRenderTargetView( Buffer* const textureBuffer ) {
+	DX11RenderTargetView* view = new DX11RenderTargetView();
+	if ( !view->Create( device, textureBuffer ) ) {
+		delete view;
 		return nullptr;
 	}
-	return descriptor;
+	return view;
 }
 
-TextureDescriptor* DX11Device::CreateTextureDescriptor( Buffer* const textureBuffer, Sampler* const sampler ) {
-	DX11TextureDescriptor* descriptor = new DX11TextureDescriptor();
-	if ( !descriptor->Create( device, textureBuffer ) ) {
-		delete descriptor;
+TextureView* DX11Device::CreateTextureView( Buffer* const textureBuffer, Sampler* const sampler ) {
+	DX11TextureView* view = new DX11TextureView();
+	if ( !view->Create( device, textureBuffer ) ) {
+		delete view;
 		return nullptr;
 	}
-	return descriptor;
+	return view;
 }
 
-DepthStencilBufferDescriptor* DX11Device::CreateDepthStencilBufferDescriptor( Buffer* const textureBuffer ) {
-	DX11DepthStencilBufferDescriptor* descriptor = new DX11DepthStencilBufferDescriptor();
-	if ( !descriptor->Create( device, textureBuffer ) ) {
-		delete descriptor;
+DepthStencilView* DX11Device::CreateDepthStencilView( Buffer* const textureBuffer, const DepthStencilViewParams& params ) {
+	DX11DepthStencilView* view = new DX11DepthStencilView();
+	if ( !view->Create( device, textureBuffer, params ) ) {
+		delete view;
 		return nullptr;
 	}
-	return descriptor;
+	return view;
 }
 
-ConstantBufferDescriptor* DX11Device::CreateConstantBufferDescriptor( Buffer* const constantBuffer, const ConstantBufferDescriptorParams& params ) {
-	DX11ConstantBufferDescriptor* descriptor = new DX11ConstantBufferDescriptor();
-	if ( !descriptor->Create( constantBuffer, params ) ) {
-		delete descriptor;
+ConstantBufferView* DX11Device::CreateConstantBufferView( Buffer* const constantBuffer, const ConstantBufferViewParams& params ) {
+	DX11ConstantBufferView* view = new DX11ConstantBufferView();
+	if ( !view->Create( constantBuffer, params ) ) {
+		delete view;
 		return nullptr;
 	}
-	return descriptor;
+	return view;
 }
 
-VertexDescriptor* DX11Device::CreateVertexDescriptor( const VertexDescriptorParams& params ) {
-	DX11VertexDescriptor* descriptor = new DX11VertexDescriptor();
-	if ( !descriptor->Create( params ) ) {
-		delete descriptor;
+VertexStream* DX11Device::CreateVertexStream( const VertexStreamParams& params ) {
+	DX11VertexStream* stream = new DX11VertexStream();
+	if ( !stream->Create( params ) ) {
+		delete stream;
 		return nullptr;
 	}
-	return descriptor;
+	return stream;
 }
 
 CommandInterface* DX11Device::CreateCommandInterface() {
@@ -568,7 +568,7 @@ void DX11Display::SetSystemMode() {
 	if ( window == nullptr ) {
 		return;
 	}
-	BackBuffer* backBuffer = window->GetBackBuffer();
+	BackBuffer* const backBuffer = window->GetBackBuffer();
 	if ( backBuffer == nullptr ) {
 		return;
 	}
@@ -583,13 +583,13 @@ void DX11Display::SetSystemMode() {
 }
 
 bool DX11Display::SetMode( const DisplayMode& mode, Window& window ) {
-	BackBuffer* backBuffer = window.GetBackBuffer();
+	BackBuffer* const backBuffer = window.GetBackBuffer();
 	if ( backBuffer == nullptr ) {
 		return false;
 	}
 	// ziskat swap chain back bufferu
 	ASSERT_DOWNCAST( backBuffer, DX11BackBuffer );
-	IDXGISwapChain* swapChain = static_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
+	IDXGISwapChain* const swapChain = static_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
 	if ( swapChain == nullptr ) {
 		return false;
 	}
@@ -1104,22 +1104,22 @@ ID3D11Buffer* DX11GenericBuffer::GetD3D11Buffer() {
 	return static_cast< ID3D11Buffer* >( GetResource() );
 }
 
-// DX11RenderTargetDescriptor
+// DX11RenderTargetView
 
-DX11RenderTargetDescriptor::DX11RenderTargetDescriptor() {
+DX11RenderTargetView::DX11RenderTargetView() {
 	view = nullptr;
 }
 
-DX11RenderTargetDescriptor::~DX11RenderTargetDescriptor() {
+DX11RenderTargetView::~DX11RenderTargetView() {
 	ReleaseCom( &view );
 }
 
-bool DX11RenderTargetDescriptor::Create( ID3D11Device* const device, BackBuffer* const backBuffer ) {
+bool DX11RenderTargetView::Create( ID3D11Device* const device, BackBuffer* const backBuffer ) {
 	HRESULT hresult = 0;
 
 	// get back buffer texture
 	ASSERT_DOWNCAST( backBuffer, DX11BackBuffer );
-	IDXGISwapChain* swapChain = static_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
+	IDXGISwapChain* const swapChain = static_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
 	ComPtr< ID3D11Texture2D > texture;
 	hresult = swapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &texture ) );
 	if ( FAILED( hresult ) ) {
@@ -1135,9 +1135,9 @@ bool DX11RenderTargetDescriptor::Create( ID3D11Device* const device, BackBuffer*
 	return true;
 }
 
-bool DX11RenderTargetDescriptor::Create( ID3D11Device* const device, Buffer* const textureBuffer ) {
+bool DX11RenderTargetView::Create( ID3D11Device* const device, Buffer* const textureBuffer ) {
 	ASSERT_DOWNCAST( textureBuffer, DX11TextureBuffer );
-	ID3D11Resource* resource = static_cast< DX11TextureBuffer* >( textureBuffer )->GetResource();
+	ID3D11Resource* const resource = static_cast< DX11TextureBuffer* >( textureBuffer )->GetResource();
 	ComPtr< ID3D11RenderTargetView > view;
 	HRESULT hresult = device->CreateRenderTargetView ( resource, NULL, &view );
 	if ( FAILED( hresult ) ) {
@@ -1147,22 +1147,22 @@ bool DX11RenderTargetDescriptor::Create( ID3D11Device* const device, Buffer* con
 	return true;
 }
 
-ID3D11RenderTargetView* DX11RenderTargetDescriptor::GetView() {
+ID3D11RenderTargetView* DX11RenderTargetView::GetD3D11RenderTargetView() {
 	return view;
 }
 
-// DX11TextureDescriptor
+// DX11TextureView
 
-DX11TextureDescriptor::DX11TextureDescriptor() {
+DX11TextureView::DX11TextureView() {
 	view = nullptr;
 }
-DX11TextureDescriptor::~DX11TextureDescriptor() {
+DX11TextureView::~DX11TextureView() {
 	ReleaseCom( &view );
 }
 
-bool DX11TextureDescriptor::Create( ID3D11Device* const device, Buffer* const textureBuffer ) {
+bool DX11TextureView::Create( ID3D11Device* const device, Buffer* const textureBuffer ) {
 	ASSERT_DOWNCAST( textureBuffer, DX11TextureBuffer );
-	ID3D11Resource* resource = static_cast< DX11TextureBuffer* >( textureBuffer )->GetResource();
+	ID3D11Resource* const resource = static_cast< DX11TextureBuffer* >( textureBuffer )->GetResource();
 	ComPtr< ID3D11ShaderResourceView > view;
 	HRESULT hresult = device->CreateShaderResourceView( resource, NULL, &view );
 	if ( FAILED( hresult ) ) {
@@ -1172,21 +1172,21 @@ bool DX11TextureDescriptor::Create( ID3D11Device* const device, Buffer* const te
 	return true;
 }
 
-ID3D11ShaderResourceView* DX11TextureDescriptor::GetD3D11ShaderResourceView() {
+ID3D11ShaderResourceView* DX11TextureView::GetD3D11ShaderResourceView() {
 	return view;
 }
 
-// DX11DepthStencilBufferDescriptor
+// DX11DepthStencilView
 
-DX11DepthStencilBufferDescriptor::DX11DepthStencilBufferDescriptor() {
+DX11DepthStencilView::DX11DepthStencilView() {
 	view = nullptr;
 }
 
-DX11DepthStencilBufferDescriptor::~DX11DepthStencilBufferDescriptor() {
+DX11DepthStencilView::~DX11DepthStencilView() {
 	ReleaseCom( &view );
 }
 
-bool DX11DepthStencilBufferDescriptor::Create( ID3D11Device* const device, Buffer* const textureBuffer ) {
+bool DX11DepthStencilView::Create( ID3D11Device* const device, Buffer* const textureBuffer, const DepthStencilViewParams& params ) {
 	const BufferType bufferType = textureBuffer->GetType();
 
 	// check buffer type
@@ -1234,15 +1234,15 @@ bool DX11DepthStencilBufferDescriptor::Create( ID3D11Device* const device, Buffe
 	return true;
 }
 
-ID3D11DepthStencilView* DX11DepthStencilBufferDescriptor::GetD3D11DepthStencilView() {
+ID3D11DepthStencilView* DX11DepthStencilView::GetD3D11DepthStencilView() {
 	return view;
 }
 
-// DX11ConstantBufferDescriptor
+// DX11ConstantBufferView
 
 const int UNUSED_CBUFFER_SLOT = MAX_CBUFFER_SLOTS;
 
-DX11ConstantBufferDescriptor::DX11ConstantBufferDescriptor() {
+DX11ConstantBufferView::DX11ConstantBufferView() {
 	buffer = nullptr;
 	constantsCount = 0;
 	constantsSize = 0;
@@ -1251,14 +1251,14 @@ DX11ConstantBufferDescriptor::DX11ConstantBufferDescriptor() {
 	gsSlot = 0;
 }
 
-DX11ConstantBufferDescriptor::~DX11ConstantBufferDescriptor() {
+DX11ConstantBufferView::~DX11ConstantBufferView() {
 	ReleaseCom( &buffer );
 }
 
 /*
 Pozn.: Funkce Create() nekontroluje signaturu konstant!
 */
-bool DX11ConstantBufferDescriptor::Create( Buffer* const constantBuffer, const ConstantBufferDescriptorParams &params ) {
+bool DX11ConstantBufferView::Create( Buffer* const constantBuffer, const ConstantBufferViewParams &params ) {
 	HRESULT hresult = 0;
 
 	ASSERT_DOWNCAST( params.program, DX11RenderProgram );
@@ -1401,7 +1401,7 @@ bool DX11ConstantBufferDescriptor::Create( Buffer* const constantBuffer, const C
 	return true;
 }
 
-void DX11ConstantBufferDescriptor::UpdateConstants( const void* const src, void* const dest ) const {
+void DX11ConstantBufferView::UpdateConstants( const void* const src, void* const dest ) const {
 	// zarovnani systemove pameti odpovida zarovnani constant bufferu
 	if ( !map ) {
 		memcpy( dest, src, constantsSize );
@@ -1418,19 +1418,19 @@ void DX11ConstantBufferDescriptor::UpdateConstants( const void* const src, void*
 	}
 }
 
-ID3D11Buffer* DX11ConstantBufferDescriptor::GetBuffer() {
+ID3D11Buffer* DX11ConstantBufferView::GetD3D11Buffer() {
 	return buffer;
 }
 
-int DX11ConstantBufferDescriptor::GetVSSlot() const {
+int DX11ConstantBufferView::GetVSSlot() const {
 	return vsSlot;
 }
 
-int DX11ConstantBufferDescriptor::GetPSSlot() const {
+int DX11ConstantBufferView::GetPSSlot() const {
 	return psSlot;
 }
 
-int DX11ConstantBufferDescriptor::GetGSSlot() const {
+int DX11ConstantBufferView::GetGSSlot() const {
 	return gsSlot;
 }
 
@@ -1873,16 +1873,16 @@ ID3D11InputLayout* DX11VertexLayout::GetInputLayout() {
 	return inputLayout;
 }
 
-// DX11VertexDescriptor
+// DX11VertexStream
 
-DX11VertexDescriptor::DX11VertexDescriptor() {
+DX11VertexStream::DX11VertexStream() {
 	ZeroMemory( vertexBuffers, sizeof( vertexBuffers ) );
 	indexBuffer = nullptr;
 	indexBufferFormat = DXGI_FORMAT_UNKNOWN;
 	inputLayout = nullptr;
 }
 
-DX11VertexDescriptor::~DX11VertexDescriptor() {
+DX11VertexStream::~DX11VertexStream() {
 	for ( int i = 0; i < MAX_VERTEX_INPUT_SLOTS; i++ ) {
 		ReleaseCom( &vertexBuffers[ i ] );
 	}
@@ -1890,7 +1890,7 @@ DX11VertexDescriptor::~DX11VertexDescriptor() {
 	ReleaseCom( &inputLayout );
 }
 
-bool DX11VertexDescriptor::Create( const VertexDescriptorParams& params ) {
+bool DX11VertexStream::Create( const VertexStreamParams& params ) {
 	// save index buffer
 	if ( params.indexBuffer != nullptr ) {
 		if ( params.indexBuffer->GetType() != BufferType::INDEX_BUFFER ) {
@@ -1915,7 +1915,7 @@ bool DX11VertexDescriptor::Create( const VertexDescriptorParams& params ) {
 			return false;
 		}
 		ASSERT_DOWNCAST( buffer, DX11Buffer );
-		ID3D11Resource* resource = static_cast< ID3D11Buffer* >( static_cast< DX11Buffer* >( buffer )->GetResource() );
+		ID3D11Resource* const resource = static_cast< ID3D11Buffer* >( static_cast< DX11Buffer* >( buffer )->GetResource() );
 		ASSERT_DOWNCAST( resource, ID3D11Buffer );
 		vertexBuffers[ i ] = static_cast< ID3D11Buffer* >( resource );
 		vertexBuffers[ i ]->AddRef();
@@ -1927,19 +1927,19 @@ bool DX11VertexDescriptor::Create( const VertexDescriptorParams& params ) {
 	return true;
 }
 
-ID3D11Buffer** DX11VertexDescriptor::GetVertexBuffers() {
+ID3D11Buffer** DX11VertexStream::GetVertexBuffers() {
 	return vertexBuffers;
 }
 
-ID3D11Buffer* DX11VertexDescriptor::GetIndexBuffer() {
+ID3D11Buffer* DX11VertexStream::GetIndexBuffer() {
 	return indexBuffer;
 }
 
-ID3D11InputLayout* DX11VertexDescriptor::GetInputLayout() {
+ID3D11InputLayout* DX11VertexStream::GetInputLayout() {
 	return inputLayout;
 }
 
-DXGI_FORMAT DX11VertexDescriptor::GetIndexBufferDXGIFormat() const {
+DXGI_FORMAT DX11VertexStream::GetIndexBufferDXGIFormat() const {
 	return indexBufferFormat;
 }
 
@@ -1947,6 +1947,13 @@ DXGI_FORMAT DX11VertexDescriptor::GetIndexBufferDXGIFormat() const {
 
 DX11CommandInterface::DX11CommandInterface() {
 	context = nullptr;
+	currentInputLayout = nullptr;
+	currentVertexShader = nullptr;
+	currentPixelShader = nullptr;
+	currentGeometryShader = nullptr;
+	currentBlendState = nullptr;
+	currentDepthStencilState = nullptr;
+	currentRasterizerState = nullptr;
 }
 
 DX11CommandInterface::~DX11CommandInterface() {
@@ -1960,6 +1967,15 @@ bool DX11CommandInterface::Create() {
 void DX11CommandInterface::Begin( Device* const device ) {
 	ASSERT_DOWNCAST( device, DX11Device );
 	context = static_cast< DX11Device* >( device )->GetContext();
+
+	context->ClearState();
+	currentInputLayout = nullptr;
+	currentVertexShader = nullptr;
+	currentPixelShader = nullptr;
+	currentGeometryShader = nullptr;
+	currentBlendState = nullptr;
+	currentDepthStencilState = nullptr;
+	currentRasterizerState = nullptr;
 }
 
 void DX11CommandInterface::Begin( CommandList* const commandList ) {
@@ -1976,55 +1992,55 @@ void DX11CommandInterface::Flush() {
 	context->Flush();
 }
 
-void DX11CommandInterface::SetRenderTargets( RenderTargetDescriptor* const renderTargets[], const int count, DepthStencilBufferDescriptor* const depthStencilBuffer ) {
+void DX11CommandInterface::SetRenderTargets( RenderTargetView* const renderTargets[], const int count, DepthStencilView* const depthStencil ) {
 	if ( count > MAX_RENDER_TARGETS ) {
 		return;
 	}
 	ID3D11RenderTargetView* renderTargetViews[ MAX_RENDER_TARGETS ] = { NULL };
 	for ( int i = 0; i < count; i++ ) {
-		ASSERT_DOWNCAST( renderTargets[ i ], DX11RenderTargetDescriptor );
-		renderTargetViews[ i ] = static_cast< DX11RenderTargetDescriptor* >( renderTargets[ i ] )->GetView();
+		ASSERT_DOWNCAST( renderTargets[ i ], DX11RenderTargetView );
+		renderTargetViews[ i ] = static_cast< DX11RenderTargetView* >( renderTargets[ i ] )->GetD3D11RenderTargetView();
 	}
 	ID3D11DepthStencilView* depthStencilView = NULL;
-	if ( depthStencilBuffer != nullptr ) {
-		ASSERT_DOWNCAST( depthStencilBuffer, DX11DepthStencilBufferDescriptor );
-		depthStencilView = static_cast< DX11DepthStencilBufferDescriptor* >( depthStencilBuffer )->GetD3D11DepthStencilView();
+	if ( depthStencil != nullptr ) {
+		ASSERT_DOWNCAST( depthStencil, DX11DepthStencilView );
+		depthStencilView = static_cast< DX11DepthStencilView* >( depthStencil )->GetD3D11DepthStencilView();
 	}
 	context->OMSetRenderTargets( MAX_RENDER_TARGETS, renderTargetViews, depthStencilView );
 }
 
-void DX11CommandInterface::ClearRenderTarget( RenderTargetDescriptor* const renderTarget, const Color& color ) {
-	ASSERT_DOWNCAST( renderTarget, DX11RenderTargetDescriptor );
+void DX11CommandInterface::ClearRenderTarget( RenderTargetView* const renderTarget, const Color& color ) {
+	ASSERT_DOWNCAST( renderTarget, DX11RenderTargetView );
 	context->ClearRenderTargetView(
-		static_cast< DX11RenderTargetDescriptor* >( renderTarget )->GetView(),
+		static_cast< DX11RenderTargetView* >( renderTarget )->GetD3D11RenderTargetView(),
 		reinterpret_cast< const FLOAT* >( &color )
 	);
 }
 
-void DX11CommandInterface::ClearDepthStencil( DepthStencilBufferDescriptor* const descriptor, const float depth, const uint8_t stencil ) {
-	ASSERT_DOWNCAST( descriptor, DX11DepthStencilBufferDescriptor );
+void DX11CommandInterface::ClearDepthStencil( DepthStencilView* const view, const float depth, const uint8_t stencil ) {
+	ASSERT_DOWNCAST( view, DX11DepthStencilView );
 	context->ClearDepthStencilView(
-		static_cast< DX11DepthStencilBufferDescriptor* >( descriptor )->GetD3D11DepthStencilView(),
+		static_cast< DX11DepthStencilView* >( view )->GetD3D11DepthStencilView(),
 		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
 		static_cast< FLOAT >( depth ),
 		static_cast< UINT8 >( stencil )
 	);
 }
 
-void DX11CommandInterface::ClearDepth( DepthStencilBufferDescriptor* const descriptor, const float depth ) {
-	ASSERT_DOWNCAST( descriptor, DX11DepthStencilBufferDescriptor );
+void DX11CommandInterface::ClearDepth( DepthStencilView* const view, const float depth ) {
+	ASSERT_DOWNCAST( view, DX11DepthStencilView );
 	context->ClearDepthStencilView(
-		static_cast< DX11DepthStencilBufferDescriptor* >( descriptor )->GetD3D11DepthStencilView(),
+		static_cast< DX11DepthStencilView* >( view )->GetD3D11DepthStencilView(),
 		D3D11_CLEAR_DEPTH,
 		static_cast< FLOAT >( depth ),
 		0
 	);
 }
 
-void DX11CommandInterface::ClearStencil( DepthStencilBufferDescriptor* const descriptor, const uint8_t stencil ) {
-	ASSERT_DOWNCAST( descriptor, DX11DepthStencilBufferDescriptor );
+void DX11CommandInterface::ClearStencil( DepthStencilView* const view, const uint8_t stencil ) {
+	ASSERT_DOWNCAST( view, DX11DepthStencilView );
 	context->ClearDepthStencilView(
-		static_cast< DX11DepthStencilBufferDescriptor* >( descriptor )->GetD3D11DepthStencilView(),
+		static_cast< DX11DepthStencilView* >( view )->GetD3D11DepthStencilView(),
 		D3D11_CLEAR_STENCIL,
 		0,
 		static_cast< UINT8 >( stencil )
@@ -2077,15 +2093,15 @@ bool DX11CommandInterface::UpdateBuffer( Buffer* const buffer, const int subreso
 	return true;
 }
 
-bool DX11CommandInterface::UpdateConstantBuffer( ConstantBufferDescriptor* const descriptor, const void* const data ) {
-	ASSERT_DOWNCAST( descriptor, DX11ConstantBufferDescriptor );
-	ID3D11Buffer* buffer = static_cast< DX11ConstantBufferDescriptor* >( descriptor )->GetBuffer();
+bool DX11CommandInterface::UpdateConstantBuffer( ConstantBufferView* const view, const void* const data ) {
+	ASSERT_DOWNCAST( view, DX11ConstantBufferView );
+	ID3D11Buffer* const buffer = static_cast< DX11ConstantBufferView* >( view )->GetD3D11Buffer();
 	D3D11_MAPPED_SUBRESOURCE mappedSubresource;
 	HRESULT hresult = context->Map( buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubresource );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	static_cast< DX11ConstantBufferDescriptor* >( descriptor )->UpdateConstants( data, mappedSubresource.pData );
+	static_cast< DX11ConstantBufferView* >( view )->UpdateConstants( data, mappedSubresource.pData );
 	context->Unmap( buffer, 0 );
 	return true;
 }
@@ -2099,9 +2115,9 @@ void DX11CommandInterface::CopyBuffer( Buffer* const src, Buffer* const dest ) {
 	);
 }
 
-void DX11CommandInterface::SetConstantBuffers( ConstantBufferDescriptor* const descriptors[], const int count ) {
+void DX11CommandInterface::SetConstantBuffers( ConstantBufferView* const views[], const int count ) {
 	// deaktivovat vsechny sloty
-	if ( descriptors == nullptr ) {
+	if ( views == nullptr ) {
 		ID3D11Buffer* buffers[ MAX_CBUFFER_SLOTS ] = { nullptr };
 		context->VSSetConstantBuffers( 0, MAX_CBUFFER_SLOTS, buffers );
 		context->PSSetConstantBuffers( 0, MAX_CBUFFER_SLOTS, buffers );
@@ -2114,39 +2130,57 @@ void DX11CommandInterface::SetConstantBuffers( ConstantBufferDescriptor* const d
 	ID3D11Buffer* gsBuffers[ MAX_CBUFFER_SLOTS + 1 ] = { nullptr };
 
 	for ( int i = 0; i < count; i++ ) {
-		ASSERT_DOWNCAST( descriptors[ i ], DX11ConstantBufferDescriptor );
-		DX11ConstantBufferDescriptor* descriptor = static_cast< DX11ConstantBufferDescriptor* >( descriptors[ i ] );
-		vsBuffers[ descriptor->GetVSSlot() ] = descriptor->GetBuffer();
-		psBuffers[ descriptor->GetPSSlot() ] = descriptor->GetBuffer();
-		gsBuffers[ descriptor->GetGSSlot() ] = descriptor->GetBuffer();
+		ASSERT_DOWNCAST( views[ i ], DX11ConstantBufferView );
+		DX11ConstantBufferView* view = static_cast< DX11ConstantBufferView* >( views[ i ] );
+		vsBuffers[ view->GetVSSlot() ] = view->GetD3D11Buffer();
+		psBuffers[ view->GetPSSlot() ] = view->GetD3D11Buffer();
+		gsBuffers[ view->GetGSSlot() ] = view->GetD3D11Buffer();
 	}
 	context->VSSetConstantBuffers( 0, MAX_CBUFFER_SLOTS, vsBuffers );
 	context->PSSetConstantBuffers( 0, MAX_CBUFFER_SLOTS, psBuffers );
 	context->GSSetConstantBuffers( 0, MAX_CBUFFER_SLOTS, gsBuffers );
 }
 
-void DX11CommandInterface::SetVertexInput( VertexDescriptor* const descriptor ) {
-	ASSERT_DOWNCAST( descriptor, DX11VertexDescriptor );
-	context->IASetInputLayout( static_cast< DX11VertexDescriptor* >( descriptor )->GetInputLayout() );
+void DX11CommandInterface::SetVertexStream( VertexStream* const stream ) {
+	ASSERT_DOWNCAST( stream, DX11VertexStream );
+
+	ID3D11InputLayout* const inputLayout = static_cast< DX11VertexStream* >( stream )->GetInputLayout();
+	if ( inputLayout != currentInputLayout ) {
+		context->IASetInputLayout( inputLayout );
+		currentInputLayout = inputLayout;
+	}
 	context->IASetVertexBuffers(
 		0,
 		MAX_VERTEX_INPUT_SLOTS,
-		static_cast< DX11VertexDescriptor* >( descriptor )->GetVertexBuffers(),
+		static_cast< DX11VertexStream* >( stream )->GetVertexBuffers(),
 		NULL,
 		NULL
 	);
 	context->IASetIndexBuffer(
-		static_cast< DX11VertexDescriptor* >( descriptor )->GetIndexBuffer(),
-		static_cast< DX11VertexDescriptor* >( descriptor )->GetIndexBufferDXGIFormat(),
+		static_cast< DX11VertexStream* >( stream )->GetIndexBuffer(),
+		static_cast< DX11VertexStream* >( stream )->GetIndexBufferDXGIFormat(),
 		0
 	);
 }
 
 void DX11CommandInterface::SetRenderProgram( RenderProgram* const program ) {
 	ASSERT_DOWNCAST( program, DX11RenderProgram );
-	context->VSSetShader( static_cast< DX11RenderProgram* >( program )->GetD3D11VertexShader(), NULL, 0 );
-	context->PSSetShader( static_cast< DX11RenderProgram* >( program )->GetD3D11PixelShader(), NULL, 0 );
-	context->GSSetShader( static_cast< DX11RenderProgram* >( program )->GetD3D11GeometryShader(), NULL, 0 );
+
+	ID3D11VertexShader* const vertexShader = static_cast< DX11RenderProgram* >( program )->GetD3D11VertexShader();
+	if ( currentVertexShader != vertexShader ) {
+		context->VSSetShader( vertexShader, NULL, 0 );
+		currentVertexShader = vertexShader;
+	}
+	ID3D11PixelShader* const pixelShader = static_cast< DX11RenderProgram* >( program )->GetD3D11PixelShader();
+	if ( currentPixelShader != pixelShader ) {
+		context->PSSetShader( pixelShader, NULL, 0 );
+		currentPixelShader = pixelShader;
+	}
+	ID3D11GeometryShader* const geometryShader = static_cast< DX11RenderProgram* >( program )->GetD3D11GeometryShader();
+	if ( currentGeometryShader != geometryShader ) {
+		context->GSSetShader( geometryShader, NULL, 0 );
+		currentGeometryShader = geometryShader;
+	}
 }
 
 void DX11CommandInterface::Draw( const int verticesCount, const int startVertex ) {
@@ -2182,63 +2216,81 @@ void DX11CommandInterface::SetPrimitiveTopology( const PrimitiveTopology topolog
 
 void DX11CommandInterface::SetBlendState( BlendState* const state ) {
 	if ( state == nullptr ) {
-		context->OMSetBlendState( NULL, NULL, 0 );
+		if ( currentBlendState != nullptr ) {
+			context->OMSetBlendState( NULL, NULL, 0 );
+			currentBlendState = nullptr;
+		}
 		return;
 	}
 	ASSERT_DOWNCAST( state, DX11BlendState );
-	context->OMSetBlendState(
-		static_cast< DX11BlendState* >( state )->GetD3D11BlendState(),
-		NULL,
-		0xffffffff
-	);
+	ID3D11BlendState* const blendState = static_cast< DX11BlendState* >( state )->GetD3D11BlendState();
+	if ( currentBlendState != blendState ) {
+		context->OMSetBlendState( blendState, NULL, 0xffffffff );
+		currentBlendState = blendState;
+	}
 }
 
 void DX11CommandInterface::SetDepthStencilState( DepthStencilState* const state, const uint32_t stencilRef ) {
 	if ( state == nullptr ) {
-		context->OMSetDepthStencilState( NULL, 0 );
+		if ( currentDepthStencilState != nullptr ) {
+			context->OMSetDepthStencilState( NULL, 0 );
+			currentDepthStencilState = nullptr;
+		}
 		return;
 	}
 	ASSERT_DOWNCAST( state, DX11DepthStencilState );
-	context->OMSetDepthStencilState(
-		static_cast< DX11DepthStencilState* >( state )->GetD3D11DepthStencilState(),
-		static_cast< UINT >( stencilRef )
-	);
+	ID3D11DepthStencilState* const depthStencilState = static_cast< DX11DepthStencilState* >( state )->GetD3D11DepthStencilState();
+	if ( currentDepthStencilState != depthStencilState ) {
+		context->OMSetDepthStencilState( depthStencilState, static_cast< UINT >( stencilRef ) );
+		currentDepthStencilState = depthStencilState;
+	}
 }
 
 void DX11CommandInterface::SetRasterizerState( RasterizerState* const state ) {
+	if ( state == nullptr ) {
+		if ( currentRasterizerState != nullptr ) {
+			context->RSSetState( NULL );
+			currentRasterizerState = nullptr;
+		}
+		return;
+	}
 	ASSERT_DOWNCAST( state, DX11RasterizerState );
-	context->RSSetState( static_cast< DX11RasterizerState* >( state )->GetD3D11RasterizerState() );
+	ID3D11RasterizerState* const rasterizerState = static_cast< DX11RasterizerState* >( state )->GetD3D11RasterizerState();
+	if ( currentRasterizerState != rasterizerState ) {
+		context->RSSetState( rasterizerState );
+		currentRasterizerState = rasterizerState;
+	}
 }
 
-void DX11CommandInterface::SetVSTextures( TextureDescriptor* const descriptors[], const int count ) {
-	ID3D11ShaderResourceView* views[ MAX_TEXTURES ] = { NULL };
-	if ( descriptors != nullptr ) {
+void DX11CommandInterface::SetVSTextures( TextureView* const views[], const int count ) {
+	ID3D11ShaderResourceView* srvs[ MAX_TEXTURES ] = { NULL };
+	if ( views != nullptr ) {
 		for ( int i = 0; i < count; i++ ) {
-			ASSERT_DOWNCAST( descriptors[ i ], DX11TextureDescriptor );
-			views[ i ] = static_cast< DX11TextureDescriptor* >( descriptors[ i ] )->GetD3D11ShaderResourceView();
+			ASSERT_DOWNCAST( views[ i ], DX11TextureView );
+			srvs[ i ] = static_cast< DX11TextureView* >( views[ i ] )->GetD3D11ShaderResourceView();
 		}
 	}
-	context->VSSetShaderResources( 0, static_cast< UINT >( MAX_TEXTURES ), views );
+	context->VSSetShaderResources( 0, static_cast< UINT >( MAX_TEXTURES ), srvs );
 }
 
-void DX11CommandInterface::SetPSTextures( TextureDescriptor* const descriptors[], const int count ) {
-	ID3D11ShaderResourceView* views[ MAX_TEXTURES ] = { NULL };
-	if ( descriptors != nullptr ) {
+void DX11CommandInterface::SetPSTextures( TextureView* const views[], const int count ) {
+	ID3D11ShaderResourceView* srvs[ MAX_TEXTURES ] = { NULL };
+	if ( views != nullptr ) {
 		for ( int i = 0; i < count; i++ ) {
-			ASSERT_DOWNCAST( descriptors[ i ], DX11TextureDescriptor );
-			views[ i ] = static_cast< DX11TextureDescriptor* >( descriptors[ i ] )->GetD3D11ShaderResourceView();
+			ASSERT_DOWNCAST( views[ i ], DX11TextureView );
+			srvs[ i ] = static_cast< DX11TextureView* >( views[ i ] )->GetD3D11ShaderResourceView();
 		}
 	}
-	context->PSSetShaderResources( 0, static_cast< UINT >( MAX_TEXTURES ), views );
+	context->PSSetShaderResources( 0, static_cast< UINT >( MAX_TEXTURES ), srvs );
 }
 
-void DX11CommandInterface::SetGSTextures( TextureDescriptor* const descriptors[], const int count ) {
-	ID3D11ShaderResourceView* views[ MAX_TEXTURES ] = { NULL };
-	if ( descriptors != nullptr ) {
+void DX11CommandInterface::SetGSTextures( TextureView* const views[], const int count ) {
+	ID3D11ShaderResourceView* srvs[ MAX_TEXTURES ] = { NULL };
+	if ( views != nullptr ) {
 		for ( int i = 0; i < count; i++ ) {
-			ASSERT_DOWNCAST( descriptors[ i ], DX11TextureDescriptor );
-			views[ i ] = static_cast< DX11TextureDescriptor* >( descriptors[ i ] )->GetD3D11ShaderResourceView();
+			ASSERT_DOWNCAST( views[ i ], DX11TextureView );
+			srvs[ i ] = static_cast< DX11TextureView* >( views[ i ] )->GetD3D11ShaderResourceView();
 		}
 	}
-	context->GSSetShaderResources( 0, static_cast< UINT >( MAX_TEXTURES ), views );
+	context->GSSetShaderResources( 0, static_cast< UINT >( MAX_TEXTURES ), srvs );
 }

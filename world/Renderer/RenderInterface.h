@@ -15,10 +15,10 @@ namespace RenderInterface {
 	class CommandInterface;
 	class CommandList;
 	class Buffer;
-	class TextureDescriptor;
-	class RenderTargetDescriptor;
-	class DepthStencilBufferDescriptor;
-	class ConstantBufferDescriptor;
+	class TextureView;
+	class RenderTargetView;
+	class DepthStencilView;
+	class ConstantBufferView;
 	class Shader;
 	class RenderProgram;
 	class Sampler;
@@ -26,10 +26,12 @@ namespace RenderInterface {
 	class RasterizerState;
 	class DepthStencilState;
 	class VertexLayout;
-	class VertexDescriptor;
+	class VertexStream;
 	class PipelineState;
 
-	// Render Interface constants:
+	/*
+	Render Interface constants:
+	*/
 
 	// Maximalni kvalita multisample algoritmu
 	const int MAX_MULTISAMPLE_QUALITY = -1;
@@ -63,14 +65,6 @@ namespace RenderInterface {
 	
 	// Vytvori Device objekt (DirectX implementace)
 	Device* DX11CreateDevice( const DX11CreateDeviceParams& params );
-
-	template < typename T >
-	inline void ReleaseDeviceObject( T** target ) {
-		if ( *target != nullptr ) {
-			( *target )->Release();
-			*target = nullptr;
-		}
-	}
 
 	enum class Format {
 		UNKNOWN = 0,
@@ -131,7 +125,7 @@ namespace RenderInterface {
 	rowPitch = pointPitch * textureWidth
 	*/
 	struct FormatInfo {
-		int channelCount;		// pocet kanalu na pixel
+		int channelsCount;		// pocet kanalu na pixel
 		int channelByteWidth;	// pocet bytes na kanal
 		int blockSize;			// velikost bloku
 		int blockByteWidth;		// pocet bytes na blok
@@ -150,18 +144,18 @@ namespace RenderInterface {
 	};
 
 	/*
-	Usage popisuje pristup do bufferu
+	Zpusob pristupu do bufferu
 	*/
 	enum class BufferUsage {
-		DRAW,		// GPU ma plny pristup do bufferu (CPU nema zadny pristup), typicke pouziti render target buffer
-		STATIC,		// GPU readonly, buffer musi byt inicializovan pri svem vytvoreni, obsah nemuze byt nijak zmenen
-		DYNAMIC,	// GPU read only, CPU write only; napr. dynamicky vertex buffer
+		DRAW,		// GPU vyhradni pristup do bufferu, typicke pouziti render target buffer
+		STATIC,		// GPU readonly, buffer musi byt inicializovan pri vytvoreni
+		DYNAMIC,	// GPU read, CPU write (napr. dynamicky vertex buffer)
 		COPY		// GPU read write, CPU read write
 	};
 
 	/*
-	Pristupova prava CPU do bufferu, blize specifikuje BufferUsage.
-	Hodnoty je mozne prevest na uint a pracovat s nimi jako s priznaky (flags)
+	Pristup CPU do bufferu, blize specifikuje BufferUsage.
+	Hodnoty je mozne prevest na uint a pracovat s nimi jako s priznaky.
 	*/
 	enum class BufferAccess {
 		NONE		= 0x00,
@@ -188,13 +182,13 @@ namespace RenderInterface {
 	};
 
 	/*
-	Informace o bufferu
+	Atributy bufferu
 	*/
 	struct BufferInfo {
-		BufferType type;		// typ bufferu
-		int byteWidth;			// minimalni velikost bufferu v bytech, realna velikost bufferu muze byt vetsi
-		BufferUsage usage;		// zpusob pristupu do bufferu
-		BufferAccess access;	// cpu access
+		BufferType type;
+		BufferUsage usage;
+		BufferAccess access;
+		int byteWidth;
 	};
 
 	/*
@@ -207,7 +201,7 @@ namespace RenderInterface {
 	};
 
 	enum TextureBufferFlags {
-		TEXTURE_BUFFER_FLAG_RENDER_TARGET = 0x01
+		TEXTURE_BUFFER_FLAG_RENDER_TARGET = ( 1 << 1 )
 	};
 
 	/*
@@ -229,7 +223,7 @@ namespace RenderInterface {
 	};
 
 	/*
-	Rezim filtrovani textur
+	Filtrovani textury
 	*/
 	enum class TextureFilter {
 		POINT,
@@ -244,7 +238,7 @@ namespace RenderInterface {
 	};
 
 	/*
-	Adresovani textur
+	Adresovani textury (jak adresovat hodnoty mimo rozsah <0; 1>
 	*/
 	enum class TextureAddressing {
 		WRAP,
@@ -261,8 +255,19 @@ namespace RenderInterface {
 		TextureAddressing vAddressing;
 		TextureAddressing wAddressing;
 		int maxAnisotropy;
-		float minLOD;	// >= 0
-		float maxLOD;	// <0; MAX_TEXTURE_LOD>
+		float minLOD; // >= 0
+		float maxLOD; // <0; MAX_TEXTURE_LOD>
+	};
+
+	enum class DepthStencilUsage {
+		DISABLED,	// no depth or stencil tests performed
+		STANDARD,	// read write depth stencil usage
+		READONLY	// readonly depth stencil usage
+	};
+
+	struct DepthStencilViewParams {
+		DepthStencilUsage depthUsage;
+		DepthStencilUsage stencilUsage;
 	};
 
 	enum class DepthStencilComparsion {
@@ -287,25 +292,12 @@ namespace RenderInterface {
 		DECR
 	};
 
-	enum class DepthStencilUsage {
-		DISABLED,	// no depth or stencil tests performed
-		STANDARD,	// read write depth stencil usage
-		READONLY	// readonly depth stencil usage
-	};
-
-	/*
-	struct DepthStencilBufferDescriptorParams {
-		DepthStencilUsage depthUsage;			// default: STANDARD
-		DepthStencilUsage stencilUsage;			// default: STANDARD
-	};
-	*/
-
 	/*
 	Parametry funkce Device::CreateDepthStencilState()
 	*/
 	struct DepthStencilStateParams {
-		bool enableDepth;
-		bool enableStencil;
+		bool enableDepth;						// deffault:
+		bool enableStencil;						// deffault:
 		DepthStencilComparsion depthFunc;		// default: LESS
 		DepthStencilComparsion stencilFunc;		// default: ALWAYS
 		StencilOperation stencilPassOp;			// default: KEEP
@@ -337,9 +329,9 @@ namespace RenderInterface {
 	};
 
 	/*
-	parametry funkce Device::CreateConstantBufferDescriptor()
+	parametry funkce Device::CreateConstantBufferView()
 	*/
-	struct ConstantBufferDescriptorParams {
+	struct ConstantBufferViewParams {
 		const char* name;					// nazev konstant bufferu
 		RenderProgram* program;
 		ShaderConstant* const constants;	// popis konstant
@@ -396,7 +388,7 @@ namespace RenderInterface {
 		int instanceCount;			// pocet instanci se stejnym atributem (0 pro per vertex attribute; >0 pro per instance attribute)
 	};
 
-	struct VertexDescriptorParams {
+	struct VertexStreamParams {
 		Buffer* vertexBuffers[ MAX_VERTEX_INPUT_SLOTS ];
 		Buffer* indexBuffer;
 		Format indexBufferFormat;
@@ -552,13 +544,13 @@ namespace RenderInterface {
 		virtual Buffer* CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) = 0;
 		virtual Buffer* CreateConstantBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData ) = 0;
 
-		// descriptors
-		virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( BackBuffer* const backBuffer ) = 0;
-		virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( Buffer* const textureBuffer ) = 0;
-		virtual TextureDescriptor* CreateTextureDescriptor( Buffer* const textureBuffer, Sampler* const sampler ) = 0;
-		virtual DepthStencilBufferDescriptor* CreateDepthStencilBufferDescriptor( Buffer* const textureBuffer ) = 0;
-		virtual ConstantBufferDescriptor* CreateConstantBufferDescriptor( Buffer* const constantBuffer, const ConstantBufferDescriptorParams& params ) = 0;
-		virtual VertexDescriptor* CreateVertexDescriptor( const VertexDescriptorParams& params ) = 0;
+		// views
+		virtual RenderTargetView* CreateRenderTargetView( BackBuffer* const backBuffer ) = 0;
+		virtual RenderTargetView* CreateRenderTargetView( Buffer* const textureBuffer ) = 0;
+		virtual TextureView* CreateTextureView( Buffer* const textureBuffer, Sampler* const sampler ) = 0;
+		virtual DepthStencilView* CreateDepthStencilView( Buffer* const textureBuffer, const DepthStencilViewParams& params ) = 0;
+		virtual ConstantBufferView* CreateConstantBufferView( Buffer* const constantBuffer, const ConstantBufferViewParams& params ) = 0;
+		virtual VertexStream* CreateVertexStream( const VertexStreamParams& params ) = 0;
 
 		// objects
 		virtual CommandInterface* CreateCommandInterface() = 0;
@@ -600,19 +592,19 @@ namespace RenderInterface {
 		virtual void Flush() = 0;
 		
 		// Nastavi multiple render targets a depth stencil buffer (pokud je nullptr, pouzije se vychozi depth stencil state)
-		virtual void SetRenderTargets( RenderTargetDescriptor* const renderTargets[], const int count, DepthStencilBufferDescriptor* const depthStencilBuffer ) = 0;
+		virtual void SetRenderTargets( RenderTargetView* const renderTargets[], const int count, DepthStencilView* const depthStencil ) = 0;
 		
 		// Vyplni render target barvou
-		virtual void ClearRenderTarget( RenderTargetDescriptor* const renderTarget, const Color& color ) = 0;
+		virtual void ClearRenderTarget( RenderTargetView* const renderTarget, const Color& color ) = 0;
 
 		// nastavi depth i stencil buffer na pozadovanou hodnotu
-		virtual void ClearDepthStencil( DepthStencilBufferDescriptor* const descriptor, const float depth, const uint8_t stencil ) = 0;
+		virtual void ClearDepthStencil( DepthStencilView* const descriptor, const float depth, const uint8_t stencil ) = 0;
 
 		// nastavi depth buffer na hodnotu depth
-		virtual void ClearDepth( DepthStencilBufferDescriptor* const descriptor, const float depth ) = 0;
+		virtual void ClearDepth( DepthStencilView* const descriptor, const float depth ) = 0;
 
 		// nastavi stencil buffer na hodnotu stencil
-		virtual void ClearStencil( DepthStencilBufferDescriptor* const descriptor, const uint8_t stencil ) = 0;
+		virtual void ClearStencil( DepthStencilView* const descriptor, const uint8_t stencil ) = 0;
 
 		// Nastavi objekt Device do vychoziho stavu
 		virtual void ClearState() = 0;
@@ -640,16 +632,16 @@ namespace RenderInterface {
 		Konstant buffer by nemel byt mapovan primo, ale radeji pomoci funkce UpdateConstantBuffer.
 		Objekt ConstantBufferDescriptor obsahuje vsechny potrebne informace o umisteni konstant (byte offset).
 		*/
-		virtual bool UpdateConstantBuffer( ConstantBufferDescriptor* const descriptor, const void* const data ) = 0;
+		virtual bool UpdateConstantBuffer( ConstantBufferView* const view, const void* const data ) = 0;
 
 		//Kopirovani obsahu bufferu pomoci GPU. Cilovy buffer musi mit shodnou velikost a kompatibilni format
 		virtual void CopyBuffer( Buffer* const src, Buffer* const dest ) = 0;
 
 		// Binduje konstant buffery do odpovidajicich slotu. Pokud je parametr descriptors nullptr, jsou vsechny buffery odpojeny.
-		virtual void SetConstantBuffers( ConstantBufferDescriptor* const descriptors[], const int count ) = 0;
+		virtual void SetConstantBuffers( ConstantBufferView* const views[], const int count ) = 0;
 
 		// Nastavi vertex buffer, index buffer a input layout (podobne jako OpenGL VAO)
-		virtual void SetVertexInput( VertexDescriptor* const descriptor ) = 0;
+		virtual void SetVertexStream( VertexStream* const stream ) = 0;
 
 		// nastavi render program (vertex shader, pixel shader a geometry shader)
 		virtual void SetRenderProgram( RenderProgram* const program ) = 0;
@@ -670,9 +662,9 @@ namespace RenderInterface {
 		Odpoji vsechny predchozi nabindovane sloty.
 		Pokud je parametr descriptors nullptr, pouze odpoji vsechny sloty a parametr count se ignoruje.
 		*/
-		virtual void SetVSTextures( TextureDescriptor* const descriptors[], const int count ) = 0;
-		virtual void SetPSTextures( TextureDescriptor* const descriptors[], const int count ) = 0;
-		virtual void SetGSTextures( TextureDescriptor* const descriptors[], const int count ) = 0;
+		virtual void SetVSTextures( TextureView* const views[], const int count ) = 0;
+		virtual void SetPSTextures( TextureView* const views[], const int count ) = 0;
+		virtual void SetGSTextures( TextureView* const views[], const int count ) = 0;
 
 		/*
 		Nabinduje samplery pro vybrany shader stage.
@@ -746,20 +738,19 @@ namespace RenderInterface {
 	Umoznuje nabindovat texturu jako render target.
 	Pouze nasledujici textury muzou byt pouzity jako render target: TEXTURE_1D, TEXTURE_2D, TEXTURE_2D_MS
 	*/
-	class RenderTargetDescriptor: public DeviceObject {};
+	class RenderTargetView: public DeviceObject {};
 
 	/*
-	TextureDescriptor slouzi k bindovani textury do pipeline stage.
-	Ke svemu vytvoreni potrebuje Sampler objekt. To zavazuje klienta, ze bude textura samplovana timto samplerem.
+	K vytvoreni potrebuje Sampler objekt. To zavazuje klienta, ze bude textura samplovana timto samplerem.
 	Hlavne v HLSL implementaci je nutne dbat na dodrzeni tohoto pravidla (neexistuje kontrolni mechanismus)
 	*/
-	class TextureDescriptor: public DeviceObject {};
+	class TextureView: public DeviceObject {};
 	
 	/*
 	Umoznuje nabindovat DepthStencilBuffer do pipeline.
 	Podporovane formaty asociovaneho texture bufferu: TEXTURE_2D a TEXTURE_2D_MS
 	*/
-	class DepthStencilBufferDescriptor: public DeviceObject {};
+	class DepthStencilView: public DeviceObject {};
 	
 	/*
 	Sampler
@@ -767,12 +758,11 @@ namespace RenderInterface {
 	class Sampler: public DeviceObject {};
 
 	/*
-	Constant buffer descriptor popisuje format, umisteni a usporadani konstant v constant bufferu.
-	Pomoci tohoto objektu jsou data mapovana do bufferu.
+	Format, umisteni a usporadani konstant v constant bufferu. Pomoci tohoto objektu jsou data mapovana do bufferu.
 	Descriptor je vytvoren pro konkretni render program, objekt je ovsem mozne pouzit pro vice render programu,
 	pokud je dodrzen stejny layout constant bufferu.
 	*/
-	class ConstantBufferDescriptor: public DeviceObject {};
+	class ConstantBufferView: public DeviceObject {};
 	
 	/*
 	Shader (VS, PS nebo GS)
@@ -830,11 +820,9 @@ namespace RenderInterface {
 	};
 
 	/*
-	Podobne, jako texture descriptor slouzi k nabindovani texture bufferu do pipeline stage,
-	slouzi vertex descriptor k nabindovani vertex bufferu a index bufferu.
-	K vytvoreni vertex descriptoru je potreba vertex layout objekt.
-	Objekt vznikl kvuli podpore Vertex Arrays Object (VAO) v OpenGL.
+	Popisuje zdroj a usporadani vstupnich dat vertex shaderu.
+	Objekt vznikl kvuli podpore OpenGL VAO.
 	*/
-	class VertexDescriptor: public DeviceObject {};
+	class VertexStream: public DeviceObject {};
 	
 } // namespace RenderInterface

@@ -15,10 +15,10 @@ class DX11CommandList;
 class DX11Buffer;
 class DX11TextureBuffer;
 class DX11GenericBuffer;
-class DX11RenderTargetDescriptor;
-class DX11TextureDescriptor;
-class DX11ConstantBufferDescriptor;
-class DX11DepthStencilBufferDescriptor;
+class DX11RenderTargetView;
+class DX11TextureView;
+class DX11ConstantBufferView;
+class DX11DepthStencilView;
 class DX11Shader;
 class DX11RenderProgram;
 class DX11Sampler;
@@ -26,7 +26,7 @@ class DX11BlendState;
 class DX11RasterizerState;
 class DX11DepthStencilState;
 class DX11VertexLayout;
-class DX11VertexDescriptor;
+class DX11VertexStream;
 
 using namespace RenderInterface;
 
@@ -53,12 +53,12 @@ public:
 	virtual Buffer* CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) override;
 	virtual Buffer* CreateConstantBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData ) override;
 
-	virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( BackBuffer* const backBuffer ) override;
-	virtual RenderTargetDescriptor* CreateRenderTargetDescriptor( Buffer* const textureBuffer ) override;
-	virtual TextureDescriptor* CreateTextureDescriptor( Buffer* const textureBuffer, Sampler* const sampler ) override;
-	virtual DepthStencilBufferDescriptor* CreateDepthStencilBufferDescriptor( Buffer* const textureBuffer ) override;
-	virtual ConstantBufferDescriptor* CreateConstantBufferDescriptor( Buffer* const constantBuffer, const ConstantBufferDescriptorParams& params ) override;
-	virtual VertexDescriptor* CreateVertexDescriptor( const VertexDescriptorParams& params ) override;
+	virtual RenderTargetView* CreateRenderTargetView( BackBuffer* const backBuffer ) override;
+	virtual RenderTargetView* CreateRenderTargetView( Buffer* const textureBuffer ) override;
+	virtual TextureView* CreateTextureView( Buffer* const textureBuffer, Sampler* const sampler ) override;
+	virtual DepthStencilView* CreateDepthStencilView( Buffer* const textureBuffer, const DepthStencilViewParams& params ) override;
+	virtual ConstantBufferView* CreateConstantBufferView( Buffer* const constantBuffer, const ConstantBufferViewParams& params ) override;
+	virtual VertexStream* CreateVertexStream( const VertexStreamParams& params ) override;
 
 	virtual CommandInterface* CreateCommandInterface() override;
 	virtual Display* CreateDisplay( const int outputId ) override;
@@ -115,34 +115,43 @@ public:
 	virtual void Begin( CommandList* const commandList ) override;
 	virtual void End() override;
 	virtual void Flush() override;
-	virtual void SetRenderTargets( RenderTargetDescriptor* const renderTargets[], const int count, DepthStencilBufferDescriptor* const depthStencilBuffer ) override;
-	virtual void ClearRenderTarget( RenderTargetDescriptor* const renderTarget, const Color& color ) override;
-	virtual void ClearDepthStencil( DepthStencilBufferDescriptor* const descriptor, const float depth, const uint8_t stencil ) override;
-	virtual void ClearDepth( DepthStencilBufferDescriptor* const descriptor, const float depth ) override;
-	virtual void ClearStencil( DepthStencilBufferDescriptor* const descriptor, const uint8_t stencil ) override;
+	virtual void SetRenderTargets( RenderTargetView* const renderTargets[], const int count, DepthStencilView* const depthStencil ) override;
+	virtual void ClearRenderTarget( RenderTargetView* const renderTarget, const Color& color ) override;
+	virtual void ClearDepthStencil( DepthStencilView* const descriptor, const float depth, const uint8_t stencil ) override;
+	virtual void ClearDepth( DepthStencilView* const descriptor, const float depth ) override;
+	virtual void ClearStencil( DepthStencilView* const descriptor, const uint8_t stencil ) override;
 	virtual void ClearState() override;
 	virtual bool Map( Buffer* const buffer, const int subresource, const MapPolicy policy, MappedBuffer& result ) override;
 	virtual void Unmap( Buffer* const buffer, MappedBuffer& mappedBuffer ) override;
 	virtual bool UpdateBuffer( Buffer* const buffer, const int subresource, const void* const data ) override;
-	virtual bool UpdateConstantBuffer( ConstantBufferDescriptor* const descriptor, const void* const data ) override;
+	virtual bool UpdateConstantBuffer( ConstantBufferView* const view, const void* const data ) override;
 	virtual void CopyBuffer( Buffer* const src, Buffer* const dest ) override;
-	virtual void SetConstantBuffers( ConstantBufferDescriptor* const descriptors[], const int count ) override;
-	virtual void SetVertexInput( VertexDescriptor* const descriptor ) override;
+	virtual void SetConstantBuffers( ConstantBufferView* const views[], const int count ) override;
+	virtual void SetVertexStream( VertexStream* const stream ) override;
 	virtual void SetRenderProgram( RenderProgram* const program ) override;
-	virtual void Draw( const int verticesCount, const int startVertex ) override;
-	virtual void DrawIndexed( const int indicesCount, const int startIndex ) override;
-	virtual void DrawInstanced( const int verticesCount, const int startVertex, const int instancesCount, const int startInstance ) override;
-	virtual void DrawIndexedInstanced( const int indicesCount, const int startIndex, const int instancesCount, const int startInstance ) override;
 	virtual void SetPrimitiveTopology( const PrimitiveTopology topology ) override;
 	virtual void SetBlendState( BlendState* const state ) override;
 	virtual void SetDepthStencilState( DepthStencilState* const state, const uint32_t stencilRef ) override;
 	virtual void SetRasterizerState( RasterizerState* const state ) override;
-	virtual void SetVSTextures( TextureDescriptor* const descriptors[], const int count ) override;
-	virtual void SetPSTextures( TextureDescriptor* const descriptors[], const int count ) override;
-	virtual void SetGSTextures( TextureDescriptor* const descriptors[], const int count ) override;
+	virtual void SetVSTextures( TextureView* const views[], const int count ) override;
+	virtual void SetPSTextures( TextureView* const views[], const int count ) override;
+	virtual void SetGSTextures( TextureView* const views[], const int count ) override;
+	virtual void Draw( const int verticesCount, const int startVertex ) override;
+	virtual void DrawIndexed( const int indicesCount, const int startIndex ) override;
+	virtual void DrawInstanced( const int verticesCount, const int startVertex, const int instancesCount, const int startInstance ) override;
+	virtual void DrawIndexedInstanced( const int indicesCount, const int startIndex, const int instancesCount, const int startInstance ) override;
 
 private:
 	ID3D11DeviceContext* context;
+
+	// ulozene state objekty (provadi se test, aby nedochazelo k prenastaveni stejnych objektu)
+	ID3D11InputLayout* currentInputLayout;
+	ID3D11VertexShader* currentVertexShader;
+	ID3D11PixelShader* currentPixelShader;
+	ID3D11GeometryShader* currentGeometryShader;
+	ID3D11BlendState* currentBlendState;
+	ID3D11DepthStencilState* currentDepthStencilState;
+	ID3D11RasterizerState* currentRasterizerState;
 };
 
 class DX11BackBuffer: public BackBuffer {
@@ -243,24 +252,24 @@ public:
 	ID3D11Buffer* GetD3D11Buffer();
 };
 
-class DX11RenderTargetDescriptor: public RenderTargetDescriptor {
+class DX11RenderTargetView: public RenderTargetView {
 public:
-	DX11RenderTargetDescriptor();
-	virtual ~DX11RenderTargetDescriptor();
+	DX11RenderTargetView();
+	~DX11RenderTargetView();
 	bool Create( ID3D11Device* const device, BackBuffer* const backBuffer );
 	bool Create( ID3D11Device* const device, Buffer* const textureBuffer );
 
 	// implementation interface
-	ID3D11RenderTargetView* GetView();
+	ID3D11RenderTargetView* GetD3D11RenderTargetView();
 
 private:
 	ID3D11RenderTargetView* view;
 };
 
-class DX11TextureDescriptor: public TextureDescriptor {
+class DX11TextureView: public TextureView {
 public:
-	DX11TextureDescriptor();
-	virtual ~DX11TextureDescriptor();
+	DX11TextureView();
+	~DX11TextureView();
 	bool Create( ID3D11Device* const device, Buffer* const textureBuffer );
 
 	// implementation interface
@@ -270,11 +279,11 @@ private:
 	ID3D11ShaderResourceView* view;
 };
 
-class DX11DepthStencilBufferDescriptor: public DepthStencilBufferDescriptor {
+class DX11DepthStencilView: public DepthStencilView {
 public:
-	DX11DepthStencilBufferDescriptor();
-	~DX11DepthStencilBufferDescriptor();
-	bool Create( ID3D11Device* const device, Buffer* const textureBuffer );
+	DX11DepthStencilView();
+	~DX11DepthStencilView();
+	bool Create( ID3D11Device* const device, Buffer* const textureBuffer, const DepthStencilViewParams& params );
 
 	// implementation interface
 	ID3D11DepthStencilView* GetD3D11DepthStencilView();
@@ -283,17 +292,17 @@ private:
 	ID3D11DepthStencilView* view;
 };
 
-class DX11ConstantBufferDescriptor: public ConstantBufferDescriptor {
+class DX11ConstantBufferView: public ConstantBufferView {
 public:
-	DX11ConstantBufferDescriptor();
-	~DX11ConstantBufferDescriptor();
-	bool Create( Buffer* const constantBuffer, const ConstantBufferDescriptorParams &params );
+	DX11ConstantBufferView();
+	~DX11ConstantBufferView();
+	bool Create( Buffer* const constantBuffer, const ConstantBufferViewParams &params );
 
 	// pouze pro interni uziti, zkopiruje data ze systemove pameti (src) do bufferu (dest)
 	void UpdateConstants( const void* const src, void* const dest ) const;
 
 	// implementation interface
-	ID3D11Buffer* GetBuffer();
+	ID3D11Buffer* GetD3D11Buffer();
 	int GetVSSlot() const;
 	int GetPSSlot() const;
 	int GetGSSlot() const;
@@ -429,11 +438,11 @@ private:
 	ID3D11InputLayout* inputLayout;
 };
 
-class DX11VertexDescriptor: public VertexDescriptor {
+class DX11VertexStream: public VertexStream {
 public:
-	DX11VertexDescriptor();
-	~DX11VertexDescriptor();
-	bool Create( const VertexDescriptorParams& params );
+	DX11VertexStream();
+	~DX11VertexStream();
+	bool Create( const VertexStreamParams& params );
 
 	// implementation interface
 	ID3D11Buffer** GetVertexBuffers();

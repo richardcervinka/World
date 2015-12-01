@@ -20,7 +20,7 @@ const FormatInfo RenderInterface::GetFormatInfo( const Format format ) {
 	case Format::UNKNOWN:						return { 0,			0,			1,			0 };
 	case Format::R32G32B32A32_FLOAT:			return { 4,			4,			1,			16 };
 	case Format::R32G32B32A32_UINT:				return { 4,			4,			1,			16 };
-	case Format::R32G32B32_FLOAT:				return { 3,			4,			1,			12 }
+	case Format::R32G32B32_FLOAT:				return { 3,			4,			1,			12 };
 	case Format::R32G32B32_UINT:				return { 3,			4,			1,			12 };
 	case Format::R32G32_FLOAT:					return { 2,			4,			1,			8 };
 	case Format::R32G32_UINT:					return { 2,			4,			1,			8 };
