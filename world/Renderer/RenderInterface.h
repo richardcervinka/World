@@ -686,7 +686,8 @@ namespace RenderInterface {
 	class CommandList: public DeviceObject {};
 	
 	/*
-	Displej pripojeny k vystupu graficke karty
+	Displej pripojeny k vystupu graficke karty.
+	Pro nastaveni rezimu obrazovky je nutny objekt Window s pripojenym rendererem
 	*/
 	class Display: public DeviceObject {
 	public:

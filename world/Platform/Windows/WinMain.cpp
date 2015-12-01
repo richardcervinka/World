@@ -42,30 +42,21 @@ bool DevApp::Create( const HINSTANCE hInstance ) {
 	window.CreateAppWindow( hInstance, 1024, 768 );
 	window.SetName( String( u"World" ) );
 	window.SetBackgroundColor( Color::BLACK );
-	//window.SetRenderer( nullptr )
-	//window.SetRenderDevice( renderDevice );
 
-	commandInterface = device->CreateCommandInterface();
-	commandInterface->Begin( device );
+	RenderInterface::Display* display = device->CreateDisplay( 0 );
+	RenderInterface::DisplayMode displayMode;
+	display->GetBestMode( displayMode );
+	display->SetMode( displayMode, window );
+	//display->SetMode( )
+
+	RenderInterface::CommandInterface* commandInterface = device->CreateCommandInterface();
+	RenderInterface::BackBuffer* backBuffer = device->CreateBackBuffer( window );
 
 
-	//RenderInterface::BackBuffer *backBuffer = window.GetBackBuffer();
-	//commandInterface->ClearRenderTarget( backBuffer->GetRenderTargetObject(), Color( 1.0f, 0.5f, 0, 1.0f ) );
+	//window.SetRenderer();
 
-
-	commandInterface->End();
-	window.PresentBackBuffer( 0 );
-
-	// display mode
-	//RenderInterface::Display *display = device->CreateDisplay( 0 );
-	//RenderInterface::DisplayMode mode;
-	//display->GetBestMode( mode );
-	//display->SetMode( mode, window );
-	
 	// uvolneni objektu
-	//window.SetRenderDevice( nullptr );
-	//display->Release();
 	//device->Release();
-	
+
 	return true;
 }
