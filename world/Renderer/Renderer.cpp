@@ -225,9 +225,9 @@ void Renderer::ResizeGBuffers( const int width, const int height ) {
 	CreateGBuffers( width, height );
 	*/
 }
-
+/*
 void Renderer::CreateRenderTarget( const int width, const int height, const DXGI_FORMAT format, const Antialiasing antialiasing, RenderTarget &target ) {
-	/*
+	
 	return;
 	D3D11_TEXTURE2D_DESC textureDesc;
 	textureDesc.Width = static_cast< UINT >( width );
@@ -273,9 +273,10 @@ void Renderer::CreateRenderTarget( const int width, const int height, const DXGI
 		target.renderTargetView = nullptr;
 		return;
 	}
-	*/
+	
 }
-
+*/
+/*
 int Renderer::GetSamplesCount( const Antialiasing antialiasing ) const {
 	switch ( antialiasing ) {
 	case Antialiasing::MSAA2:
@@ -292,6 +293,7 @@ int Renderer::GetSamplesCount( const Antialiasing antialiasing ) const {
 	}
 	return 1;
 }
+*/
 
 void Renderer::CreateDepthStencilBuffer() {
 	/*
