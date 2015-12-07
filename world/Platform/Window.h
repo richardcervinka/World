@@ -3,7 +3,6 @@
 #include "..\Framework\String.h"
 #include "..\Framework\Color.h"
 #include "..\Renderer\Renderer.h"
-#include "..\Renderer\RenderInterface.h"
 
 // Trida window neni urcena k vytvareni uzivatelskeho rozhrani okennich aplikaci.
 // Zapouzdruje funkcionalitu potrebnou k zobrazeni obsahu BackBufferu v klientske oblasti okna.
@@ -29,23 +28,15 @@ public:
 	virtual void Hide() = 0;
 	virtual void SetName( const String& str ) = 0;
 	virtual const String GetName() const = 0;
-	// vyvola prekresleni klientske oblasti okna
 	virtual void Update() = 0;
-	
-	// back buffering
 
 	void SetRenderer( Renderer* const renderer );
-	void PresentBackBuffer( const int vsync );
-	// ResizeBackBuffer nevolat primo, pri zmene velikosti okna volat OnResized()
-	void ResizeBackBuffer();
-	RenderInterface::BackBuffer* GetBackBuffer();
-	bool RendererDrawing() const;
+	bool IsRendererTarget() const;
 
 protected:
-	// Pokud je okno render target, musi byt funkce OnResized() volana vzdy pri zmene velikosti okna
+	// Musi byt volano pri zmene velikosti okna
 	void OnResized( const int width, const int height );
 	
 private:
 	Renderer* renderer;
-	RenderInterface::BackBuffer* backBuffer;
 };

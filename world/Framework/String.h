@@ -3,25 +3,32 @@
 #include "Types.h"
 
 /*
+Prevede wchar_t retezec na char16_t retezec.
+Hodnoty v rozsahu <0xD800; 0xDFFF> jsou nahrazeny znakem u' '
+*/
+void WcharToChar16( const wchar_t* const src, char16_t* const dest, const int length );
+
+/*
 String
 
 Duvody vlastni implementace:
 - Rozsiruje funkcionalitu std::string v ramci jedne tridy
-- Optimalizace pro male retezce (retezce do velikosti SHORT_LENGTH nealokuji dynamickou pamet)
+- Optimalizace pro male retezce (retezce do velikosti SHORT_LENGTH nealokuji dynamicky pamet)
 - Podpora internich alokatoru
 - Jednotny typ retezcu (std::string vs std::wstring vs std::u16string vs std::u32string)
 - Jednotny format (ANSI vs UNICODE vs UCS-2)
 - Jednotne kodovani (raw vs UTF8 vs UTF16 vs UTF32)
 - Podpora interni serializace
+- Jednoduchost, trida nepotrebuje byt maximalne obecna
 
 Argumenty:
-- Proc ne std::string nebo std::wstring? Ani jeden typ nedefinuje znakovou sadu ani kodovani
-- Proc ne std::u16string? Engine pouziva, misto UTF16, kodovani s pevnou sirkou znaku (UCS-2)
+- Proc ne std::string nebo std::wstring? Ani jeden typ nedefinuje znakovou sadu ani kodovani, wstring je neprenositelny datovy typ
+- Proc ne std::u16string? Engine pouziva misto UTF16 kodovani kodovani s pevnou sirkou znaku (UCS-2)
 
-Trida String pouziva UCS-2 kodovani (reprezentuje BMP mnozinu UTF-16).
-Trida nepovoluje implicitni pretypovani z jineho typu nez char16_t.
-Kdyz je potreba prevest String na char16_t, nemusi se provadet zadna konverze.
-Je nutne vzdy pouzivat literar 'u' (pr.: String string = u"hello");
+- String pouziva UCS-2 kodovani (reprezentuje BMP mnozinu UTF-16).
+- Trida nepovoluje implicitni pretypovani z jineho typu nez char16_t.
+- Kdyz je potreba prevest String na char16_t, nemusi se provadet zadna konverze.
+- Pri zadavani parametru pomoci uvozovek je nutne vzdy pouzivat literar 'u' (String string = u"hello");
 */
 class String {
 public:

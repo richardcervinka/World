@@ -3,8 +3,8 @@
 #include <d3d11.h>
 #include <dxgi1_2.h>
 #include <memory>
+#include <vector>
 #include "..\RenderInterface.h"
-#include "..\..\Framework\Array.h"
 
 // forward declarations
 class DX11Device;
@@ -42,12 +42,12 @@ inline void ReleaseCom( T** target ) {
 class DX11Device: public Device {
 public:
 	DX11Device();
-	virtual ~DX11Device();
+	~DX11Device();
 	bool Create( const DX11CreateDeviceParams& params );
 
 	// implementace rozhrani Device
 
-	virtual BackBuffer* CreateBackBuffer( Window& window ) override;
+	virtual BackBuffer* CreateBackBuffer( const Window& window ) override;
 	virtual Buffer* CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) override;
 	virtual Buffer* CreateVertexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) override;
 	virtual Buffer* CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) override;
@@ -73,7 +73,7 @@ public:
 	virtual int GetMultisampleQuality( const int samplesCount ) const override;
 
 	// implementation interface
-	ID3D11DeviceContext* GetContext();
+	ID3D11DeviceContext* GetD3D11DeviceContext();
 
 private:
 	IDXGIFactory1* dxgiFactory;
@@ -84,14 +84,14 @@ private:
 
 class DX11Display: public Display {
 public:
-	virtual ~DX11Display();
-	
+	DX11Display();
+	~DX11Display();
 	bool Create( ID3D11Device* const device, IDXGIAdapter* const adapter, const int outputId );
 
 	// Display implementation
-	virtual bool SetMode( const DisplayMode& mode, Window& window ) override;
-	virtual void SetSystemMode() override;
-	virtual bool GetMode( const int id, DisplayMode& result ) const override;
+	virtual void SetMode( const DisplayMode& mode, Window& window ) override;
+	virtual void SetWindowedMode() override;
+	virtual void GetMode( const int id, DisplayMode& result ) const override;
 	virtual void FindMode( const DisplayMode& request, DisplayMode& result ) const override;
 	virtual void GetBestMode( DisplayMode& result ) const override;
 	
@@ -99,9 +99,9 @@ private:
 	void EnumDisplayModes();
 	
 public:
-	IDXGIOutput* dxgiOutput;
 	Window* window;
-	Array< DisplayMode > modes;
+	IDXGIOutput* dxgiOutput;
+	std::vector< DisplayMode > modes;
 };
 
 class DX11CommandInterface: public CommandInterface {
@@ -133,9 +133,13 @@ public:
 	virtual void SetBlendState( BlendState* const state ) override;
 	virtual void SetDepthStencilState( DepthStencilState* const state, const uint32_t stencilRef ) override;
 	virtual void SetRasterizerState( RasterizerState* const state ) override;
-	virtual void SetVSTextures( TextureView* const views[], const int count ) override;
-	virtual void SetPSTextures( TextureView* const views[], const int count ) override;
-	virtual void SetGSTextures( TextureView* const views[], const int count ) override;
+	virtual void SetViewports( const Viewport* const viewports[], const int count ) override;
+	virtual void SetVSTextures( const int startSlot, const int count, TextureView* const views[] ) override;
+	virtual void SetPSTextures( const int startSlot, const int count, TextureView* const views[] ) override;
+	virtual void SetGSTextures( const int startSlot, const int count, TextureView* const views[] ) override;
+	virtual void SetVSSamplers( Sampler* const samplers[ MAX_SAMPLERS ] ) override;
+	virtual void SetPSSamplers( Sampler* const samplers[ MAX_SAMPLERS ] ) override;
+	virtual void SetGSSamplers( Sampler* const samplers[ MAX_SAMPLERS ] ) override;
 	virtual void Draw( const int verticesCount, const int startVertex ) override;
 	virtual void DrawIndexed( const int indicesCount, const int startIndex ) override;
 	virtual void DrawInstanced( const int verticesCount, const int startVertex, const int instancesCount, const int startInstance ) override;
@@ -157,20 +161,22 @@ private:
 class DX11BackBuffer: public BackBuffer {
 public:
 	DX11BackBuffer();
-	virtual ~DX11BackBuffer();
-	bool Create( ID3D11Device* const device, IDXGIFactory1* const factory, Window& window );
+	~DX11BackBuffer();
+	bool Create( ID3D11Device* const device, IDXGIFactory1* const factory, const Window& window );
 
 	// BackBuffer implementation
 	virtual void Present( const int vsync ) override;
 	virtual void Resize() override;
-	
+	virtual int GetWidth() const override;
+	virtual int GetHeight() const override;
+
 	// implementation interface
-	IDXGISwapChain* GetSwapChain();
+	IDXGISwapChain* GetDXGISwapChain();
 
 private:
 	IDXGISwapChain* dxgiSwapChain;
 	ID3D11Device* device;
-	Window* window;
+	const Window* window;
 	int width;
 	int height;
 };
@@ -178,7 +184,7 @@ private:
 class DX11Buffer: public Buffer {
 public:
 	DX11Buffer();
-	~DX11Buffer() = 0;
+	~DX11Buffer();
 
 	// Buffer implementation
 	virtual void GetInfo( BufferInfo& result ) const override;
@@ -189,7 +195,7 @@ public:
 	virtual int GetSubresourcesCount() const override;
 
 	// implementation interface
-	ID3D11Resource* GetResource();
+	ID3D11Resource* GetD3D11Resource();
 	virtual bool Map( ID3D11DeviceContext* const context, const int subresource, const D3D11_MAP mapType, MappedBuffer& result ) = 0;
 
 protected:
@@ -338,7 +344,6 @@ public:
 
 	// implementation interface
 	ID3DBlob* GetBlob();
-	ID3D11DeviceChild* GetShader();
 	ID3D11VertexShader* GetD3D11VertexShader();
 	ID3D11PixelShader* GetD3D11PixelShader();
 	ID3D11GeometryShader* GetD3D11GeometryShader();
@@ -380,7 +385,7 @@ public:
 	bool Create( ID3D11Device* const device, const SamplerParams& params );
 
 	// implementation interface
-	ID3D11SamplerState* GetSampler();
+	ID3D11SamplerState* GetD3D11SamplerState();
 
 private:
 	ID3D11SamplerState* sampler;
@@ -432,7 +437,7 @@ public:
 	bool Create( ID3D11Device* const device, const VertexAttribute* const attributes, const int attributesCount, RenderProgram* const program );
 
 	// implementation interface
-	ID3D11InputLayout* GetInputLayout();
+	ID3D11InputLayout* GetD3D11InputLayout();
 
 private:
 	ID3D11InputLayout* inputLayout;
@@ -447,8 +452,8 @@ public:
 	// implementation interface
 	ID3D11Buffer** GetVertexBuffers();
 	ID3D11Buffer* GetIndexBuffer();
-	ID3D11InputLayout* GetInputLayout();
-	DXGI_FORMAT GetIndexBufferDXGIFormat() const;
+	ID3D11InputLayout* GetD3D11InputLayout();
+	DXGI_FORMAT GetIndexDxgiFormat() const;
 
 private:
 	ID3D11Buffer* vertexBuffers[ MAX_VERTEX_INPUT_SLOTS ];

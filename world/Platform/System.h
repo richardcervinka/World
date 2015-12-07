@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 enum class OSVersion {
 	UNKNOWN,
 	XP,
@@ -22,44 +24,52 @@ enum class CPUArchitecture {
 	ARM
 };
 
+struct AdapterInfo {
+	int id;
+	int outputsCount;
+	uint32_t vendorId;
+	uint64_t dedicatedVideoMemory;
+	uint64_t dedicatedSystemMemory;
+	uint64_t sharedSystemMemory;
+	char16_t description[ 128 ];
+};
+
 /*
-Hardware (krome adapteru) a operacni system
+Informace o hardware a operacnim systemu
 */
 class System {
 public:
-	// neni povoleno vytvaret instance
-	System() = delete;
+	virtual ~System() = default;
 
-	// Inicializace, musi byt provedeno pred volanim ostatnich metod.
-	static void Initialize();
-
-	// Pristupove thread-safe funkce
+	// Musi byt provedeno pred volanim ostatnich metod.
+	virtual void EnumerateCapabilities() = 0;
 
 	// vraci true, pokud je operacni system kompatibilni s parametrem version
-	static bool OSSupport( const OSVersion version );
+	virtual bool CompatibleOS( const OSVersion version ) const = 0;
 
 	// pocet logickych procesoru
-	static int GetProcessorsCount();
+	virtual int GetProcessorsCount() const = 0;
 
 	// architektura procesoru
-	static CPUArchitecture GetCPUArchitecture();
+	virtual CPUArchitecture GetCPUArchitecture() const = 0;
 
 	// pocet bajtu nainstalovane pameti RAM
-	static long long GetPhysicalMemory();
+	virtual long long GetPhysicalMemory() const = 0;
 
-	// dostupnost instrukcni sady SSE
-	static bool AvailableSSE();
-	static bool AvailableSSE2();
-	static bool AvailableSSE3();
+	// dostupnost SSE
+	virtual bool SSE() const = 0;
+	virtual bool SSE2() const = 0;
+	virtual bool SSE3() const = 0;
 
 	// Resetuje casovac, nutne volat pred prvnim pouzitim funkce GetTime()
-	static void ResetTime();
+	virtual void ResetTime() = 0;
 
-	// Vraci pocet sekund od predchoziho volani
-	static double GetTime();
+	// Vraci pocet sekund od predchoziho volani funkce
+	virtual double GetTime() const = 0;
 
-private:
-	//static ProcessorArchitecture processorArchitecture;
-	static long long performanceFrequency;
-	static long long performanceCounter;
+	// Pocet nainstalovanych grafickych adapteru
+	virtual int GetAdaptersCount() const = 0;
+
+	// Parametry grafickeho adapteru
+	virtual bool GetAdapterInfo( const int adapterId, AdapterInfo& result ) const = 0;
 };

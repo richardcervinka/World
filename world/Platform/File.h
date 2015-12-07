@@ -1,9 +1,9 @@
 #pragma once
 
+#include <vector>
 #include "Platform.h"
 #include "..\Framework\Types.h"
 #include "..\Framework\String.h"
-#include "..\Framework\Array.h"
 
 // Vrati cely nazev souboru, bez adresarove cesty
 String GetFileName( const String& file );
@@ -33,7 +33,7 @@ enum class FileAccess {
 class IFile {
 public:
 	enum {
-		EOF = ULONG_MAX
+		END_OF_FILE = ULONG_MAX
 	};
 	
 	IFile();
@@ -131,10 +131,10 @@ namespace FileSystem {
 	
 	// vrati seznam vsech souboru v adresari, napr. "dir/"
 	// je mozne uvest i filtr pro nazev souboru, napr. "dir/*.png"
-	bool EnumFiles( const String& path, Array< String >& result );
+	bool EnumFiles( const String& path, std::vector< String >& result );
 	
 	// vrati seznam vsech primych podadresaru
-	bool EnumDirs( const String& path, Array< String >& result );
+	bool EnumDirs( const String& path, std::vector< String >& result );
 };
 
 // Implementace

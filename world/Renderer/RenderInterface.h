@@ -42,17 +42,20 @@ namespace RenderInterface {
 	// maximalni pocettextur nabindovanych shaderu
 	const int MAX_TEXTURES = 32;
 
+	// maximalni pocet aktivnich sampleru
+	const int MAX_SAMPLERS = 8;
+
 	// maximalni pocet aktivnich render targets
 	const int MAX_RENDER_TARGETS = 8;
 
 	// maximalni pocet slotu, na ktere se pripojuje vertex buffer
 	const int MAX_VERTEX_INPUT_SLOTS = 16;
 
-	// maximalni pocet aktivnich sampleru
-	const int MAX_SAMPLERS = 8;
-
 	// Maximalni pocet aktivnich konstant bufferu
 	const int MAX_CBUFFER_SLOTS = 8;
+
+	// Maximalni pocet viewportu
+	const int MAX_VIEWPORTS = 8;
 	
 	/*
 	Informace potrebne k vytvoreni objektu DX11Device
@@ -449,6 +452,7 @@ namespace RenderInterface {
 	struct BlendStateParams {
 		RenderTargetBlend renderTargets[ MAX_RENDER_TARGETS ];
 		bool uniformBlending;
+		bool alphaToCoverage;
 	};
 
 	enum class CullMode {
@@ -503,6 +507,16 @@ namespace RenderInterface {
 		int depthsCount;	// pocet depth slices ( >= 1 ) dostupne casti pameti
 	};
 
+	/*
+	Mapovani vystupu render pipeline do render target.
+	*/
+	struct Viewport {
+		float x;
+		float y;
+		float width;
+		float height;
+	};
+
 	// Vypocet rozmeru mipmapy
 	void GetMipDimmensions( const int width, const int height, const int depth, const int mipLevel, TextureDimmensions& result );
 
@@ -518,27 +532,21 @@ namespace RenderInterface {
 		DeviceObject();
 		virtual ~DeviceObject() = 0;
 		
-		// neni mozne vytvaret kopie device objektu, jediny, kdo vytvari device objekty je objekt Device
+		// Neni mozne vytvaret kopie device objektu
 		DeviceObject( const DeviceObject& ) = delete;
 		DeviceObject& operator=( const DeviceObject& ) = delete;
 		
-		// Pokud je pocet referenci 0, uvolni objekt z pameti a nesmi byt dale pouzivan!
+		// Uvolni objekt z pameti, objekt nesmi byt dale pouzivan!
 		void Release();
-		
-		// inkrementuje pocitadlo referenci, objekt neni uvolnen z pameti, dokud je pocet referenci vetsi nez 0
-		void AddRef();
-
-	private:
-		int references;
 	};
 	
 	/*
-	Device reprezentuje grafickou kartu; vytvari veskere zdroje.
+	Device reprezentuje graficky adapter, vytvari veskere device objekty.
 	*/
 	class Device: public DeviceObject {
 	public:
 		// buffers
-		virtual BackBuffer* CreateBackBuffer( Window& window ) = 0;
+		virtual BackBuffer* CreateBackBuffer( const Window& window ) = 0;
 		virtual Buffer* CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) = 0;
 		virtual Buffer* CreateVertexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) = 0;
 		virtual Buffer* CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) = 0;
@@ -569,9 +577,6 @@ namespace RenderInterface {
 		Pokud neni msaa level podporovan, vraci hodnotu 0.
 		*/
 		virtual int GetMultisampleQuality( const int samplesCount ) const = 0;
-
-		// Vraci pocet zobrazovacich zarizeni pripojenych na vystup graficke karty
-		// virtual int GetOutputsCount() const;
 	};
 	
 	/*
@@ -657,21 +662,17 @@ namespace RenderInterface {
 		// Pokud je parametr state nullptr, pouzije se vychozi state.
 		virtual void SetRasterizerState( RasterizerState* const state ) = 0;
 
-		/*
-		Nabinduje textury pro vybrany shader stage. V shaderu je nutne specifikovat slot (bind point).
-		Odpoji vsechny predchozi nabindovane sloty.
-		Pokud je parametr descriptors nullptr, pouze odpoji vsechny sloty a parametr count se ignoruje.
-		*/
-		virtual void SetVSTextures( TextureView* const views[], const int count ) = 0;
-		virtual void SetPSTextures( TextureView* const views[], const int count ) = 0;
-		virtual void SetGSTextures( TextureView* const views[], const int count ) = 0;
+		virtual void SetViewports( const Viewport* const viewports[], const int count ) = 0;
 
-		/*
-		Nabinduje samplery pro vybrany shader stage.
-		*/
-		//virtual void SetVSSamplers( Samplers* const samplers[], const int count ) = 0;
-		//virtual void SetPSSamplers( Samplers* const samplers[], const int count ) = 0;
-		//virtual void SetGSSamplers( Samplers* const samplers[], const int count ) = 0;
+		// Nabinduje textury pro vybrany shader stage. V shaderu je nutne specifikovat slot (bind point).
+		virtual void SetVSTextures( const int startSlot, const int count, TextureView* const views[] ) = 0;
+		virtual void SetPSTextures( const int startSlot, const int count, TextureView* const views[] ) = 0;
+		virtual void SetGSTextures( const int startSlot, const int count, TextureView* const views[] ) = 0;
+
+		// Nabinduje samplery pro vybrany shader stage. Parametr nullptr odpoji vsechny samplery.
+		virtual void SetVSSamplers( Sampler* const samplers[ MAX_SAMPLERS ] ) = 0;
+		virtual void SetPSSamplers( Sampler* const samplers[ MAX_SAMPLERS ] ) = 0;
+		virtual void SetGSSamplers( Sampler* const samplers[ MAX_SAMPLERS ] ) = 0;
 
 		// Draw commands
 		virtual void Draw( const int verticesCount, const int startVertex ) = 0;
@@ -695,13 +696,13 @@ namespace RenderInterface {
 		Nastavi rezim co nejvice odpovidajici pozadavku (na desktopu prepne do rezimu cele obrazovky)
 		U zarizeni, ktera maji jediny mozny rezim obrazovky (mobilni zarizeni...), nedela nic
 		*/
-		virtual bool SetMode( const DisplayMode& mode, Window& window ) = 0;
+		virtual void SetMode( const DisplayMode& mode, Window& window ) = 0;
 		
 		// Nastavi vychozi rezim pro danou platformu (napr. na windows prepne z celoobrazovkoveho rezimu)
-		virtual void SetSystemMode() = 0;
+		virtual void SetWindowedMode() = 0;
 		
 		// Ziskani rezimu, pokud rezim s pozadovanym id neexistuje, vrati false
-		virtual bool GetMode( const int id, DisplayMode& result ) const = 0;
+		virtual void GetMode( const int id, DisplayMode& result ) const = 0;
 		
 		// Najde rezim, ktery co nejlepe (ovsem ne nutne nejvice) odpovida pozadovanemu rezimu
 		virtual void FindMode( const DisplayMode& request, DisplayMode& result ) const = 0;
@@ -717,8 +718,8 @@ namespace RenderInterface {
 	public:
 		virtual void Present( const int vsync ) = 0;
 		virtual void Resize() = 0;
-		//virtual int GetWidth() const = 0;
-		//virtual int GetHeight() const = 0;
+		virtual int GetWidth() const = 0;
+		virtual int GetHeight() const = 0;
 	};
 
 	/*
@@ -743,7 +744,8 @@ namespace RenderInterface {
 
 	/*
 	K vytvoreni potrebuje Sampler objekt. To zavazuje klienta, ze bude textura samplovana timto samplerem.
-	Hlavne v HLSL implementaci je nutne dbat na dodrzeni tohoto pravidla (neexistuje kontrolni mechanismus)
+	Hlavne v HLSL implementaci je nutne dbat na dodrzeni tohoto pravidla (neexistuje kontrolni mechanismus).
+	Sampler muze byt nullptr, pak se pouzije vychozi point sampler.
 	*/
 	class TextureView: public DeviceObject {};
 	

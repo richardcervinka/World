@@ -69,19 +69,10 @@ void RenderInterface::GetMipDimmensions( const int width, const int height, cons
 
 // DeviceObject 
 
-DeviceObject::DeviceObject() {
-	references = 1;
-}
+DeviceObject::DeviceObject() {}
 
 DeviceObject::~DeviceObject() {}
 
 void DeviceObject::Release() {
-	references -= 1;
-	if ( references <= 0 ) {
-		delete this;
-	}
-}
-
-void DeviceObject::AddRef() {
-	references += 1;
+	delete this;
 }

@@ -2,7 +2,7 @@
 
 class FileWindows: public IFile {
 public:
-	using IFile::EOF;
+	using IFile::END_OF_FILE;
 
 	FileWindows();
 	virtual ~FileWindows();
@@ -42,6 +42,6 @@ namespace FileSystemWindows {
 	bool RemoveDir( const String& path );
 	bool RemoveDirContent( const String& path );
 	bool RemoveFile( const String& fullname );
-	bool EnumFiles( const String& path, Array< String >& result );
-	bool EnumDirs( const String& path, Array< String >& result );
+	bool EnumFiles( const String& path, std::vector< String >& result );
+	bool EnumDirs( const String& path, std::vector< String >& result );
 }

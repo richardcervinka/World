@@ -45,9 +45,6 @@
     <ClCompile Include="platform\Window.cpp">
       <Filter>Source Files\Platform</Filter>
     </ClCompile>
-    <ClCompile Include="platform\System.cpp">
-      <Filter>Source Files\Platform</Filter>
-    </ClCompile>
     <ClCompile Include="framework\Math.cpp">
       <Filter>Source Files\Framework</Filter>
     </ClCompile>
@@ -123,9 +120,6 @@
       <Filter>Source Files\Framework</Filter>
     </ClInclude>
     <ClInclude Include="framework\Debug.h">
-      <Filter>Source Files\Framework</Filter>
-    </ClInclude>
-    <ClInclude Include="framework\Array.h">
       <Filter>Source Files\Framework</Filter>
     </ClInclude>
     <ClInclude Include="platform\File.h">

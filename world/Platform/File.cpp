@@ -136,10 +136,10 @@ bool FileSystem::RemoveFile( const String& fullname ) {
 	return FileSystemPlatform::RemoveFile( fullname );
 }
 
-bool FileSystem::EnumFiles( const String& path, Array< String >& result ) {
+bool FileSystem::EnumFiles( const String& path, std::vector< String >& result ) {
 	return FileSystemPlatform::EnumFiles( path, result );
 }
 
-bool FileSystem::EnumDirs( const String& path, Array< String >& result ) {
+bool FileSystem::EnumDirs( const String& path, std::vector< String >& result ) {
 	return FileSystemPlatform::EnumDirs( path, result );
 }

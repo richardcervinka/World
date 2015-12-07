@@ -159,7 +159,6 @@
     <ClCompile Include="framework\String.cpp" />
     <ClCompile Include="platform\Application.cpp" />
     <ClCompile Include="platform\File.cpp" />
-    <ClCompile Include="platform\System.cpp" />
     <ClCompile Include="platform\Window.cpp" />
     <ClCompile Include="platform\windows\WindowsApplication.cpp" />
     <ClCompile Include="platform\windows\WindowsFile.cpp" />
@@ -171,7 +170,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework\Allocation.h" />
-    <ClInclude Include="framework\Array.h" />
     <ClInclude Include="framework\Color.h" />
     <ClInclude Include="framework\Core.h" />
     <ClInclude Include="framework\Debug.h" />

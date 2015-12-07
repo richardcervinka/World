@@ -2,56 +2,28 @@
 
 Window::Window() {
 	renderer = nullptr;
-	backBuffer = nullptr;
 }
 
 Window::~Window() {
-	if ( backBuffer != nullptr ) {
-		backBuffer->Release();
-		backBuffer = nullptr;
-	}
+	SetRenderer( nullptr );
 }
 
 void Window::SetRenderer( Renderer* const renderer ) {
-	// unbind current (NOT IMPLEMENTED)
 	if ( this->renderer != nullptr ) {
-		return;
+		renderer->UnregisterWindow( *this );
 	}
-	if ( renderer == nullptr ) {
-		return;
-	}
-	// create new back buffer
-	RenderInterface::BackBuffer* backBuffer = renderer->CreateWindowBackBuffer( *this );
-	if ( backBuffer == nullptr ) {
-		return;
-	}
-	// save new state
-	this->backBuffer = backBuffer;
 	this->renderer = renderer;
-}
-
-void Window::PresentBackBuffer( const int vsync ) {
-	if ( backBuffer != nullptr ) {
-		backBuffer->Present( vsync );
+	if ( renderer != nullptr ) {
+		renderer->RegisterWindow( *this );
 	}
 }
 
-RenderInterface::BackBuffer* Window::GetBackBuffer() {
-	return backBuffer;
-}
-
-void Window::ResizeBackBuffer() {
-	if ( backBuffer != nullptr ) {
-		backBuffer->Resize();
-	}
-}
-
-bool Window::RendererDrawing() const {
+bool Window::IsRendererTarget() const {
 	return renderer != nullptr;
 }
 
 void Window::OnResized( const int width, const int height ) {
 	if ( renderer != nullptr ) {
-		renderer->ResizeBuffers( *this, width, height );
+		renderer->ResizeBackBuffer( *this, width, height );
 	}
 }

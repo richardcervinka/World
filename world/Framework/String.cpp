@@ -5,6 +5,30 @@
 #include "Math.h"
 #include "Types.h"
 
+void WcharToChar16( const wchar_t* const src, char16_t* const dest, const int length ) {
+	if ( src == nullptr || dest == nullptr ) {
+		return;
+	}
+	if ( length <= 0 ) {
+		dest[ 0 ] = u'\0';
+		return;
+	}
+	const wchar_t* srcChar = src;
+	char16_t* destChar = dest;
+
+	for ( int i = 0; i < length; i++ ) {
+		if ( *src >= 0xD800 && *src <= 0xDFFF ) {
+			*destChar = u' ';
+		} else {
+			*destChar = static_cast< char16_t >( *srcChar );
+		}
+		srcChar += 1;
+		destChar += 1;
+	}
+}
+
+// String
+
 String::String() {
 	length = 0;
 	capacity = SHORT_LENGTH;

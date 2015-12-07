@@ -168,7 +168,7 @@ unsigned long FileWindows::SetPointer( const unsigned long position ) {
 		return 0;
 	}
 	LARGE_INTEGER pointer;
-	if ( position == IFile::EOF ) {
+	if ( position == IFile::END_OF_FILE ) {
 		LARGE_INTEGER offset;
 		offset.QuadPart = 0;
 		SetFilePointerEx( reinterpret_cast< HANDLE >( handle ), offset, &pointer, FILE_END );
@@ -222,7 +222,7 @@ enum class FindFilesMode {
 	ALL
 };
 
-bool FindFiles( const String& path, FindFilesMode mode, Array< String >& result ) {
+bool FindFiles( const String& path, FindFilesMode mode, std::vector< String >& result ) {
 	String fullname = path;
 	if ( fullname[ fullname.Length() - 1 ] == u'/' ) {
 		fullname += String( u"*.*" );
@@ -235,7 +235,7 @@ bool FindFiles( const String& path, FindFilesMode mode, Array< String >& result 
 	}
 	
 	// vymazat obsah pole az pokud je platny handle a funkce vrati true
-	result.Clear();
+	result.clear();
 	
 	// prochazet vsechny objekty v adresari
 	do {
@@ -256,7 +256,7 @@ bool FindFiles( const String& path, FindFilesMode mode, Array< String >& result 
 		if ( wcsncmp( fd.cFileName, L"..", 2 ) == 0 ) {
 			continue;
 		}
-		result.Push( String( reinterpret_cast< char16_t* >( fd.cFileName ) ) );
+		result.push_back( String( reinterpret_cast< char16_t* >( fd.cFileName ) ) );
 		
 	} while ( FindNextFileW( handle, &fd ) );
 	
@@ -264,10 +264,10 @@ bool FindFiles( const String& path, FindFilesMode mode, Array< String >& result 
 	return true;
 }
 
-bool FileSystemWindows::EnumFiles( const String& path, Array< String >& result ) {
+bool FileSystemWindows::EnumFiles( const String& path, std::vector< String >& result ) {
 	return FindFiles( path, FindFilesMode::FILE, result );
 }
 
-bool FileSystemWindows::EnumDirs( const String& path, Array< String >& result ) {
+bool FileSystemWindows::EnumDirs( const String& path, std::vector< String >& result ) {
 	return FindFiles( path, FindFilesMode::DIR, result );
 }

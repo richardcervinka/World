@@ -30,7 +30,7 @@ public:
 	}
 	
 	ComPtr( const ComPtr& comPtr ) {
-		ptr = comPtr.GetRef();
+		ptr = comPtr.Ref();
 	}
 	
 	ComPtr& operator=( const ComPtr& comPtr ) {
@@ -53,23 +53,23 @@ public:
 		Release();
 		return &ptr;
 	}
-
-	void Release() {
-		if ( ptr != nullptr ) {
-			ptr->Release();
-			ptr = nullptr;
-		}
-	}
 	
-	T* GetRef() {
+	T* Get() {
+		return ptr;
+	}
+
+	T* Ref() {
 		if ( ptr != nullptr ) {
 			ptr->AddRef();
 		}
 		return ptr;
 	}
 
-	T* Get() {
-		return ptr;
+	void Release() {
+		if ( ptr != nullptr ) {
+			ptr->Release();
+			ptr = nullptr;
+		}
 	}
 
 private:
@@ -261,21 +261,21 @@ DX11Device::~DX11Device() {
 bool DX11Device::Create( const DX11CreateDeviceParams& params ) {
 	HRESULT hresult = 0;
 
-	// vytvorit DXGIFactory1
+	// factory
 	ComPtr< IDXGIFactory1 > factory;
 	hresult = CreateDXGIFactory1( __uuidof( IDXGIFactory1 ), reinterpret_cast< void** >( &factory ) );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	// pokusit se ziskat pozadovany adapter
+	// adapter
 	ComPtr< IDXGIAdapter > adapter;
 	hresult = factory->EnumAdapters( static_cast< UINT >( params.adapter ), &adapter );
 
-	// selhani, zkusit ziskat vychozi adapter
+	// selhani, ziskat vychozi adapter
 	if ( FAILED( hresult ) ) {
 		hresult = factory->EnumAdapters( 0, &adapter );
 	}
-	// nebyl ziskan zadny adapter
+	// nebyl nalezen zadny adapter
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
@@ -306,6 +306,9 @@ bool DX11Device::Create( const DX11CreateDeviceParams& params ) {
 #else
 	UINT flags = 0
 #endif
+	// create device
+	ID3D11Device* device = nullptr;
+	ID3D11DeviceContext* context = nullptr;
 	hresult = D3D11CreateDevice(
 		adapter.Get(),
 		D3D_DRIVER_TYPE_UNKNOWN,
@@ -321,12 +324,14 @@ bool DX11Device::Create( const DX11CreateDeviceParams& params ) {
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	this->dxgiFactory = factory.GetRef();
-	this->dxgiAdapter = adapter.GetRef();
+	this->device = device;
+	this->context = context;
+	this->dxgiFactory = factory.Ref();
+	this->dxgiAdapter = adapter.Ref();
 	return true;
 }
 
-BackBuffer* DX11Device::CreateBackBuffer( Window& window ) {
+BackBuffer* DX11Device::CreateBackBuffer( const Window& window ) {
 	DX11BackBuffer* backBuffer = new DX11BackBuffer();
 	if ( !backBuffer->Create( device, dxgiFactory, window ) ) {
 		delete backBuffer;
@@ -514,15 +519,19 @@ int DX11Device::GetMultisampleQuality( const int samplesCount) const {
 	return levels;
 }
 
-ID3D11DeviceContext* DX11Device::GetContext() {
+ID3D11DeviceContext* DX11Device::GetD3D11DeviceContext() {
 	return context;
 }
 
 // DX11Display
 
-DX11Display::~DX11Display() {
-	dxgiOutput = nullptr;
+DX11Display::DX11Display() {
 	window = nullptr;
+	dxgiOutput = nullptr;
+}
+
+DX11Display::~DX11Display() {
+	ReleaseCom( &dxgiOutput );
 }
 
 bool DX11Display::Create( ID3D11Device* const device, IDXGIAdapter* const adapter, const int outputId ) {
@@ -532,7 +541,7 @@ bool DX11Display::Create( ID3D11Device* const device, IDXGIAdapter* const adapte
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	this->dxgiOutput = output.GetRef();
+	this->dxgiOutput = output.Ref();
 	EnumDisplayModes();
 	return true;
 }
@@ -544,26 +553,27 @@ void DX11Display::EnumDisplayModes() {
 	UINT count = 0;
 	dxgiOutput->GetDisplayModeList( BACK_BUFFER_FORMAT, 0, &count, NULL );
 
-	// zjistit dostupne mody
+	// ziskat vsechny rezimy
 	std::unique_ptr< DXGI_MODE_DESC[] > dxgiModes( new DXGI_MODE_DESC[ count ] );
 	dxgiOutput->GetDisplayModeList( BACK_BUFFER_FORMAT, 0, &count, dxgiModes.get() );
 
-	// ulozit vysledek
-	modes.Clear();
+	// ulozit rezimy ve formatu DisplayMode
+	modes.clear();
+	modes.reserve( count );
 	for ( UINT i = 0; i < count; i++ ) {
-		DisplayMode dm;
-		dm.width = static_cast< int >( dxgiModes[ i ].Width );
-		dm.height = static_cast< int >( dxgiModes[ i ].Height );
-		dm.refreshRateNumerator = static_cast< int >( dxgiModes[ i ].RefreshRate.Numerator );
-		dm.refreshRateDenominator = static_cast< int >( dxgiModes[ i ].RefreshRate.Denominator );
-		modes.Push( dm );
+		DisplayMode mode;
+		mode.width = static_cast< int >( dxgiModes[ i ].Width );
+		mode.height = static_cast< int >( dxgiModes[ i ].Height );
+		mode.refreshRateNumerator = static_cast< int >( dxgiModes[ i ].RefreshRate.Numerator );
+		mode.refreshRateDenominator = static_cast< int >( dxgiModes[ i ].RefreshRate.Denominator );
+		modes.push_back( mode );
 	}
 }
 
-void DX11Display::SetSystemMode() {
+void DX11Display::SetWindowedMode() {
 	/*
-	Pri vstupu do fullscreenu je predan ukazatel na window,
-	pokud neni dostupny neni okno ve fullscreen rezimu
+	Pri vstupu do fullscreen rezimu je ulozen ukazatel na objekt Window.
+	Pokud je nyni tento ukazatel nullptr, okno neni ve fullscreen rezimu.
 	*/
 	if ( window == nullptr ) {
 		return;
@@ -574,7 +584,7 @@ void DX11Display::SetSystemMode() {
 	}
 	// ziskat ukazatel na swap chain
 	ASSERT_DOWNCAST( backBuffer, DX11BackBuffer );
-	IDXGISwapChain* swapChain = static_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
+	IDXGISwapChain* const swapChain = static_cast< DX11BackBuffer* >( backBuffer )->GetDXGISwapChain();
 	if ( swapChain == nullptr ) {
 		return;
 	}
@@ -582,70 +592,71 @@ void DX11Display::SetSystemMode() {
 	window = nullptr;
 }
 
-bool DX11Display::SetMode( const DisplayMode& mode, Window& window ) {
+void DX11Display::SetMode( const DisplayMode& mode, Window& window ) {
 	BackBuffer* const backBuffer = window.GetBackBuffer();
 	if ( backBuffer == nullptr ) {
-		return false;
+		return;
 	}
 	// ziskat swap chain back bufferu
 	ASSERT_DOWNCAST( backBuffer, DX11BackBuffer );
-	IDXGISwapChain* const swapChain = static_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
+	IDXGISwapChain* const swapChain = static_cast< DX11BackBuffer* >( backBuffer )->GetDXGISwapChain();
 	if ( swapChain == nullptr ) {
-		return false;
+		return;
 	}
 	// najit odpovidajici rezim
 	DisplayMode validMode;
 	FindMode( mode, validMode );
 
-	// prepnout do rezimu cele obrazovky
+	// DXGI mode
 	DXGI_MODE_DESC desc;
 	ZeroMemory( &desc, sizeof( desc ) );
-	desc.Width						= mode.width;
-	desc.Height						= mode.height;
+	desc.Width						= static_cast< UINT >( mode.width );
+	desc.Height						= static_cast< UINT >( mode.height );
 	desc.RefreshRate.Numerator		= static_cast< UINT >( mode.refreshRateNumerator );
 	desc.RefreshRate.Denominator	= static_cast< UINT >( mode.refreshRateDenominator );
 	desc.Format						= DXGI_FORMAT_UNKNOWN;
 	desc.ScanlineOrdering			= DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	desc.Scaling					= DXGI_MODE_SCALING_STRETCHED;
 
+	// prepnout do rezimu cele obrazovky
 	swapChain->ResizeTarget( &desc );
 	swapChain->SetFullscreenState( TRUE, dxgiOutput );
 	swapChain->ResizeTarget( &desc );
 
 	this->window = &window;
-	return true;
 }
 
-bool DX11Display::GetMode( const int id, DisplayMode &result ) const {
-	if ( id < 0 || id >= modes.Length() ) {
-		return false;
+void DX11Display::GetMode( const int id, DisplayMode &result ) const {
+	if ( id < 0 || id >= static_cast< int >( modes.size() ) ) {
+		ZeroMemory( &result, sizeof( DisplayMode ) );
+		return;
 	}
 	result = modes[ id ];
-	return true;
 }
 
 void DX11Display::FindMode( const DisplayMode& request, DisplayMode& result ) const {
-	if ( modes.Length() == 0 ) {
+	if ( modes.size() == 0 ) {
 		ZeroMemory( &result, sizeof( DisplayMode ) );
 		return;
 	}
 	const DisplayMode* best = &modes[ 0 ];
-	int bestDifference = Math::Abs( request.width - best->width ) + Math::Abs( request.height - best->height );
+	int bestDivergence = Math::Abs( request.width - best->width ) + Math::Abs( request.height - best->height );
 	int bestId = 0;
 
-	for ( int i = 1; i < modes.Length(); i++ ) {
+	for ( int i = 1; i < static_cast< int >( modes.size() ); i++ ) {
 		const DisplayMode& mode = modes[ i ];
-		int difference = Math::Abs( mode.width - request.width ) + Math::Abs( mode.height - request.height );
+		int divergence = Math::Abs( mode.width - request.width ) + Math::Abs( mode.height - request.height );
 
 		// horsi odchylka rozlyseni, porovnat dalsi rezim
-		if ( difference > bestDifference ) {
+		if ( divergence > bestDivergence ) {
 			continue;
 		}
 		// stejna odchylka rozlyseni, porovnat refresh rate
-		if ( difference == bestDifference ) {
+		if ( divergence == bestDivergence ) {
+
 			// porovnat refresh rate
-			float refreshRate = static_cast< float >( mode.refreshRateNumerator ) / static_cast< float >( mode.refreshRateDenominator );
-			float bestRefreshRate = static_cast< float >( best->refreshRateNumerator ) / static_cast< float >( best->refreshRateDenominator );
+			const float refreshRate = static_cast< float >( mode.refreshRateNumerator ) / static_cast< float >( mode.refreshRateDenominator );
+			const float bestRefreshRate = static_cast< float >( best->refreshRateNumerator ) / static_cast< float >( best->refreshRateDenominator );
 			
 			// nalezeny mod ma horsi refresh rate, hledat dal
 			if ( refreshRate < bestRefreshRate ) {
@@ -653,13 +664,13 @@ void DX11Display::FindMode( const DisplayMode& request, DisplayMode& result ) co
 			}
 			// nalezeny mod ma lepsi refresh rate, ulozit novy mod
 			best = &mode;
-			bestDifference = difference;
+			bestDivergence = divergence;
 			bestId = i;
 			continue;
 		}
 		// lepsi odchylka rozlyseni, ulozit mod
 		best = &mode;
-		bestDifference = difference;
+		bestDivergence = divergence;
 		bestId = i;
 	}
 	result = *best;
@@ -691,11 +702,9 @@ DX11BackBuffer::~DX11BackBuffer() {
 	ReleaseCom( &device );
 }
 
-bool DX11BackBuffer::Create( ID3D11Device* const device, IDXGIFactory1* const factory, Window& window ) {
-	HRESULT hresult = 0;
-
-	ASSERT_DOWNCAST( &window, WindowsWindow );
-	HWND hwnd = static_cast< WindowsWindow* >( &window )->GetHandle();
+bool DX11BackBuffer::Create( ID3D11Device* const device, IDXGIFactory1* const factory, const Window& window ) {
+	ASSERT_DOWNCAST( &window, const WindowsWindow );
+	const HWND hwnd = static_cast< const WindowsWindow* >( &window )->GetHandle();
 	
 	// swap chain
 
@@ -716,7 +725,7 @@ bool DX11BackBuffer::Create( ID3D11Device* const device, IDXGIFactory1* const fa
 	desc.Flags								= DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
 	ComPtr< IDXGISwapChain > swapChain;
-	hresult = factory->CreateSwapChain( device, &desc, &swapChain );
+	HRESULT hresult = factory->CreateSwapChain( device, &desc, &swapChain );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
@@ -724,29 +733,38 @@ bool DX11BackBuffer::Create( ID3D11Device* const device, IDXGIFactory1* const fa
 	// vypnuti defaultniho prepinani do rezimu cele obrazovky
 	factory->MakeWindowAssociation( hwnd, DXGI_MWA_NO_ALT_ENTER  );
 
-	// ulozit objekty
+	// ulozit vysledek
+	this->width = window.GetClientWidth();
+	this->height = window.GetClientHeight();
 	this->window = &window;
+	this->dxgiSwapChain = swapChain.Ref();
 	this->device = device;
 	device->AddRef();
-	this->dxgiSwapChain = swapChain.GetRef();
-
 	return true;
 }
 
 void DX11BackBuffer::Resize() {
-	const int width = window->GetClientWidth();
-	const int height = window->GetClientHeight();
-	DXGI_SWAP_CHAIN_DESC swapChainDesc;
-	dxgiSwapChain->GetDesc( &swapChainDesc );
-	dxgiSwapChain->ResizeBuffers( swapChainDesc.BufferCount, width, height, DXGI_FORMAT_UNKNOWN, swapChainDesc.Flags );
+	width = window->GetClientWidth();
+	height = window->GetClientHeight();
+	DXGI_SWAP_CHAIN_DESC desc;
+	dxgiSwapChain->GetDesc( &desc );
+	dxgiSwapChain->ResizeBuffers( desc.BufferCount, width, height, DXGI_FORMAT_UNKNOWN, desc.Flags );
 }
 
 void DX11BackBuffer::Present( const int vsync ) {
 	dxgiSwapChain->Present( vsync, 0 );
 }
 
-IDXGISwapChain* DX11BackBuffer::GetSwapChain() {
+IDXGISwapChain* DX11BackBuffer::GetDXGISwapChain() {
 	return dxgiSwapChain;
+}
+
+int DX11BackBuffer::GetWidth() const {
+	return width;
+}
+
+int DX11BackBuffer::GetHeight() const {
+	return height;
 }
 
 // DX11Buffer
@@ -786,7 +804,7 @@ BufferAccess DX11Buffer::GetAccess() const {
 	return bufferInfo.access;
 }
 
-ID3D11Resource* DX11Buffer::GetResource() {
+ID3D11Resource* DX11Buffer::GetD3D11Resource() {
 	return resource;
 }
 
@@ -820,7 +838,7 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferP
 	if ( params.format == Format::DEPTH_24_UNORM_STENCIL_8_UINT ) {
 		bindFlags |= D3D11_BIND_DEPTH_STENCIL;
 	}
-	// subresources temporary
+	// d3d11 subresource initial data temporary
 	std::unique_ptr< D3D11_SUBRESOURCE_DATA[] > subresources( nullptr );
 	
 	// initialize subresources temporary
@@ -876,7 +894,7 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferP
 		if ( FAILED( hresult ) ) {
 			return false;
 		}
-		SetTextureBuffer( texture.GetRef(), params );
+		SetTextureBuffer( texture.Ref(), params );
 		return true;
 	}
 
@@ -904,7 +922,7 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferP
 		if ( FAILED( hresult ) ) {
 			return false;
 		}
-		SetTextureBuffer( texture.GetRef(), params );
+		SetTextureBuffer( texture.Ref(), params );
 		return true;
 	}
 
@@ -926,7 +944,7 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferP
 		if ( FAILED( hresult ) ) {
 			return false;
 		}
-		SetTextureBuffer( texture.GetRef(), params );
+		SetTextureBuffer( texture.Ref(), params );
 		return true;
 	}
 
@@ -935,7 +953,7 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferP
 }
 
 void DX11TextureBuffer::SetTextureBuffer( ID3D11Resource* const resource, const TextureBufferParams& params ) {
-	// Ulozit atributy bufferu (validace rozmeru textury, hodnota nesmi byt < 1)
+	// ulozit atributy bufferu (validace rozmeru textury, hodnota nesmi byt < 1)
 	format = params.format;
 	width = Math::Max( params.width, 1 );
 	height = Math::Max( params.height, 1 );
@@ -945,7 +963,7 @@ void DX11TextureBuffer::SetTextureBuffer( ID3D11Resource* const resource, const 
 	samplesCount = params.samplesCount;
 	samplesQuality = params.samplesQuality;
 
-	// Vypocitat velikost bufferu (rozhrani ID3DTextureXD neposkytuje informaci o velikosti alokovane pameti pro textury)
+	// vypocitat velikost bufferu (rozhrani ID3DTextureXD neposkytuje informaci o velikosti alokovane pameti pro textury)
 	
 	const FormatInfo formatInfo = GetFormatInfo( format );
 	int mipWidth = width;
@@ -968,7 +986,7 @@ void DX11TextureBuffer::SetTextureBuffer( ID3D11Resource* const resource, const 
 			mipDepth /= 2;
 		}
 	}
-	// ulozit informace o bufferu
+	// ulozit buffer
 	BufferInfo bufferInfo;
 	bufferInfo.type = params.type;
 	bufferInfo.byteWidth = mipSliceSize * arraySize;
@@ -978,8 +996,8 @@ void DX11TextureBuffer::SetTextureBuffer( ID3D11Resource* const resource, const 
 }
 
 bool DX11TextureBuffer::Map( ID3D11DeviceContext* const context, const int subresource, const D3D11_MAP mapType, MappedBuffer& result ) {
-	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	HRESULT hresult = context->Map( GetResource(), static_cast< UINT >( subresource ), mapType, 0, &mappedResource );
+	D3D11_MAPPED_SUBRESOURCE ms;
+	HRESULT hresult = context->Map( GetD3D11Resource(), static_cast< UINT >( subresource ), mapType, 0, &ms );
 	if ( FAILED( hresult ) ) {
 		ZeroMemory( &result, sizeof( MappedBuffer ) );
 		return false;
@@ -988,9 +1006,9 @@ bool DX11TextureBuffer::Map( ID3D11DeviceContext* const context, const int subre
 	GetMipDimmensions( width, height, depth, subresource % mipLevels, dimmensions );
 	FormatInfo formatInfo = GetFormatInfo( format );
 
-	result.data = mappedResource.pData;
-	result.rowPitch = static_cast< int >( mappedResource.RowPitch );
-	result.depthPitch = static_cast< int >( mappedResource.DepthPitch );
+	result.data = ms.pData;
+	result.rowPitch = static_cast< int >( ms.RowPitch );
+	result.depthPitch = static_cast< int >( ms.DepthPitch );
 	result.subresource = subresource;
 	result.rowByteWidth = ( dimmensions.width / formatInfo.blockSize ) * formatInfo.blockByteWidth;
 	result.rowsCount = ( dimmensions.width / formatInfo.blockSize ) * ( dimmensions.height / formatInfo.blockSize ) * dimmensions.depth;
@@ -1079,20 +1097,20 @@ bool DX11GenericBuffer::Create(
 	bufferInfo.byteWidth = byteWidth;
 	bufferInfo.usage = usage;
 	bufferInfo.access = access;
-	SetBuffer( buffer.GetRef(), bufferInfo );
+	SetBuffer( buffer.Ref(), bufferInfo );
 	return true;
 }
 
 bool DX11GenericBuffer::Map( ID3D11DeviceContext* const context, const int subresource, const D3D11_MAP mapType, MappedBuffer& result ) {
-	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	HRESULT hresult = context->Map( GetResource(), 0, mapType, 0, &mappedResource );
+	D3D11_MAPPED_SUBRESOURCE ms;
+	HRESULT hresult = context->Map( GetD3D11Resource(), 0, mapType, 0, &ms );
 	if ( FAILED( hresult ) ) {
 		ZeroMemory( &result, sizeof( MappedBuffer ) );
 		return false;
 	}
-	result.data = mappedResource.pData;
-	result.rowPitch = static_cast< int >( mappedResource.RowPitch );
-	result.depthPitch = static_cast< int >( mappedResource.DepthPitch );
+	result.data = ms.pData;
+	result.rowPitch = static_cast< int >( ms.RowPitch );
+	result.depthPitch = static_cast< int >( ms.DepthPitch );
 	result.subresource = 0;
 	result.rowByteWidth = GetByteWidth();
 	result.rowsCount = 1;
@@ -1101,7 +1119,7 @@ bool DX11GenericBuffer::Map( ID3D11DeviceContext* const context, const int subre
 }
 
 ID3D11Buffer* DX11GenericBuffer::GetD3D11Buffer() {
-	return static_cast< ID3D11Buffer* >( GetResource() );
+	return static_cast< ID3D11Buffer* >( GetD3D11Resource() );
 }
 
 // DX11RenderTargetView
@@ -1119,7 +1137,7 @@ bool DX11RenderTargetView::Create( ID3D11Device* const device, BackBuffer* const
 
 	// get back buffer texture
 	ASSERT_DOWNCAST( backBuffer, DX11BackBuffer );
-	IDXGISwapChain* const swapChain = static_cast< DX11BackBuffer* >( backBuffer )->GetSwapChain();
+	IDXGISwapChain* const swapChain = static_cast< DX11BackBuffer* >( backBuffer )->GetDXGISwapChain();
 	ComPtr< ID3D11Texture2D > texture;
 	hresult = swapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &texture ) );
 	if ( FAILED( hresult ) ) {
@@ -1131,19 +1149,19 @@ bool DX11RenderTargetView::Create( ID3D11Device* const device, BackBuffer* const
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	this->view = view.GetRef();
+	this->view = view.Ref();
 	return true;
 }
 
 bool DX11RenderTargetView::Create( ID3D11Device* const device, Buffer* const textureBuffer ) {
 	ASSERT_DOWNCAST( textureBuffer, DX11TextureBuffer );
-	ID3D11Resource* const resource = static_cast< DX11TextureBuffer* >( textureBuffer )->GetResource();
+	ID3D11Resource* const resource = static_cast< DX11TextureBuffer* >( textureBuffer )->GetD3D11Resource();
 	ComPtr< ID3D11RenderTargetView > view;
 	HRESULT hresult = device->CreateRenderTargetView ( resource, NULL, &view );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	this->view = view.GetRef();
+	this->view = view.Ref();
 	return true;
 }
 
@@ -1162,13 +1180,13 @@ DX11TextureView::~DX11TextureView() {
 
 bool DX11TextureView::Create( ID3D11Device* const device, Buffer* const textureBuffer ) {
 	ASSERT_DOWNCAST( textureBuffer, DX11TextureBuffer );
-	ID3D11Resource* const resource = static_cast< DX11TextureBuffer* >( textureBuffer )->GetResource();
+	ID3D11Resource* const resource = static_cast< DX11TextureBuffer* >( textureBuffer )->GetD3D11Resource();
 	ComPtr< ID3D11ShaderResourceView > view;
 	HRESULT hresult = device->CreateShaderResourceView( resource, NULL, &view );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	this->view = view.GetRef();
+	this->view = view.Ref();
 	return true;
 }
 
@@ -1201,8 +1219,7 @@ bool DX11DepthStencilView::Create( ID3D11Device* const device, Buffer* const tex
 	if ( format != Format::DEPTH_24_UNORM_STENCIL_8_UINT ) {
 		return false;
 	}
-	ID3D11Resource* texture = static_cast< DX11TextureBuffer* >( textureBuffer )->GetResource();
-	HRESULT hresult = 0;
+	ID3D11Resource* const texture = static_cast< DX11TextureBuffer* >( textureBuffer )->GetD3D11Resource();
 
 	D3D11_DEPTH_STENCIL_VIEW_DESC viewDesc;
 	ZeroMemory( &viewDesc, sizeof( viewDesc ) );
@@ -1215,22 +1232,22 @@ bool DX11DepthStencilView::Create( ID3D11Device* const device, Buffer* const tex
 	if ( params.stencilUsage != DepthStencilUsage::STANDARD ) {
 		viewDesc.Flags |= D3D11_DSV_READ_ONLY_STENCIL;
 	}
-	// texture view dimension
+	// texture 2D view dimension
 	if ( bufferType == BufferType::TEXTURE_2D ) {
 		viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 		viewDesc.Texture2D.MipSlice = 0;
 
-	// multisampled texture view dimension
+	// multisampled texture 2D view dimension
 	} else if ( bufferType == BufferType::TEXTURE_2D_MS ) {
 		viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
 	} 
 	// create view
 	ComPtr< ID3D11DepthStencilView > view;
-	hresult = device->CreateDepthStencilView( texture, &viewDesc, &view );
+	HRESULT hresult = device->CreateDepthStencilView( texture, &viewDesc, &view );
 	if ( FAILED( hresult )  ) {
 		return false;
 	}
-	this->view = view.GetRef();
+	this->view = view.Ref();
 	return true;
 }
 
@@ -1528,7 +1545,7 @@ bool DX11Shader::Compile( ID3D11Device* const device, const ShaderParams& params
 		return false;
 	}
 	// ulozit vysledek
-	this->code = code.GetRef();
+	this->code = code.Ref();
 	this->shader = shader;
 	this->type = params.type;
 	this->version = params.version;
@@ -1548,29 +1565,25 @@ ID3DBlob* DX11Shader::GetBlob() {
 	return code;
 }
 
-ID3D11DeviceChild* DX11Shader::GetShader() {
-	return shader;
-}
-
 ID3D11VertexShader* DX11Shader::GetD3D11VertexShader() {
-	if ( type == ShaderType::VERTEX_SHADER ) {
-		return static_cast< ID3D11VertexShader* >( shader );
+	if ( type != ShaderType::VERTEX_SHADER ) {
+		return nullptr;
 	}
-	return nullptr;
+	return static_cast< ID3D11VertexShader* >( shader );
 }
 
 ID3D11PixelShader* DX11Shader::GetD3D11PixelShader() {
-	if ( type == ShaderType::PIXEL_SHADER ) {
-		return static_cast< ID3D11PixelShader* >( shader );
+	if ( type != ShaderType::PIXEL_SHADER ) {
+		return nullptr;
 	}
-	return nullptr;
+	return static_cast< ID3D11PixelShader* >( shader );
 }
 
 ID3D11GeometryShader* DX11Shader::GetD3D11GeometryShader() {
-	if ( type == ShaderType::GEOMETRY_SHADER ) {
-		return static_cast< ID3D11GeometryShader* >( shader );
+	if ( type != ShaderType::GEOMETRY_SHADER ) {
+		return nullptr;
 	}
-	return nullptr;
+	return static_cast< ID3D11GeometryShader* >( shader );
 }
 
 // DX11RenderProgram
@@ -1687,11 +1700,11 @@ bool DX11Sampler::Create( ID3D11Device* const device, const SamplerParams& param
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	this->sampler = sampler.GetRef();
+	this->sampler = sampler.Ref();
 	return true;
 }
 
-ID3D11SamplerState* DX11Sampler::GetSampler() {
+ID3D11SamplerState* DX11Sampler::GetD3D11SamplerState() {
 	return sampler;
 }
 
@@ -1708,7 +1721,7 @@ DX11BlendState::~DX11BlendState() {
 bool DX11BlendState::Create( ID3D11Device* const device, const BlendStateParams& params ) {
 	D3D11_BLEND_DESC desc;
 	ZeroMemory( &desc, sizeof( desc ) );
-	desc.AlphaToCoverageEnable = FALSE;
+	desc.AlphaToCoverageEnable = ( params.alphaToCoverage ? TRUE : FALSE );
 	desc.IndependentBlendEnable = ( params.uniformBlending ? FALSE : TRUE );
 
 	for ( int i = 0; i < MAX_RENDER_TARGETS; i++ ) {
@@ -1728,7 +1741,7 @@ bool DX11BlendState::Create( ID3D11Device* const device, const BlendStateParams&
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	this->state = state.GetRef();
+	this->state = state.Ref();
 	return true;
 }
 
@@ -1770,7 +1783,7 @@ bool DX11RasterizerState::Create( ID3D11Device* const device, const RasterizerSt
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	this->state = state.GetRef();
+	this->state = state.Ref();
 	return true;
 }
 
@@ -1807,7 +1820,7 @@ bool DX11DepthStencilState::Create( ID3D11Device* const device, const DepthStenc
 	if ( FAILED( hresult )  ) {
 		return false;
 	}
-	this->state = state.GetRef();
+	this->state = state.Ref();
 	return true;
 }
 
@@ -1829,8 +1842,8 @@ bool DX11VertexLayout::Create( ID3D11Device* const device, const VertexAttribute
 	ASSERT_DOWNCAST( program, DX11RenderProgram );
 	ID3DBlob* const shaderCode = static_cast< DX11RenderProgram* >( program )->GetVertexShaderByteCode();
 
-	Array< D3D11_INPUT_ELEMENT_DESC > elements;
-	elements.Reserve( attributesCount );
+	std::vector< D3D11_INPUT_ELEMENT_DESC > elements;
+	elements.reserve( attributesCount );
 
 	// initialize elements
 	for ( int attributeIndex = 0; attributeIndex < attributesCount; attributeIndex++ ) {
@@ -1850,14 +1863,14 @@ bool DX11VertexLayout::Create( ID3D11Device* const device, const VertexAttribute
 		for ( int i = 0; i < attribute.elementsCount; i++ ) {
 			desc.SemanticIndex		= static_cast< UINT >( attribute.semanticIndex + i );
 			desc.AlignedByteOffset	= static_cast< UINT >( attribute.offset + i * formatInfo.blockByteWidth );
-			elements.Push( desc );
+			elements.push_back( desc );
 		}
 	}
 	// create input layout
 	ComPtr< ID3D11InputLayout > inputLayout;
 	HRESULT hresult = device->CreateInputLayout(
-		elements.Raw(),
-		static_cast< UINT >( elements.Length() ),
+		elements.data(),
+		static_cast< UINT >( elements.size() ),
 		shaderCode->GetBufferPointer(),
 		static_cast< SIZE_T >( shaderCode->GetBufferSize() ),
 		&inputLayout
@@ -1865,11 +1878,11 @@ bool DX11VertexLayout::Create( ID3D11Device* const device, const VertexAttribute
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	this->inputLayout = inputLayout.GetRef();
+	this->inputLayout = inputLayout.Ref();
 	return true;
 }
 
-ID3D11InputLayout* DX11VertexLayout::GetInputLayout() {
+ID3D11InputLayout* DX11VertexLayout::GetD3D11InputLayout() {
 	return inputLayout;
 }
 
@@ -1915,14 +1928,14 @@ bool DX11VertexStream::Create( const VertexStreamParams& params ) {
 			return false;
 		}
 		ASSERT_DOWNCAST( buffer, DX11Buffer );
-		ID3D11Resource* const resource = static_cast< ID3D11Buffer* >( static_cast< DX11Buffer* >( buffer )->GetResource() );
+		ID3D11Resource* const resource = static_cast< ID3D11Buffer* >( static_cast< DX11Buffer* >( buffer )->GetD3D11Resource() );
 		ASSERT_DOWNCAST( resource, ID3D11Buffer );
 		vertexBuffers[ i ] = static_cast< ID3D11Buffer* >( resource );
 		vertexBuffers[ i ]->AddRef();
 	}
 	// save input layout
 	ASSERT_DOWNCAST( params.vertexLayout, DX11VertexLayout );
-	inputLayout = static_cast< DX11VertexLayout* >( params.vertexLayout )->GetInputLayout();
+	inputLayout = static_cast< DX11VertexLayout* >( params.vertexLayout )->GetD3D11InputLayout();
 
 	return true;
 }
@@ -1935,11 +1948,11 @@ ID3D11Buffer* DX11VertexStream::GetIndexBuffer() {
 	return indexBuffer;
 }
 
-ID3D11InputLayout* DX11VertexStream::GetInputLayout() {
+ID3D11InputLayout* DX11VertexStream::GetD3D11InputLayout() {
 	return inputLayout;
 }
 
-DXGI_FORMAT DX11VertexStream::GetIndexBufferDXGIFormat() const {
+DXGI_FORMAT DX11VertexStream::GetIndexDxgiFormat() const {
 	return indexBufferFormat;
 }
 
@@ -1966,8 +1979,7 @@ bool DX11CommandInterface::Create() {
 
 void DX11CommandInterface::Begin( Device* const device ) {
 	ASSERT_DOWNCAST( device, DX11Device );
-	context = static_cast< DX11Device* >( device )->GetContext();
-
+	context = static_cast< DX11Device* >( device )->GetD3D11DeviceContext();
 	context->ClearState();
 	currentInputLayout = nullptr;
 	currentVertexShader = nullptr;
@@ -2066,7 +2078,10 @@ bool DX11CommandInterface::Map( Buffer* const buffer, const int subresource, con
 void DX11CommandInterface::Unmap( Buffer* const buffer, MappedBuffer& mappedBuffer ) {
 	mappedBuffer.data = nullptr;
 	ASSERT_DOWNCAST( buffer, DX11Buffer );
-	context->Unmap( static_cast< DX11Buffer* >( buffer )->GetResource(), static_cast< UINT >( mappedBuffer.subresource ) );
+	context->Unmap(
+		static_cast< DX11Buffer* >( buffer )->GetD3D11Resource(),
+		static_cast< UINT >( mappedBuffer.subresource )
+	);
 }
 
 bool DX11CommandInterface::UpdateBuffer( Buffer* const buffer, const int subresource, const void* const data ) {
@@ -2110,8 +2125,8 @@ void DX11CommandInterface::CopyBuffer( Buffer* const src, Buffer* const dest ) {
 	ASSERT_DOWNCAST( src, DX11Buffer );
 	ASSERT_DOWNCAST( dest, DX11Buffer );
 	context->CopyResource(
-		static_cast< DX11Buffer* >( dest )->GetResource(),
-		static_cast< DX11Buffer* >( src )->GetResource()
+		static_cast< DX11Buffer* >( dest )->GetD3D11Resource(),
+		static_cast< DX11Buffer* >( src )->GetD3D11Resource()
 	);
 }
 
@@ -2144,7 +2159,7 @@ void DX11CommandInterface::SetConstantBuffers( ConstantBufferView* const views[]
 void DX11CommandInterface::SetVertexStream( VertexStream* const stream ) {
 	ASSERT_DOWNCAST( stream, DX11VertexStream );
 
-	ID3D11InputLayout* const inputLayout = static_cast< DX11VertexStream* >( stream )->GetInputLayout();
+	ID3D11InputLayout* const inputLayout = static_cast< DX11VertexStream* >( stream )->GetD3D11InputLayout();
 	if ( inputLayout != currentInputLayout ) {
 		context->IASetInputLayout( inputLayout );
 		currentInputLayout = inputLayout;
@@ -2158,7 +2173,7 @@ void DX11CommandInterface::SetVertexStream( VertexStream* const stream ) {
 	);
 	context->IASetIndexBuffer(
 		static_cast< DX11VertexStream* >( stream )->GetIndexBuffer(),
-		static_cast< DX11VertexStream* >( stream )->GetIndexBufferDXGIFormat(),
+		static_cast< DX11VertexStream* >( stream )->GetIndexDxgiFormat(),
 		0
 	);
 }
@@ -2262,35 +2277,87 @@ void DX11CommandInterface::SetRasterizerState( RasterizerState* const state ) {
 	}
 }
 
-void DX11CommandInterface::SetVSTextures( TextureView* const views[], const int count ) {
-	ID3D11ShaderResourceView* srvs[ MAX_TEXTURES ] = { NULL };
-	if ( views != nullptr ) {
-		for ( int i = 0; i < count; i++ ) {
-			ASSERT_DOWNCAST( views[ i ], DX11TextureView );
-			srvs[ i ] = static_cast< DX11TextureView* >( views[ i ] )->GetD3D11ShaderResourceView();
-		}
+void DX11CommandInterface::SetVSTextures( const int startSlot, const int count, TextureView* const views[] ) {
+	if ( count + startSlot > MAX_TEXTURES ) {
+		return;
 	}
-	context->VSSetShaderResources( 0, static_cast< UINT >( MAX_TEXTURES ), srvs );
+	ID3D11ShaderResourceView* srvs[ MAX_TEXTURES ];
+	for ( int i = 0; i < count; i++ ) {
+		ASSERT_DOWNCAST( views[ i ], DX11TextureView );
+		srvs[ i ] = static_cast< DX11TextureView* >( views[ i ] )->GetD3D11ShaderResourceView();
+	}
+	context->VSSetShaderResources( static_cast< UINT >( startSlot ), static_cast< UINT >( count ), srvs );
 }
 
-void DX11CommandInterface::SetPSTextures( TextureView* const views[], const int count ) {
-	ID3D11ShaderResourceView* srvs[ MAX_TEXTURES ] = { NULL };
-	if ( views != nullptr ) {
-		for ( int i = 0; i < count; i++ ) {
-			ASSERT_DOWNCAST( views[ i ], DX11TextureView );
-			srvs[ i ] = static_cast< DX11TextureView* >( views[ i ] )->GetD3D11ShaderResourceView();
-		}
+void DX11CommandInterface::SetPSTextures( const int startSlot, const int count, TextureView* const views[] ) {
+	if ( count + startSlot > MAX_TEXTURES ) {
+		return;
 	}
-	context->PSSetShaderResources( 0, static_cast< UINT >( MAX_TEXTURES ), srvs );
+	ID3D11ShaderResourceView* srvs[ MAX_TEXTURES ];
+	for ( int i = 0; i < count; i++ ) {
+		ASSERT_DOWNCAST( views[ i ], DX11TextureView );
+		srvs[ i ] = static_cast< DX11TextureView* >( views[ i ] )->GetD3D11ShaderResourceView();
+	}
+	context->PSSetShaderResources( static_cast< UINT >( startSlot ), static_cast< UINT >( count ), srvs );
 }
 
-void DX11CommandInterface::SetGSTextures( TextureView* const views[], const int count ) {
-	ID3D11ShaderResourceView* srvs[ MAX_TEXTURES ] = { NULL };
-	if ( views != nullptr ) {
-		for ( int i = 0; i < count; i++ ) {
-			ASSERT_DOWNCAST( views[ i ], DX11TextureView );
-			srvs[ i ] = static_cast< DX11TextureView* >( views[ i ] )->GetD3D11ShaderResourceView();
-		}
+void DX11CommandInterface::SetGSTextures( const int startSlot, const int count, TextureView* const views[] ) {
+	if ( count + startSlot > MAX_TEXTURES ) {
+		return;
 	}
-	context->GSSetShaderResources( 0, static_cast< UINT >( MAX_TEXTURES ), srvs );
+	ID3D11ShaderResourceView* srvs[ MAX_TEXTURES ];
+	for ( int i = 0; i < count; i++ ) {
+		ASSERT_DOWNCAST( views[ i ], DX11TextureView );
+		srvs[ i ] = static_cast< DX11TextureView* >( views[ i ] )->GetD3D11ShaderResourceView();
+	}
+	context->GSSetShaderResources( static_cast< UINT >( startSlot ), static_cast< UINT >( count ), srvs );
+}
+
+void FillSamplerStateArray( Sampler* const samplers[ MAX_SAMPLERS ], ID3D11SamplerState* result[ MAX_SAMPLERS ] ) {
+	if ( samplers == nullptr ) {
+		ZeroMemory( result, MAX_SAMPLERS * sizeof( void* ) );
+		return;
+	}
+	for ( int i = 0; i < MAX_SAMPLERS; i++ ) {
+		if ( samplers[ i ] == nullptr ) {
+			result[ i ] = NULL;
+			continue;
+		}
+		ASSERT_DOWNCAST( samplers[ i ], DX11Sampler );
+		result[ i ] = static_cast< DX11Sampler* >( samplers[ i ] )->GetD3D11SamplerState();
+	}
+}
+
+void DX11CommandInterface::SetVSSamplers( Sampler* const samplers[] ) {
+	ID3D11SamplerState* samplerStates[ MAX_SAMPLERS ];
+	FillSamplerStateArray( samplers, samplerStates );
+	context->VSSetSamplers( 0, static_cast< UINT >( MAX_SAMPLERS ), samplerStates );
+}
+
+void DX11CommandInterface::SetPSSamplers( Sampler* const samplers[] ) {
+	ID3D11SamplerState* samplerStates[ MAX_SAMPLERS ];
+	FillSamplerStateArray( samplers, samplerStates );
+	context->PSSetSamplers( 0, static_cast< UINT >( MAX_SAMPLERS ), samplerStates );
+}
+
+void DX11CommandInterface::SetGSSamplers( Sampler* const samplers[] ) {
+	ID3D11SamplerState* samplerStates[ MAX_SAMPLERS ];
+	FillSamplerStateArray( samplers, samplerStates );
+	context->GSSetSamplers( 0, static_cast< UINT >( MAX_SAMPLERS ), samplerStates );
+}
+
+void DX11CommandInterface::SetViewports( const Viewport* const viewports[], const int count ) {
+	if ( count > MAX_VIEWPORTS ) {
+		return;
+	}
+	D3D11_VIEWPORT d3d11Viewports[ MAX_VIEWPORTS ];
+	for ( int i = 0; i < count; i++ ) {
+		d3d11Viewports[ i ].TopLeftX	= viewports[ i ]->x;
+		d3d11Viewports[ i ].TopLeftY	= viewports[ i ]->y;
+		d3d11Viewports[ i ].Width		= viewports[ i ]->width;
+		d3d11Viewports[ i ].Height		= viewports[ i ]->height;
+		d3d11Viewports[ i ].MinDepth	= 0;
+		d3d11Viewports[ i ].MaxDepth	= 1;
+	}
+	context->RSSetViewports( static_cast< UINT >( count ), d3d11Viewports );
 }

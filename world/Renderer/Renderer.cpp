@@ -1,65 +1,95 @@
-
-#include <dxgi.h>
-#include "..\framework\Core.h"
-#include "..\platform\Window.h"
-#include "..\platform\File.h"
+#include "..\Framework\Core.h"
+#include "..\Platform\Window.h"
+#include "..\Platform\File.h"
 #include "RenderInterface.h"
 #include "Renderer.h"
 
 Renderer::Renderer() {
 	device = nullptr;
-	immediateCommandInterface = nullptr;
+	immediateCommands = nullptr;
 }
 
-bool Renderer::Initialize( const RendererInitialParams &parameters ) {
+bool Renderer::Initialize( const RendererParams &params ) {
 
 	// device
-	
-	RenderInterface::DX11CreateDeviceParams deviceParams;
-	ZeroMemory( &deviceParams, sizeof( deviceParams ) );
-	deviceParams.majorFeatureLevels = 11;
-	deviceParams.minorFeatureLevels = 0;
-	deviceParams.adapter = 0;
 
-	RenderInterface::Device *device = RenderInterface::DX11CreateDevice( deviceParams );
+	RenderInterface::Device* device = nullptr;
+	if ( params.version == RendererVersion::DX_11_0 ) {
+		RenderInterface::DX11CreateDeviceParams deviceParams;
+		deviceParams.majorFeatureLevels = 11;
+		deviceParams.minorFeatureLevels = 0;
+		//deviceParams.adapter = params.adapterId;
+		device = RenderInterface::DX11CreateDevice( deviceParams );
+	}
 	if ( device == nullptr ) {
 		return false;
 	}
 
 	// immediate command interface
 
-	RenderInterface::CommandInterface *immediateCommandInterface = device->CreateCommandInterface();
-	if ( immediateCommandInterface == nullptr ) {
+	RenderInterface::CommandInterface* immediateCommands = device->CreateCommandInterface();
+	if ( immediateCommands == nullptr ) {
+		device->Release();
 		return false;
 	}
 
 	// G-Buffers
 
-	// ...
-
 	return true;
 }
 
-RenderInterface::BackBuffer *Renderer::CreateWindowBackBuffer( Window &window ) {
-	RenderInterface::BackBuffer *backBuffer = device->CreateBackBuffer( window );
-	return backBuffer;
+uint32_t Renderer::RegisterWindow( const Window& window ) {
+	// overit jestli okno neni registrovane
+	for ( const RenderWindow& rw : renderWindows ) {
+		if ( rw.window == &window ) {
+			return INVALID_WINDOW_HANDLE;
+		}
+	}
+	RenderInterface::BackBuffer* const backBuffer = device->CreateBackBuffer( window );
+	if ( backBuffer == nullptr ) {
+		return INVALID_WINDOW_HANDLE;
+	}
+	RenderInterface::RenderTargetView* const renderTargetView = device->CreateRenderTargetView( backBuffer );
+	if ( renderTargetView == nullptr ) {
+		backBuffer->Release();
+		return INVALID_WINDOW_HANDLE;
+	}
+	RenderWindow rw;
+	rw.window = &window;
+	rw.backBuffer = backBuffer;
+	rw.renderTargetView = renderTargetView;
+	renderWindows.push_back( rw );
+	return static_cast< uint32_t >( renderWindows.size() ) - 1;
 }
 
-void Renderer::ResizeBuffers( Window &window, const int width, const int height ) {
-	window.ResizeBackBuffer();
-
-	// resize g-buffers and create render target descriptors
-	// ...
+void Renderer::UnregisterWindow( const Window& window ) {
+	for ( auto iter = renderWindows.begin(); iter != renderWindows.end(); iter++ ) {
+		if ( iter->window == &window ) {
+			iter->renderTargetView->Release();
+			iter->backBuffer->Release();
+			renderWindows.erase( iter );
+			return;
+		}
+	}
 }
 
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+void Renderer::ResizeBackBuffer( const Window& window, const int width, const int height ) {
+	for ( RenderWindow &rw : renderWindows ) {
+		rw.renderTargetView->Release();
+		rw.renderTargetView = nullptr;
+		rw.backBuffer->Resize();
+		rw.renderTargetView = device->CreateRenderTargetView( rw.backBuffer );
+	}
+}
+
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //
-// TENTO KOD JE POZUSTATEK Z PROTOTYPU, POTREBA KOMPLETRNE PREPSAT !
+// NASLEDUJE POZUSTATEK PROTOTYPU, POTREBA KOMPLETRNE PREPSAT!
 //
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-Renderer::~Renderer() {
-}
+//Renderer::~Renderer() {
+//}
 /*
 void Renderer::Initialize( const RendererInitialParams &parameters ) {
 
@@ -184,7 +214,7 @@ void Renderer::Initialize( const RendererInitialParams &parameters ) {
 	SetViewport();
 }
 */
-void Renderer::SetViewport() {
+//void Renderer::SetViewport() {
 	/*
 	D3D11_VIEWPORT viewport;
 	viewport.TopLeftX = 0;
@@ -195,9 +225,9 @@ void Renderer::SetViewport() {
 	viewport.MaxDepth = 1;
 	deviceContext_->RSSetViewports( 1, &viewport );
 	*/
-}
+//}
 
-void Renderer::CreateGBuffers( const int width, const int height ) {
+//void Renderer::CreateGBuffers( const int width, const int height ) {
 	/*
 	// normal.x, normal.y, normal.z, specular_exp
 	CreateRenderTarget( width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, parameters.antialiasing, gbuffers[ 0 ] );
@@ -208,9 +238,9 @@ void Renderer::CreateGBuffers( const int width, const int height ) {
 	// specular.r, specular.g, specular.b
 	CreateRenderTarget( width, height, DXGI_FORMAT_R8G8B8A8_UNORM, parameters.antialiasing, gbuffers[ 3 ] );
 	*/
-}
+//}
 
-void Renderer::ResizeGBuffers( const int width, const int height ) {
+//void Renderer::ResizeGBuffers( const int width, const int height ) {
 	/*
 	return;
 	UnbindRenderTargets();
@@ -224,7 +254,7 @@ void Renderer::ResizeGBuffers( const int width, const int height ) {
 	}
 	CreateGBuffers( width, height );
 	*/
-}
+//}
 /*
 void Renderer::CreateRenderTarget( const int width, const int height, const DXGI_FORMAT format, const Antialiasing antialiasing, RenderTarget &target ) {
 	
@@ -295,7 +325,7 @@ int Renderer::GetSamplesCount( const Antialiasing antialiasing ) const {
 }
 */
 
-void Renderer::CreateDepthStencilBuffer() {
+//void Renderer::CreateDepthStencilBuffer() {
 	/*
 	return;
 	HRESULT hresult = 0;
@@ -338,9 +368,9 @@ void Renderer::CreateDepthStencilBuffer() {
 		return;
 	}
 	*/
-}
+//}
 
-void Renderer::CreateDepthStencilStates() {
+//void Renderer::CreateDepthStencilStates() {
 	/*
 	return;
 	ID3D11DepthStencilState *state = nullptr;
@@ -413,9 +443,9 @@ void Renderer::CreateDepthStencilStates() {
 	}
 	depthStencilStates.Insert( state, static_cast< int >( DepthStencil::READONLY ) );
 	*/
-}
+//}
 
-void Renderer::CreateBlendStates() {
+//void Renderer::CreateBlendStates() {
 	/*
 	ID3D11BlendState *state = nullptr;
 	D3D11_BLEND_DESC desc;
@@ -476,9 +506,9 @@ void Renderer::CreateBlendStates() {
 	}
 	blendStates.Insert( state, static_cast< int >( BlendState::ODT ) );
 	*/
-}
+//}
 
-void Renderer::CreateRasterizerStates() {
+//void Renderer::CreateRasterizerStates() {
 	/*
 	D3D11_RASTERIZER_DESC desc;
 	ID3D11RasterizerState *state = nullptr;
@@ -502,9 +532,9 @@ void Renderer::CreateRasterizerStates() {
 	}
 	rasterizerStates.Insert( state, static_cast< int >( Rasterizer::WIREFRAME ) );
 	*/
-}
+//}
 
-void Renderer::CreateTextureSamplers() {
+//void Renderer::CreateTextureSamplers() {
 	/*
 	HRESULT hresult = 0;
 	D3D11_SAMPLER_DESC desc;
@@ -526,16 +556,16 @@ void Renderer::CreateTextureSamplers() {
 	// set sampler states
 	deviceContext_->PSSetSamplers( 0, 1, &textureSampler );
 	*/
-}
+//}
 
-void Renderer::UnbindShaderResources() {
+//void Renderer::UnbindShaderResources() {
 	// ...
 	// deviceContext->PSSetShaderResources( 0, )
-}
+//}
 
-void Renderer::UnbindRenderTargets() {
+//void Renderer::UnbindRenderTargets() {
 	//deviceContext_->OMSetRenderTargets( 0, NULL, NULL );
-}
+//}
 /*
 void Renderer::Resize() {
 	return;
