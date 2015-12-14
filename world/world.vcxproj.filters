@@ -81,6 +81,9 @@
     <ClCompile Include="Renderer\DX11\DX11RenderInterface.cpp">
       <Filter>Source Files\Renderer\DX11</Filter>
     </ClCompile>
+    <ClCompile Include="Platform\Windows\WindowsSystem.cpp">
+      <Filter>Source Files\Platform\Windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="platform\Application.h">
@@ -148,6 +151,9 @@
     </ClInclude>
     <ClInclude Include="libs\libpng\png.h">
       <Filter>Source Files\Libs\libpng</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\Windows\WindowsSystem.h">
+      <Filter>Source Files\Platform\Windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

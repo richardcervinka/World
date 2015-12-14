@@ -2,11 +2,14 @@
 
 #include "..\Framework\String.h"
 #include "..\Framework\Color.h"
-#include "..\Renderer\Renderer.h"
 
-// Trida window neni urcena k vytvareni uzivatelskeho rozhrani okennich aplikaci.
-// Zapouzdruje funkcionalitu potrebnou k zobrazeni obsahu BackBufferu v klientske oblasti okna.
-//
+// forward declarations
+class Renderer;
+
+/*
+Trida window neni urcena k vytvareni uzivatelskeho rozhrani okennich aplikaci.
+Zapouzdruje funkcionalitu potrebnou k zobrazeni obsahu BackBufferu v klientske oblasti okna.
+*/
 class Window {
 public:
 	Window();
@@ -16,6 +19,7 @@ public:
 	Window( const Window& ) = delete;
 	Window& operator=( const Window& ) = delete;
 	
+	// rozhrani pro implementaci
 	virtual void Destroy() = 0;
 	virtual int GetWidth() const = 0;
 	virtual int GetHeight() const = 0;
@@ -30,8 +34,10 @@ public:
 	virtual const String GetName() const = 0;
 	virtual void Update() = 0;
 
+	// Propojeni s rendererem
 	void SetRenderer( Renderer* const renderer );
 	bool IsRendererTarget() const;
+	RenderInterface::BackBuffer* GetBackBuffer();
 
 protected:
 	// Musi byt volano pri zmene velikosti okna

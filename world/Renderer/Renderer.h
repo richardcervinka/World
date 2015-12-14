@@ -6,29 +6,10 @@
 // forward declarations
 class Window;
 
-// Chybova hodnota identifikatoru okna (Renderer::RegisterWindow())
-const uint32_t INVALID_WINDOW_HANDLE = static_cast< uint32_t >( -1 );
-
-enum class RendererVersion {
-	DX_11_0,
-	GL_4_3
-};
-
 /*
-Parametry funkce Initialize()
+Definuje zpusob mapovani oblasti frame bufferu (src) do back bufferu (dest)
 */
-struct RendererParams {
-	// urcuje, jaka implementace RenderInterface bude pouzita
-	RendererVersion version;
-
-	// id adapteru poziteho k vykreslovani; 0 je vychozi adapter. V pripade nezdaru se pouzije vychozi adapter
-	int adapter;
-};
-
-/*
-Definuje zpusob mapovani oblasti render target bufferu (src) do back bufferu (dest)
-*/
-struct RenderOutputViewport {
+struct FramebufferViewport {
 	float srcX;
 	float srcY;
 	float srcWidth;
@@ -37,6 +18,25 @@ struct RenderOutputViewport {
 	float destY;
 	float destWidth;
 	float destHeight;
+};
+
+/*
+Podporovane rezimy vyhlazovani hran, ktere implementuje trida Renderer
+*/
+enum class Antialiasing {
+	DISABLED,
+	MSAA_2,
+	MSAA_4,
+	MSAA_8
+};
+
+/*
+Parametry funkce Initialize()
+*/
+struct RendererAttribites {
+	int renderbuffersWidth;
+	int renderbuffersHeight;
+	Antialiasing antialiasing;
 };
 
 /*
@@ -52,46 +52,95 @@ public:
 	Renderer& operator=( const Renderer& renderer ) = delete;
 
 	// inicializace, je nutne volat pred prvnim pouzitim objektu
-	bool Initialize( const RendererParams& params );
+	bool Initialize( RenderInterface::Device* const device, const RendererAttribites& attributes );
 
-	// Vytvori pro okno back buffer a rtv, vraci identifikator registrovaneho okna
-	uint32_t RegisterWindow( const Window& window );
+	// Vytvori pro okno back buffer a rtv
+	void CreateBackBuffer( const Window& window );
 
-	// Uvolni back buffer a rtv patrici oknu (do okna neni mozne dale vykreslovat)
-	void UnregisterWindow( const Window& window );
+	// Uvolni backbuffer a rtv patrici oknu
+	void DeleteBackBuffer( const Window& window );
 
-	// Zmeni velikost back bufferu patrici oknu
-	void ResizeBackBuffer( const Window& window, const int width, const int height );
+	// Zmeni velikost back bufferu
+	void ResizeBackBuffer( const Window& window );
 
-	// ResizeGBuffers( width, height )
+	// Zmeni velikost renderbufferu
+	void ResizeRenderBuffers( const int width, const int height );
+
+	// Zmeni rezim vyhlazovani hran
+	void SetAntialiasing( const Antialiasing antialiasing );
+
+	// render passes
+	// BeginDrawPass()
+	// EndDrawPass()
+	// PresentFramebuffer( FramebufferViewport, Window )
+
+	// multithreading
+	// BeginDrawThread()
+	// EndDrawThread()
+	// ExecuteDrawThreads()
+
+	// 2D drawing commands
+	// DrawSprites( ... )
+	// DrawSpritesDirect()
+
+	// 3D drawing commands
+
+	// Lighting
+	// Light( ... )
 
 private:
-	RenderInterface::Device* device;
-	RenderInterface::CommandInterface* immediateCommands;
-	
-	// registrovana okna
-	struct RenderWindow {
-		const Window* window;
-		RenderInterface::BackBuffer* backBuffer;
-		RenderInterface::RenderTargetView* renderTargetView;
-	};
-	std::vector< RenderWindow > renderWindows;
+	void CreateRenderbuffers( const int width, const int height, const Antialiasing antialiasing );
+	void CreateGBuffer( const int slot, const RenderInterface::Format format, const int width, const int height, const int samplesCount, const int samplesQuality );
+	// SetCurrentBackBuffer( Window )
 
-	// G-Buffery
+private:
+	RenderInterface::PDevice device;
+	RenderInterface::PCommandInterface immediateCommands;
+	
+	// atributy
+	RendererAttribites attributes;
+
+	// registrovana okna
+	struct RenderTargetWindow {
+		const Window* window;
+		RenderInterface::PBackBuffer backBuffer;
+		RenderInterface::PRenderTargetView renderTargetView;
+	};
+	std::vector< RenderTargetWindow > renderTargetWindows;
+
+	struct RenderBuffer {
+		RenderInterface::PBuffer buffer;
+		RenderInterface::PTextureView textureView;
+		RenderInterface::PRenderTargetView renderTargetView;
+	};
+
+	// G-Buffers
 	enum {
-		GBUFFER_DIFUSE,
-		GBUFFER_NORMAL,
-		GBUFFER_SPECULAR,
+		GBUFFER_FRAME,		// (non-multisampled) render pass render target (resolved result)
+		GBUFFER_DIFUSE,		// (multisampled) RGBA difuse slozka, pouziva se take jako druhy buffer v postrpocesingu
+		GBUFFER_NORMAL,		// (multisampled) normal buffer
+		GBUFFER_SPECULAR,	// (multisampled)
 		GBUFFERS_COUNT
 	};
-	struct GBuffer {
-		RenderInterface::Buffer* buffer;
-		RenderInterface::RenderTargetView* renderTargetView;
-		RenderInterface::TextureView* textureView;
+	RenderBuffer gbuffers[ GBUFFERS_COUNT ];
+
+	// Pouziva se jen pri msaa
+	RenderBuffer coverageMap;
+
+	// depth stencil buffer
+	RenderInterface::PBuffer depthStencilBuffer;
+	enum {
+		DEPTHSTENCILSVIEW_STANDARD,
+		DEPTHSTENCILSVIEW_READONLY,
+		DEPTHSTENCILSVIEWS_COUNT
 	};
-	GBuffer gbuffers[ GBUFFERS_COUNT ];
+	RenderInterface::PDepthStencilView depthStencilViews[ DEPTHSTENCILSVIEWS_COUNT ];
+
+	//Viewport renderbufferViewport;
+	//FramebufferViewport renderbufferViewport;
 
 	// engine poskytuje pevnou sadu texture sampleru, defaultni je mozne modifikovat nastavenim
+	/*
 	enum {
 		SAMPLER_DEFAULT,
 		SAMPLER_POINT,
@@ -99,6 +148,7 @@ private:
 		SAMPLERS_COUNT
 	};
 	RenderInterface::Sampler *samplers[ SAMPLERS_COUNT ];
+	*/
 };
 
 /*

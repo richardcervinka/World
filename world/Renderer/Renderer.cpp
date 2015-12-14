@@ -4,81 +4,197 @@
 #include "RenderInterface.h"
 #include "Renderer.h"
 
+// Renderer
+
 Renderer::Renderer() {
 	device = nullptr;
 	immediateCommands = nullptr;
 }
 
-bool Renderer::Initialize( const RendererParams &params ) {
-
-	// device
-
-	RenderInterface::Device* device = nullptr;
-	if ( params.version == RendererVersion::DX_11_0 ) {
-		RenderInterface::DX11CreateDeviceParams deviceParams;
-		deviceParams.majorFeatureLevels = 11;
-		deviceParams.minorFeatureLevels = 0;
-		//deviceParams.adapter = params.adapterId;
-		device = RenderInterface::DX11CreateDevice( deviceParams );
-	}
+bool Renderer::Initialize( RenderInterface::Device* const device, const RendererAttribites& attributes ) {
 	if ( device == nullptr ) {
 		return false;
 	}
-
 	// immediate command interface
-
-	RenderInterface::CommandInterface* immediateCommands = device->CreateCommandInterface();
-	if ( immediateCommands == nullptr ) {
-		device->Release();
+	immediateCommands = device->CreateCommandInterface();
+	if ( !immediateCommands ) {
 		return false;
 	}
-
 	// G-Buffers
+	CreateRenderbuffers( attributes.renderbuffersWidth, attributes.renderbuffersHeight, attributes.antialiasing );
 
+	// Zkontrolovat, jestli byly vsechny gbuffery vytvoreny
+	for ( const RenderBuffer& rb : gbuffers ) {
+		if ( !rb.buffer || !rb.textureView || !rb.renderTargetView ) {
+			return false;
+		}
+	}
+	//return false;
+
+	// ulozit vysledek
+	//this->immediateCommands = immediateCommands;
+	this->attributes = attributes;
 	return true;
 }
 
-uint32_t Renderer::RegisterWindow( const Window& window ) {
-	// overit jestli okno neni registrovane
-	for ( const RenderWindow& rw : renderWindows ) {
-		if ( rw.window == &window ) {
-			return INVALID_WINDOW_HANDLE;
+void Renderer::CreateBackBuffer( const Window& window ) {
+	// overit jestli uz okno neni registrovane
+	for ( const RenderTargetWindow& rtw : renderTargetWindows ) {
+		if ( rtw.window == &window ) {
+			return;
 		}
 	}
-	RenderInterface::BackBuffer* const backBuffer = device->CreateBackBuffer( window );
-	if ( backBuffer == nullptr ) {
-		return INVALID_WINDOW_HANDLE;
+	RenderInterface::PBackBuffer backBuffer = device->CreateBackBuffer( window );
+	if ( !backBuffer ) {
+		return;
 	}
-	RenderInterface::RenderTargetView* const renderTargetView = device->CreateRenderTargetView( backBuffer );
-	if ( renderTargetView == nullptr ) {
-		backBuffer->Release();
-		return INVALID_WINDOW_HANDLE;
+	RenderInterface::PRenderTargetView renderTargetView = device->CreateRenderTargetView( backBuffer.get() );
+	if ( !renderTargetView ) {
+		return;
 	}
-	RenderWindow rw;
-	rw.window = &window;
-	rw.backBuffer = backBuffer;
-	rw.renderTargetView = renderTargetView;
-	renderWindows.push_back( rw );
-	return static_cast< uint32_t >( renderWindows.size() ) - 1;
+	RenderTargetWindow rtw;
+	rtw.window = &window;
+	rtw.backBuffer = std::move( backBuffer );
+	rtw.renderTargetView = std::move( renderTargetView );
+	renderTargetWindows.push_back( rtw );
 }
 
-void Renderer::UnregisterWindow( const Window& window ) {
-	for ( auto iter = renderWindows.begin(); iter != renderWindows.end(); iter++ ) {
+void Renderer::DeleteBackBuffer( const Window& window ) {
+	for ( auto iter = renderTargetWindows.begin(); iter != renderTargetWindows.end(); iter++ ) {
 		if ( iter->window == &window ) {
-			iter->renderTargetView->Release();
-			iter->backBuffer->Release();
-			renderWindows.erase( iter );
+			renderTargetWindows.erase( iter );
 			return;
 		}
 	}
 }
 
-void Renderer::ResizeBackBuffer( const Window& window, const int width, const int height ) {
-	for ( RenderWindow &rw : renderWindows ) {
-		rw.renderTargetView->Release();
-		rw.renderTargetView = nullptr;
-		rw.backBuffer->Resize();
-		rw.renderTargetView = device->CreateRenderTargetView( rw.backBuffer );
+void Renderer::ResizeBackBuffer( const Window& window ) {
+	for ( RenderTargetWindow &rtw : renderTargetWindows ) {
+		if ( rtw.window == &window ) {
+			rtw.renderTargetView->Release();
+			rtw.renderTargetView = nullptr;
+			rtw.backBuffer->Resize();
+			rtw.renderTargetView = device->CreateRenderTargetView( rtw.backBuffer.get() );
+			return;
+		}
+	}
+}
+
+/*
+Nahradit funkci SetCurrentBackBuffer
+RenderInterface::BackBuffer* Renderer::GetBackBuffer( const Window& window ) {
+	for ( RenderTargetWindow& rtw : renderTargetWindows ) {
+		if ( rtw.window == &window ) {
+			return rtw.backBuffer.get();
+		}
+	}
+	return nullptr;
+}
+*/
+
+void Renderer::ResizeRenderBuffers( const int width, const int height ) {
+	immediateCommands->ClearState();
+	CreateRenderbuffers( width, height, attributes.antialiasing );
+	attributes.renderbuffersWidth = width;
+	attributes.renderbuffersHeight = height;
+}
+
+void Renderer::CreateRenderbuffers( const int width, const int height, const Antialiasing antialiasing ) {
+	int samplesCount = 1;
+	int samplesQuality = 0;
+
+	switch ( antialiasing ) {
+	case Antialiasing::MSAA_2:
+		samplesCount = 2;
+		samplesQuality = RenderInterface::MAX_MULTISAMPLE_QUALITY;
+		break;
+
+	case Antialiasing::MSAA_4:
+		samplesCount = 4;
+		samplesQuality = RenderInterface::MAX_MULTISAMPLE_QUALITY;
+		break;
+
+	case Antialiasing::MSAA_8:
+		samplesCount = 8;
+		samplesQuality = RenderInterface::MAX_MULTISAMPLE_QUALITY;
+		break;
+	}
+	// gbuffers
+	CreateGBuffer( GBUFFER_FRAME,	 RenderInterface::Format::R8G8B8A8_UNORM,	  width, height, 1, 0 );
+	CreateGBuffer( GBUFFER_DIFUSE,	 RenderInterface::Format::R8G8B8A8_UNORM,	  width, height, samplesCount, samplesQuality );
+	CreateGBuffer( GBUFFER_NORMAL,	 RenderInterface::Format::R16G16B16A16_FLOAT, width, height, samplesCount, samplesQuality );
+	CreateGBuffer( GBUFFER_SPECULAR, RenderInterface::Format::R16G16_FLOAT,		  width, height, samplesCount, samplesQuality );
+
+	// depth stencil
+	CreateDepthStencilBuffer( width, height, samplesCount, samplesQuality );
+}
+
+/*
+V pripade selhani je ponechan puvodni stav slotu.
+*/
+void Renderer::CreateGBuffer( const int slot, const RenderInterface::Format format, const int width, const int height, const int samplesCount, const int samplesQuality ) {
+	RenderInterface::TextureBufferParams params;
+	params.type = ( samplesCount == 1 ? RenderInterface::BufferType::TEXTURE_2D : RenderInterface::BufferType::TEXTURE_2D_MS );
+	params.format = format;
+	params.usage = RenderInterface::BufferUsage::DRAW;
+	params.access = RenderInterface::BufferAccess::NONE;
+	params.width = width;
+	params.height = height;
+	params.depth = 1;
+	params.mipLevels = 1;
+	params.arraySize = 1;
+	params.samplesCount = samplesCount;
+	params.samplesQuality = samplesQuality;
+	params.flags = RenderInterface::TEXTURE_BUFFER_FLAG_RENDER_TARGET;
+
+	// vytvorit nove objekty
+	RenderInterface::PBuffer buffer = device->CreateTextureBuffer( params, nullptr );
+	RenderInterface::PTextureView textureView = device->CreateTextureView( buffer.get(), nullptr );
+	RenderInterface::PRenderTargetView renderTargetView = device->CreateRenderTargetView( buffer.get() );
+
+	// pokud se nepodarilo vytvorit jeden z objektu, ponechat puvodni stav
+	if ( !buffer || !textureView || !renderTargetView ) {
+		return;
+	}
+	// nahradit existujici objekty
+	gbuffers[ slot ].renderTargetView = std::move( renderTargetView );
+	gbuffers[ slot ].textureView = std::move( textureView );
+	gbuffers[ slot ].buffer = std::move( buffer );
+}
+
+void CreateDepthStencilBuffer( const int width, const int height, const int samplesCount, const int samplesQuality ) {
+	RenderInterface::TextureBufferParams bufferParams;
+	bufferParams.type = ( samplesCount == 1 ? RenderInterface::BufferType::TEXTURE_2D : RenderInterface::BufferType::TEXTURE_2D_MS );
+	bufferParams.format = RenderInterface::Format::DEPTH_24_UNORM_STENCIL_8_UINT;
+	bufferParams.usage = RenderInterface::BufferUsage::DRAW;
+	bufferParams.access = RenderInterface::BufferAccess::NONE;
+	bufferParams.width = width;
+	bufferParams.height = height;
+	bufferParams.depth = 1;
+	bufferParams.mipLevels = 1;
+	bufferParams.arraySize = 1;
+	bufferParams.samplesCount = samplesCount;
+	bufferParams.samplesQuality = samplesQuality;
+	bufferParams.flags = 0;
+
+	RenderInterface::PBuffer buffer = device->CreateTextureBuffer( params, nullptr );
+	if ( !buffer ) {
+		return;
+	}
+	// create views
+	DepthStencilViewParams viewParams;
+
+	// ...
+
+	// nahradit existujici objekty
+	depthStencilBuffer = std::move( buffer );
+
+}
+
+void Renderer::SetAntialiasing( const Antialiasing antialiasing ) {
+	if ( antialiasing != attributes.antialiasing ) {
+		immediateCommands->ClearState();
+		CreateRenderbuffers( attributes.renderbuffersWidth, attributes.renderbuffersHeight, attributes.antialiasing );
 	}
 }
 
@@ -325,50 +441,6 @@ int Renderer::GetSamplesCount( const Antialiasing antialiasing ) const {
 }
 */
 
-//void Renderer::CreateDepthStencilBuffer() {
-	/*
-	return;
-	HRESULT hresult = 0;
-
-	// ziskani info o back bufferu
-	ID3D11Texture2D *backBuffer;
-	swapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &backBuffer ) );
-	if ( FAILED( hresult ) ) {
-		return;
-	}
-	D3D11_TEXTURE2D_DESC backBufferDesc;
-	backBuffer->GetDesc( &backBufferDesc );
-	backBuffer->Release();
-
-	D3D11_TEXTURE2D_DESC bufferDesc;
-	ZeroMemory( &bufferDesc, sizeof( bufferDesc ) );
-	bufferDesc.Width = backBufferDesc.Width;
-	bufferDesc.Height = backBufferDesc.Height;
-	bufferDesc.MipLevels = 1;
-	bufferDesc.ArraySize = 1;
-	bufferDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	bufferDesc.SampleDesc.Count = 1;
-	bufferDesc.SampleDesc.Quality = 0;
-	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	bufferDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-
-	hresult = device_->CreateTexture2D( &bufferDesc, NULL, &depthStencilBuffer_ );
-	if ( FAILED( hresult ) ) {
-		return;
-	}
-	D3D11_DEPTH_STENCIL_VIEW_DESC viewDesc;
-	ZeroMemory( &viewDesc, sizeof( viewDesc ) );
-	viewDesc.Format = bufferDesc.Format;
-	viewDesc.ViewDimension = bufferDesc.SampleDesc.Count == 1 ? D3D11_DSV_DIMENSION_TEXTURE2D : D3D11_DSV_DIMENSION_TEXTURE2DMS;
-	viewDesc.Flags = 0;
-
-	hresult = device_->CreateDepthStencilView( depthStencilBuffer_, &viewDesc, &depthStencilView );
-	if ( FAILED( hresult ) ) {
-		//ReleaseD3DInterface( &depthStencilBuffer );
-		return;
-	}
-	*/
-//}
 
 //void Renderer::CreateDepthStencilStates() {
 	/*
@@ -508,64 +580,7 @@ int Renderer::GetSamplesCount( const Antialiasing antialiasing ) const {
 	*/
 //}
 
-//void Renderer::CreateRasterizerStates() {
-	/*
-	D3D11_RASTERIZER_DESC desc;
-	ID3D11RasterizerState *state = nullptr;
-	HRESULT hresult = 0;
-	
-	// wireframe
-	ZeroMemory( &desc, sizeof( desc ) );
-	desc.FillMode				= D3D11_FILL_WIREFRAME;
-	desc.CullMode				= D3D11_CULL_NONE;
-	desc.FrontCounterClockwise	= FALSE;
-	desc.DepthBias				= 0;
-	desc.SlopeScaledDepthBias	= 0.0f;
-	desc.DepthBiasClamp			= 0.0f;
-	desc.DepthClipEnable		= TRUE;
-	desc.ScissorEnable			= FALSE;
-	desc.MultisampleEnable		= FALSE;
-	desc.AntialiasedLineEnable	= FALSE;
-	hresult = device->CreateRasterizerState( &desc, &state );
-	if ( FAILED( hresult ) ) {
-		return;
-	}
-	rasterizerStates.Insert( state, static_cast< int >( Rasterizer::WIREFRAME ) );
-	*/
-//}
 
-//void Renderer::CreateTextureSamplers() {
-	/*
-	HRESULT hresult = 0;
-	D3D11_SAMPLER_DESC desc;
-
-	ZeroMemory( &desc, sizeof( desc ) );
-	desc.Filter			= D3D11_FILTER_ANISOTROPIC;//D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	desc.AddressU		= D3D11_TEXTURE_ADDRESS_WRAP;
-	desc.AddressV		= D3D11_TEXTURE_ADDRESS_WRAP;
-	desc.AddressW		= D3D11_TEXTURE_ADDRESS_WRAP;
-	desc.MipLODBias		= 0;
-	desc.MaxAnisotropy	= 16;
-	desc.ComparisonFunc	= D3D11_COMPARISON_NEVER;
-	desc.MinLOD			= 0;
-	desc.MaxLOD			= D3D11_FLOAT32_MAX;
-	hresult = device_->CreateSamplerState( &desc, &textureSampler );
-	if ( FAILED( hresult ) ) {
-		return;
-	}
-	// set sampler states
-	deviceContext_->PSSetSamplers( 0, 1, &textureSampler );
-	*/
-//}
-
-//void Renderer::UnbindShaderResources() {
-	// ...
-	// deviceContext->PSSetShaderResources( 0, )
-//}
-
-//void Renderer::UnbindRenderTargets() {
-	//deviceContext_->OMSetRenderTargets( 0, NULL, NULL );
-//}
 /*
 void Renderer::Resize() {
 	return;
@@ -577,113 +592,8 @@ void Renderer::Resize() {
 	ResizeBackBuffer( width, height );
 }
 */
+
 /*
-
-// mapuje globalni konstanty definovane v shaderu
-struct GlobalShaderConstants {
-	Float4x4 viewProjection;
-	Float4 ambientColor;
-	Float4 cameraPosition;
-	Float4 cameraLook;
-	Float4 cameraUp;
-	Float4 cameraRight;
-	Float4 projectionPlane; // { halfWidth, halfHeight, distance }
-	float drawDistance;
-};
-
-RenderSystem::RenderSystem() {
-	device = nullptr;
-	deviceContext = nullptr;
-	swapChain = nullptr;
-	materialShaders.Realloc( 128 );
-	materialShaders.SetDynamic();
-	depthStencilState = DepthStencilState::DEFAULT;
-	inputLayout = InputLayout::DEFAULT;
-	blendState = BlendState::DEFAULT;
-	rasterizerState = RasterizerState::DEFAULT;
-
-	inputLayouts.Realloc( 16 );
-	inputLayouts.SetDynamic();
-	depthStencilStates.Realloc( 16 );
-	depthStencilStates.SetDynamic();
-	blendStates.Realloc( 16 );
-	blendStates.SetDynamic();
-	rasterizerStates.Realloc( 16 );
-	rasterizerStates.SetDynamic();
-
-	vertexShaders.Realloc( 32 );
-	vertexShaders.SetDynamic();
-	pixelShaders.Realloc( 32 );
-	pixelShaders.SetDynamic();
-
-	pixelShader = nullptr;
-	vertexShader = nullptr;
-	geometryShader = nullptr;
-
-	msaaLevel = 4;
-	msaaQuality = 16;
-
-	renderList = new RenderListItem[ MAX_RENDER_LIST_ITEMS ];
-	ZeroMemory( renderList, sizeof( RenderListItem ) );
-	renderListSize = 0;
-
-	pointLights.Realloc( MAX_LIGHTS );
-	directionalLights.Realloc( MAX_LIGHTS );
-}
-
-RenderSystem::~RenderSystem() {
-	Release();
-}
-
-void RenderSystem::Initialize( const SystemParameters &sp, const RenderParameters &rp ) {
-	systemParams = sp;
-	renderParams = rp;
-	InitializeAPI();
-}
-
-void RenderSystem::Release() {
-	for ( ID3D11RasterizerState *state : rasterizerStates ) {
-		::Release( &state );
-	}
-	for ( ID3D11BlendState *state : blendStates ) {
-		::Release( &state );
-	}
-	for ( ID3D11DepthStencilState *state : depthStencilStates ) {
-		::Release( &state );
-	}
-	//::Release( &backBufferView );
-	::Release( &textureSampler );
-	::Release( &swapChain );
-	::Release( &deviceContext );
-	::Release( &device );
-}
-
-void RenderSystem::InitializeAPI() {
-	CreateDeviceAndSwapChain();
-	CheckMSAALevels();
-
-	// create back buffer render target view
-	ID3D11Texture2D *backBuffer;
-	swapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), reinterpret_cast< LPVOID* >( &backBuffer ) );
-	D3D11_TEXTURE2D_DESC backBufferDesc;
-	backBuffer->GetDesc( &backBufferDesc );
-	device->CreateRenderTargetView( backBuffer, NULL, &this->backBuffer.renderTargetView);
-	backBuffer->Release();
-
-	CreateGBuffers();
-	CreateDepthStencilBuffer();
-	CreateDepthStencilStates();
-	CreateBlendStates();
-	CreateRasterizerStates();
-
-	CreateConstantBuffer( ConstantBufferSlot::GLOBAL, GLOBAL_CBUFFER_SIZE );
-	BindConstantBuffers();
-	SetViewport();
-	LoadSystemShaders();
-	CreateInputLayouts();
-	InitializeTextureSamplers();
-}
-
 void RenderSystem::CreateInputLayouts() {
 	D3D11_INPUT_ELEMENT_DESC mesh[] = {
 		{ "POSITION",			0, DXGI_FORMAT_R32G32B32_FLOAT,		0, 0,	D3D11_INPUT_PER_VERTEX_DATA,	0 },
@@ -711,134 +621,6 @@ void RenderSystem::CreateInputLayouts() {
 		{ "COLOR",				0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
 	};
 	CreateInputLayout( InputLayout::BILLBOARD, VSSlot::BILLBOARD, billboard, ARRAYSIZE( billboard ) );
-}
-
-void RenderSystem::CreateInputLayout( const InputLayout layoutslot, const VSSlot vsslot, const D3D11_INPUT_ELEMENT_DESC *elements, const int elementsCount ) {
-	if ( elements == nullptr ) {
-		return;
-	}
-	ShaderSlot &shaderSlot = vertexShaders[ static_cast< int >( vsslot ) ];
-	if ( shaderSlot.shader == nullptr ) {
-		return;
-	}
-	VertexShader *vertexShader = ( VertexShader* )( shaderSlot.shader );
-	ID3D11InputLayout *layout = nullptr;
-	HRESULT hresult = device->CreateInputLayout( 
-		elements,
-		elementsCount,
-		vertexShader->GetData(),
-		vertexShader->GetDataSize(),
-		&layout
-	);
-	if ( FAILED( hresult ) ) {
-		return;
-	}
-	inputLayouts.Insert( layout, static_cast< int >( layoutslot ) );
-}
-
-void RenderSystem::BindConstantBuffers() {
-	ID3D11Buffer *buffers[ MAX_CONSTANT_BUFFERS ];
-	for ( int i = 0; i < MAX_CONSTANT_BUFFERS; i++ ) {
-		buffers[ i ] = cbuffers[ i ].buffer;
-	}
-	deviceContext->VSSetConstantBuffers( 0, MAX_CONSTANT_BUFFERS, buffers );
-	deviceContext->PSSetConstantBuffers( 0, MAX_CONSTANT_BUFFERS, buffers );
-	deviceContext->GSSetConstantBuffers( 0, MAX_CONSTANT_BUFFERS, buffers );
-}
-
-void RenderSystem::SetRenderTargets( RenderTarget *renderTargets[], const unsigned int count, bool bindDepthStencil ) {
-	const unsigned int MAX_RENDER_TARGETS = 8;
-	if ( count > MAX_RENDER_TARGETS ) {
-		return;
-	}
-	ID3D11RenderTargetView *views[ MAX_RENDER_TARGETS ] = { NULL };
-	if ( renderTargets == nullptr ) {
-		deviceContext->OMSetRenderTargets( MAX_RENDER_TARGETS, views, bindDepthStencil ? depthStencilView : NULL );
-		return;
-	}
-	for ( unsigned int i = 0; i < count; i++ ) {
-		views[ i ] = renderTargets[ i ]->renderTargetView;
-	}
-	deviceContext->OMSetRenderTargets( MAX_RENDER_TARGETS, views, bindDepthStencil ? depthStencilView : NULL );
-}
-
-void RenderSystem::SetPixelShaderResources( ID3D11ShaderResourceView *views[], const unsigned int count ) {
-	const unsigned int MAX_SLOTS = 8;
-	if ( count > MAX_SLOTS ) {
-		return;
-	}
-	ID3D11ShaderResourceView *rtv[ MAX_SLOTS ] = { NULL };
-	if ( views == nullptr ) {
-		deviceContext->PSSetShaderResources( 0, MAX_SLOTS, rtv );
-		return;
-	}
-	for ( unsigned int i = 0; i < count; i++ ) {
-		rtv[ i ] = views[ i ];
-	}
-	deviceContext->PSSetShaderResources( 0, MAX_SLOTS, rtv );
-}
-
-void RenderSystem::UnbindConstantBuffers() {
-	ID3D11Buffer *buffers[ MAX_CONSTANT_BUFFERS ];
-	for ( int i = 0; i < MAX_CONSTANT_BUFFERS; i++ ) {
-		buffers[ i ] = NULL;
-	}
-	deviceContext->VSSetConstantBuffers( 0, MAX_CONSTANT_BUFFERS, buffers );
-	deviceContext->PSSetConstantBuffers( 0, MAX_CONSTANT_BUFFERS, buffers );
-	deviceContext->GSSetConstantBuffers( 0, MAX_CONSTANT_BUFFERS, buffers );
-}
-
-void RenderSystem::CreateConstantBuffer( const int index, unsigned int byteSize ) {
-	if ( index < 0 || index >= MAX_CONSTANT_BUFFERS ) {
-		return;
-	}
-	if ( cbuffers[ index ].buffer != nullptr ) {
-		return;
-	}
-	D3D11_BUFFER_DESC desc;
-	ZeroMemory( &desc, sizeof( desc ) );
-	desc.Usage = D3D11_USAGE_DYNAMIC;
-	desc.ByteWidth = byteSize;
-	desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	ID3D11Buffer *buffer = NULL;
-	HRESULT hresult = device->CreateBuffer( &desc, NULL, &buffer );
-	if ( FAILED( hresult ) ) {
-		return;
-	}
-	cbuffers[ index ].size = byteSize;
-	cbuffers[ index ].buffer = buffer;
-}
-
-void RenderSystem::ReleaseConstantBuffers() {
-	for ( ConstantBuffer &cbuffer : cbuffers ) {
-		::Release( &cbuffer.buffer );
-		cbuffer.size = 0;
-	}
-}
-
-void RenderSystem::UpdateConstantBuffer( const int index, const void * const data ) {
-	if ( data == nullptr ) {
-		return;
-	}
-	ID3D11Buffer *buffer = cbuffers[ index ].buffer;
-	if ( buffer == nullptr ) {
-		return;
-	}
-	D3D11_MAPPED_SUBRESOURCE subresource;
-	HRESULT hresult = deviceContext->Map( buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &subresource );
-	if ( FAILED( hresult ) ) {
-		return;
-	}
-	::memcpy( subresource.pData, data, cbuffers[ index ].size );
-	deviceContext->Unmap( buffer, 0 );
-}
-
-APIDevice RenderSystem::GetAPIObject() {
-	APIDevice object;
-	object.device = device;
-	object.deviceContext = deviceContext;
-	return object;
 }
 
 void RenderSystem::Render( VertexBuffer &buffer ) {
@@ -930,29 +712,6 @@ void RenderSystem::DrawRenderList( RenderListItem *renderList ) {
 	}
 }
 
-void RenderSystem::AddLight( const Light &light ) {
-	switch ( light.GetType() ) {
-	case LightType::POINT:
-		pointLights.Push( ( PointLight* )( &light ) );
-		return;
-
-	case LightType::DIRECTIONAL:
-		directionalLights.Push( ( DirectionalLight* )( &light ) );
-		return;
-	}
-}
-
-void RenderSystem::RemoveLights() {
-	pointLights.Clear();
-	directionalLights.Clear();
-}
-
-void RenderSystem::AddMesh( const Mesh &mesh ) {
-	if ( renderListSize >= MAX_RENDER_LIST_ITEMS ) {
-		return;
-	}
-}
-
 void RenderSystem::SetBlendState( const BlendState state ) {
 	if ( state == blendState ) {
 		return;
@@ -964,64 +723,6 @@ void RenderSystem::SetBlendState( const BlendState state ) {
 	}
 	deviceContext->OMSetBlendState( blendStates[ static_cast< int >( state ) ], 0, 0xffffffff );
 	blendState = state;
-}
-
-void RenderSystem::SetRasterizerState( const RasterizerState state ) {
-	if ( state == rasterizerState ) {
-		return;
-	}
-	if ( state == RasterizerState::DEFAULT || rasterizerStates[ static_cast< int >( state ) ] == nullptr ) {
-		deviceContext->RSSetState( NULL );
-		rasterizerState = RasterizerState::DEFAULT;
-		return;
-	}
-	deviceContext->RSSetState( rasterizerStates[ static_cast< int >( state ) ] );
-	rasterizerState = state;
-}
-
-void RenderSystem::SetInputLayout( const InputLayout layout ) {
-	if ( layout == inputLayout ) {
-		return;
-	}
-	if ( inputLayouts[ static_cast< int >( layout ) ] == nullptr ) {
-		return;
-	}
-	deviceContext->IASetInputLayout( inputLayouts[ static_cast< int >( layout ) ] );
-	inputLayout = layout;
-}
-
-bool RenderSystem::SetTextures( Material &material ) {
-	int count = material.GetTexturesCount();
-	if ( count <= 0 ) {
-		return false;
-	}
-	ID3D11ShaderResourceView *views[ Material::MAX_TEXTURES ];
-	for ( int i = 0; i < count; i++ ) {
-		Texture *texture = material.GetTexture( i );
-		APITexture object = texture->GetAPIObject();
-		views[ i ] = object.view;
-	}
-	deviceContext->PSSetShaderResources( 3, count, views );
-	return true;
-}
-
-bool RenderSystem::SetNormalTexture( Texture &texture ) {
-	APITexture object = texture.GetAPIObject();
-	deviceContext->PSSetShaderResources( 4, 1, &object.view );
-	return true;
-}
-
-void RenderSystem::SetDepthStencilState( const DepthStencilState state ) {
-	if ( state == depthStencilState ) {
-		return;
-	}
-	if ( state == DepthStencilState::DEFAULT || depthStencilStates[ static_cast< int >( state ) ] == nullptr ) {
-		deviceContext->OMSetDepthStencilState( NULL, 0 );
-		depthStencilState = state;
-		return;
-	}
-	deviceContext->OMSetDepthStencilState( depthStencilStates[ static_cast< int >( state ) ], 0 );
-	depthStencilState = state;
 }
 
 void RenderSystem::SetCamera( Camera *camera ) {
@@ -1062,34 +763,6 @@ void RenderSystem::LoadSystemShader( const PSSlot slot, const wchar_t * const fi
 	shaderSlot.hash = 0;
 	shaderSlot.references = 0;
 	pixelShaders.Insert( shaderSlot, static_cast< int >( slot ) );
-}
-
-void RenderSystem::LoadSystemShader( const VSSlot slot, const wchar_t * const file ) {
-	VertexShader *shader = new VertexShader();
-	bool done = shader->CompileFile( file, nullptr );
-	if ( !done ) {
-		delete shader;
-		return;
-	}
-	ShaderSlot shaderSlot;
-	shaderSlot.shader = shader;
-	shaderSlot.hash = 0;
-	shaderSlot.references = 0;
-	vertexShaders.Insert( shaderSlot, static_cast< int >( slot ) );
-}
-
-void RenderSystem::LoadSystemShader( const GSSlot slot, const wchar_t * const file ) {
-	GeometryShader *shader = new GeometryShader();
-	bool done = shader->CompileFile( file, nullptr );
-	if ( !done ) {
-		delete shader;
-		return;
-	}
-	ShaderSlot shaderSlot;
-	shaderSlot.shader = shader;
-	shaderSlot.hash = 0;
-	shaderSlot.references = 0;
-	geometryShaders.Insert( shaderSlot, static_cast< int >( slot ) );
 }
 
 int RenderSystem::CompileMaterialShader( const char * const code ) {
@@ -1145,68 +818,6 @@ void RenderSystem::SetMaterialShader( const int id ) {
 	this->pixelShader = apiShader;
 }
 
-void RenderSystem::SetBasePassMaterialShader() {
-	if ( material == nullptr ) {
-		return;
-	}
-	SetMaterialShader( material->GetBasePassShaderSlot() );
-}
-
-void RenderSystem::SetLightPassMaterialShader() {
-	if ( material == nullptr ) {
-		return;
-	}
-	SetMaterialShader( material->GetLightPassShaderSlot() );
-}
-
-void RenderSystem::SetMaterial( Material *material ) {
-	this->material = material;
-}
-
-void RenderSystem::SetPixelShader( const PSSlot slot ) {
-	PixelShader *shader = ( PixelShader* )( pixelShaders[ static_cast< int >( slot ) ].shader );
-	if ( shader == nullptr ) {
-		return;
-	}
-	ID3D11PixelShader *apiShader = reinterpret_cast< ID3D11PixelShader* >( shader->GetAPIObject() );
-	if ( apiShader == this->pixelShader ) {
-		return;
-	}
-	deviceContext->PSSetShader( apiShader, NULL, 0 );
-	this->pixelShader = apiShader;
-}
-
-void RenderSystem::SetVertexShader( const VSSlot slot ) {
-	VertexShader *shader = ( VertexShader* )( vertexShaders[ static_cast< int >( slot ) ].shader );
-	if ( shader == nullptr ) {
-		return;
-	}
-	ID3D11VertexShader *apiShader = reinterpret_cast< ID3D11VertexShader* >( shader->GetAPIObject() );
-	if ( apiShader == this->vertexShader ) {
-		return;
-	}
-	deviceContext->VSSetShader( apiShader, NULL, 0 );
-	this->vertexShader = apiShader;
-}
-
-void RenderSystem::SetGeometryShader( const GSSlot slot ) {
-	if ( slot == GSSlot::DEFAULT ) {
-		deviceContext->GSSetShader( NULL, NULL, 0 );
-		this->geometryShader = nullptr;
-		return;
-	}
-	GeometryShader *shader = ( GeometryShader* )( geometryShaders[ static_cast< int >( slot ) ].shader );
-	if ( shader == nullptr ) {
-		return;
-	}
-	ID3D11GeometryShader *apiShader = reinterpret_cast< ID3D11GeometryShader* >( shader->GetAPIObject() );
-	if ( apiShader == this->geometryShader ) {
-		return;
-	}
-	deviceContext->GSSetShader( apiShader, NULL, 0 );
-	this->geometryShader = apiShader;
-}
-
 void RenderSystem::SetAmbientColor( const Color &color ) {
 	color.Store( reinterpret_cast< GlobalShaderConstants* >( globalCbuffer )->ambientColor );
 }
@@ -1214,18 +825,6 @@ void RenderSystem::SetAmbientColor( const Color &color ) {
 void RenderSystem::SetDrawDistance( const float drawDistance ) {
 	reinterpret_cast< GlobalShaderConstants* >( globalCbuffer )->drawDistance = drawDistance;
 }
-
-void RenderSystem::SetPrimitiveTopology( const PrimitiveTopology topology ) {
-	if ( primitiveTopology != topology ) {
-		deviceContext->IASetPrimitiveTopology( static_cast< D3D11_PRIMITIVE_TOPOLOGY >( topology ) );
-		primitiveTopology = topology;
-	}
-}
-
-//==========================================================================================
-// TESTS TESTS TESTS TESTS TESTS TESTS TESTS TESTS TESTS TESTS TESTS TESTS TESTS TESTS TESTS
-// TESTS TESTS TESTS TESTS TESTS TESTS TESTS TESTS TESTS TESTS TESTS TESTS TESTS TESTS TESTS
-//==========================================================================================
 
 #include "File.h"
 #include "OBJLoader.h"
@@ -1396,8 +995,6 @@ void RenderSystem::Draw() {
 
 	//LightPass();
 
-	//---------------------------------------------------   DEFERRED TEST
-
 	RenderTarget *renderTargets[] = {
 		&backBuffer
 	};
@@ -1436,9 +1033,6 @@ void RenderSystem::BasePass() {
 	DrawRenderList( renderList );
 }
 
-void RenderSystem::LightPass() {
-}
-
 void RenderSystem::TestUpdateInput() {
 
 	Input *input = GetInput();
@@ -1457,4 +1051,4 @@ void RenderSystem::TestUpdateInput() {
 	}
 	input->Update();
 }
-************************************************** */
+*/

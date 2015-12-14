@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include "..\Framework\Math.h"
 #include "..\Framework\Color.h"
 
@@ -10,8 +11,8 @@ namespace RenderInterface {
 	
 	// forward declarations
 	class Device;
-	class Display;
 	class BackBuffer;
+	class Display;
 	class CommandInterface;
 	class CommandList;
 	class Buffer;
@@ -27,11 +28,35 @@ namespace RenderInterface {
 	class DepthStencilState;
 	class VertexLayout;
 	class VertexStream;
-	class PipelineState;
 
-	/*
-	Render Interface constants:
-	*/
+	// Deleter for device object unique_ptr
+	template< typename T >
+	class Deleter {
+	public:
+		void operator()( T* const ptr ) const {
+			ptr->Release();
+		}
+	};
+
+	// device objects template alliases
+	using PDevice				= std::unique_ptr< Device, Deleter< Device > >;
+	using PBackBuffer			= std::unique_ptr< BackBuffer, Deleter< BackBuffer > >;
+	using PDisplay				= std::unique_ptr< Display, Deleter< Display > >;
+	using PCommandInterface		= std::unique_ptr< CommandInterface, Deleter< CommandInterface > >;
+	using PCommandList			= std::unique_ptr< CommandList, Deleter< CommandList > >;
+	using PBuffer				= std::unique_ptr< Buffer, Deleter< Buffer > >;
+	using PTextureView			= std::unique_ptr< TextureView, Deleter< TextureView > >;
+	using PRenderTargetView		= std::unique_ptr< RenderTargetView, Deleter< RenderTargetView > >;
+	using PDepthStencilView		= std::unique_ptr< DepthStencilView, Deleter< DepthStencilView > >;
+	using PConstantBufferView	= std::unique_ptr< ConstantBufferView, Deleter< ConstantBufferView > >;
+	using PShader				= std::unique_ptr< Shader, Deleter< Shader > >;
+	using PRenderProgram		= std::unique_ptr< RenderProgram, Deleter< RenderProgram > >;
+	using PSampler				= std::unique_ptr< Sampler, Deleter< Sampler > >;
+	using PBlendState			= std::unique_ptr< BlendState, Deleter< BlendState > >;
+	using PRasterizerState		= std::unique_ptr< RasterizerState, Deleter< RasterizerState > >;
+	using PDepthStencilState	= std::unique_ptr< DepthStencilState, Deleter< DepthStencilState > >;
+	using PVertexLayout			= std::unique_ptr< VertexLayout, Deleter< VertexLayout > >;
+	using PVertexStream			= std::unique_ptr< VertexStream, Deleter< VertexStream > >;
 
 	// Maximalni kvalita multisample algoritmu
 	const int MAX_MULTISAMPLE_QUALITY = -1;
@@ -67,7 +92,7 @@ namespace RenderInterface {
 	};
 	
 	// Vytvori Device objekt (DirectX implementace)
-	Device* DX11CreateDevice( const DX11CreateDeviceParams& params );
+	PDevice DX11CreateDevice( const DX11CreateDeviceParams& params );
 
 	enum class Format {
 		UNKNOWN = 0,
@@ -135,16 +160,6 @@ namespace RenderInterface {
 	};
 	
 	const FormatInfo GetFormatInfo( const Format format );
-	
-	/*
-	Fullscreen rezim displeje
-	*/
-	struct DisplayMode {
-		int width;
-		int height;
-		int refreshRateNumerator;
-		int refreshRateDenominator;
-	};
 
 	/*
 	Zpusob pristupu do bufferu
@@ -263,7 +278,6 @@ namespace RenderInterface {
 	};
 
 	enum class DepthStencilUsage {
-		DISABLED,	// no depth or stencil tests performed
 		STANDARD,	// read write depth stencil usage
 		READONLY	// readonly depth stencil usage
 	};
@@ -517,6 +531,16 @@ namespace RenderInterface {
 		float height;
 	};
 
+	/*
+	Fullscreen rezim displeje
+	*/
+	struct DisplayMode {
+		int width;
+		int height;
+		int refreshRateNumerator;
+		int refreshRateDenominator;
+	};
+
 	// Vypocet rozmeru mipmapy
 	void GetMipDimmensions( const int width, const int height, const int depth, const int mipLevel, TextureDimmensions& result );
 
@@ -542,41 +566,44 @@ namespace RenderInterface {
 	
 	/*
 	Device reprezentuje graficky adapter, vytvari veskere device objekty.
+	Zadny device objekt neuklada ukazatel na jiny device objekt (ktery muze pouzit pri svem vytvareni)
 	*/
 	class Device: public DeviceObject {
 	public:
 		// buffers
-		virtual BackBuffer* CreateBackBuffer( const Window& window ) = 0;
-		virtual Buffer* CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) = 0;
-		virtual Buffer* CreateVertexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) = 0;
-		virtual Buffer* CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) = 0;
-		virtual Buffer* CreateConstantBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData ) = 0;
+		virtual PBackBuffer CreateBackBuffer( const Window& window ) = 0;
+		virtual PBuffer CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) = 0;
+		virtual PBuffer CreateVertexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) = 0;
+		virtual PBuffer CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) = 0;
+		virtual PBuffer CreateConstantBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData ) = 0;
 
 		// views
-		virtual RenderTargetView* CreateRenderTargetView( BackBuffer* const backBuffer ) = 0;
-		virtual RenderTargetView* CreateRenderTargetView( Buffer* const textureBuffer ) = 0;
-		virtual TextureView* CreateTextureView( Buffer* const textureBuffer, Sampler* const sampler ) = 0;
-		virtual DepthStencilView* CreateDepthStencilView( Buffer* const textureBuffer, const DepthStencilViewParams& params ) = 0;
-		virtual ConstantBufferView* CreateConstantBufferView( Buffer* const constantBuffer, const ConstantBufferViewParams& params ) = 0;
-		virtual VertexStream* CreateVertexStream( const VertexStreamParams& params ) = 0;
+		virtual PRenderTargetView CreateRenderTargetView( BackBuffer* const backBuffer ) = 0;
+		virtual PRenderTargetView CreateRenderTargetView( Buffer* const textureBuffer ) = 0;
+		virtual PTextureView CreateTextureView( Buffer* const textureBuffer, Sampler* const sampler ) = 0;
+		virtual PDepthStencilView CreateDepthStencilView( Buffer* const textureBuffer, const DepthStencilViewParams& params ) = 0;
+		virtual PConstantBufferView CreateConstantBufferView( Buffer* const constantBuffer, const ConstantBufferViewParams& params ) = 0;
+		virtual PVertexStream CreateVertexStream( const VertexStreamParams& params ) = 0;
 
 		// objects
-		virtual CommandInterface* CreateCommandInterface() = 0;
-		virtual Display* CreateDisplay( const int outputId ) = 0;
-		virtual Shader* CreateShader( const ShaderParams& params ) = 0;
-		virtual RenderProgram* CreateRenderProgram( Shader* const vs, Shader* const ps, Shader* const gs ) = 0;
-		virtual Sampler* CreateSampler( const SamplerParams& params ) = 0;
-		virtual VertexLayout* CreateVertexLayout( const VertexAttribute* const attributes, const int attributesCount, RenderProgram* const program ) = 0;
-		virtual BlendState* CreateBlendState( const BlendStateParams& params ) = 0;
-		virtual RasterizerState* CreateRasterizerState( const RasterizerStateParams& params ) = 0;
-		virtual DepthStencilState* CreateDepthStencilState( const DepthStencilStateParams& params ) = 0;
+		virtual PCommandInterface CreateCommandInterface() = 0;
+		virtual PShader CreateShader( const ShaderParams& params ) = 0;
+		virtual PRenderProgram CreateRenderProgram( Shader* const vs, Shader* const ps, Shader* const gs ) = 0;
+		virtual PSampler CreateSampler( const SamplerParams& params ) = 0;
+		virtual PVertexLayout CreateVertexLayout( const VertexAttribute* const attributes, const int attributesCount, RenderProgram* const program ) = 0;
+		virtual PBlendState CreateBlendState( const BlendStateParams& params ) = 0;
+		virtual PRasterizerState CreateRasterizerState( const RasterizerStateParams& params ) = 0;
+		virtual PDepthStencilState CreateDepthStencilState( const DepthStencilStateParams& params ) = 0;
+		virtual PDisplay CreateDisplay( const int outputId ) = 0;
 
 		/*
 		Vrati max quality pro pozadovany pocet samplu.
-		Pokud neni vlastnost quality podporovana, vraci funkce hodnotu 1.
-		Pokud neni msaa level podporovan, vraci hodnotu 0.
+		Pokud neni hodnota samplesCount podporovana, vraci 0.
 		*/
-		virtual int GetMultisampleQuality( const int samplesCount ) const = 0;
+		virtual int GetMaxMultisampleQuality( const int samplesCount ) const = 0;
+
+		// vraci pocet vystupu (monitoru) pripojenych ke graficke karte
+		virtual int GetOutputsCount() const = 0;
 	};
 	
 	/*
@@ -692,25 +719,22 @@ namespace RenderInterface {
 	*/
 	class Display: public DeviceObject {
 	public:
-		/*
-		Nastavi rezim co nejvice odpovidajici pozadavku (na desktopu prepne do rezimu cele obrazovky)
-		U zarizeni, ktera maji jediny mozny rezim obrazovky (mobilni zarizeni...), nedela nic
-		*/
-		virtual void SetMode( const DisplayMode& mode, Window& window ) = 0;
-		
+		// Nastavi rezim co nejvice odpovidajici pozadavku (na desktopu prepne do rezimu cele obrazovky)
+		virtual void SetFullscreenMode( const DisplayMode& mode, Window& window ) = 0;
+
 		// Nastavi vychozi rezim pro danou platformu (napr. na windows prepne z celoobrazovkoveho rezimu)
 		virtual void SetWindowedMode() = 0;
-		
+	
 		// Ziskani rezimu, pokud rezim s pozadovanym id neexistuje, vrati false
 		virtual void GetMode( const int id, DisplayMode& result ) const = 0;
-		
+
 		// Najde rezim, ktery co nejlepe (ovsem ne nutne nejvice) odpovida pozadovanemu rezimu
 		virtual void FindMode( const DisplayMode& request, DisplayMode& result ) const = 0;
-		
+
 		// Najde nejlepsi dostupny rezim pro cilove zarizeni
 		virtual void GetBestMode( DisplayMode& result ) const = 0;
 	};
-	
+
 	/*
 	Umoznuje zobrazit obsahu back bufferu do klientske oblasti okna. Objekt je asociovan s oknem pri vytvoreni.
 	*/
@@ -806,11 +830,6 @@ namespace RenderInterface {
 		float4 position: POSITION;
 		float4x4 matrix: MATRIX;
 	}
-	GLSL
-	struct VS_INPUT {
-		vec4 position;
-		mat4 matrix;
-	}
 	C++
 	const VertexLayoutAttribute layout[] = {
 		{ "position",	"POSITION",	0, Format::R32G32B32A32_FLOAT, ... },
@@ -823,7 +842,7 @@ namespace RenderInterface {
 	};
 
 	/*
-	Popisuje zdroj a usporadani vstupnich dat vertex shaderu.
+	Popisuje umisteni a usporadani vstupnich dat vertex shaderu.
 	Objekt vznikl kvuli podpore OpenGL VAO.
 	*/
 	class VertexStream: public DeviceObject {};

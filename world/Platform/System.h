@@ -65,9 +65,9 @@ public:
 	virtual void ResetTime() = 0;
 
 	// Vraci pocet sekund od predchoziho volani funkce
-	virtual double GetTime() const = 0;
+	virtual double GetTime() = 0;
 
-	// Pocet nainstalovanych grafickych adapteru
+	// pocet adapteru v systemu (hodnota potrebna k vytvoreni objektu RenderInterface::Device)
 	virtual int GetAdaptersCount() const = 0;
 
 	// Parametry grafickeho adapteru

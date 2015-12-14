@@ -3,6 +3,7 @@
 
 #include "WindowsWindow.h"
 #include "..\Application.h"
+#include
 
 WindowsWindow::WindowsWindow():
 	hwnd( 0 ),

@@ -9,12 +9,15 @@ Window::~Window() {
 }
 
 void Window::SetRenderer( Renderer* const renderer ) {
+	if ( this->renderer == renderer ) {
+		return;
+	}
 	if ( this->renderer != nullptr ) {
-		renderer->UnregisterWindow( *this );
+		renderer->DeleteBackBuffer( *this );
 	}
 	this->renderer = renderer;
 	if ( renderer != nullptr ) {
-		renderer->RegisterWindow( *this );
+		renderer->CreateBackBuffer( *this );
 	}
 }
 
@@ -22,8 +25,15 @@ bool Window::IsRendererTarget() const {
 	return renderer != nullptr;
 }
 
+RenderInterface::BackBuffer* Window::GetBackBuffer() {
+	if ( renderer != nullptr ) {
+		return renderer->GetBackBuffer( *this );
+	}
+	return nullptr;
+}
+
 void Window::OnResized( const int width, const int height ) {
 	if ( renderer != nullptr ) {
-		renderer->ResizeBackBuffer( *this, width, height );
+		renderer->ResizeBackBuffer( *this );
 	}
 }

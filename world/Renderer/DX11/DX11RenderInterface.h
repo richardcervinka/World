@@ -8,8 +8,8 @@
 
 // forward declarations
 class DX11Device;
-class DX11Display;
 class DX11BackBuffer;
+class DX11Display;
 class DX11CommandInterface;
 class DX11CommandList;
 class DX11Buffer;
@@ -47,30 +47,31 @@ public:
 
 	// implementace rozhrani Device
 
-	virtual BackBuffer* CreateBackBuffer( const Window& window ) override;
-	virtual Buffer* CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) override;
-	virtual Buffer* CreateVertexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) override;
-	virtual Buffer* CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) override;
-	virtual Buffer* CreateConstantBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData ) override;
+	virtual PBackBuffer CreateBackBuffer( const Window& window ) override;
+	virtual PBuffer CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) override;
+	virtual PBuffer CreateVertexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) override;
+	virtual PBuffer CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) override;
+	virtual PBuffer CreateConstantBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData ) override;
 
-	virtual RenderTargetView* CreateRenderTargetView( BackBuffer* const backBuffer ) override;
-	virtual RenderTargetView* CreateRenderTargetView( Buffer* const textureBuffer ) override;
-	virtual TextureView* CreateTextureView( Buffer* const textureBuffer, Sampler* const sampler ) override;
-	virtual DepthStencilView* CreateDepthStencilView( Buffer* const textureBuffer, const DepthStencilViewParams& params ) override;
-	virtual ConstantBufferView* CreateConstantBufferView( Buffer* const constantBuffer, const ConstantBufferViewParams& params ) override;
-	virtual VertexStream* CreateVertexStream( const VertexStreamParams& params ) override;
+	virtual PRenderTargetView CreateRenderTargetView( BackBuffer* const backBuffer ) override;
+	virtual PRenderTargetView CreateRenderTargetView( Buffer* const textureBuffer ) override;
+	virtual PTextureView CreateTextureView( Buffer* const textureBuffer, Sampler* const sampler ) override;
+	virtual PDepthStencilView CreateDepthStencilView( Buffer* const textureBuffer, const DepthStencilViewParams& params ) override;
+	virtual PConstantBufferView CreateConstantBufferView( Buffer* const constantBuffer, const ConstantBufferViewParams& params ) override;
+	virtual PVertexStream CreateVertexStream( const VertexStreamParams& params ) override;
 
-	virtual CommandInterface* CreateCommandInterface() override;
-	virtual Display* CreateDisplay( const int outputId ) override;
-	virtual Shader* CreateShader( const ShaderParams& params ) override;
-	virtual RenderProgram* CreateRenderProgram( Shader* const vs, Shader* const ps, Shader* const gs ) override;
-	virtual Sampler* CreateSampler( const SamplerParams& params ) override;
-	virtual VertexLayout* CreateVertexLayout( const VertexAttribute* const attributes, const int attributesCount, RenderProgram* const program ) override;
-	virtual BlendState* CreateBlendState( const BlendStateParams& params ) override;
-	virtual RasterizerState* CreateRasterizerState( const RasterizerStateParams& params ) override;
-	virtual DepthStencilState* CreateDepthStencilState( const DepthStencilStateParams& params ) override;
+	virtual PCommandInterface CreateCommandInterface() override;
+	virtual PShader CreateShader( const ShaderParams& params ) override;
+	virtual PRenderProgram CreateRenderProgram( Shader* const vs, Shader* const ps, Shader* const gs ) override;
+	virtual PSampler CreateSampler( const SamplerParams& params ) override;
+	virtual PVertexLayout CreateVertexLayout( const VertexAttribute* const attributes, const int attributesCount, RenderProgram* const program ) override;
+	virtual PBlendState CreateBlendState( const BlendStateParams& params ) override;
+	virtual PRasterizerState CreateRasterizerState( const RasterizerStateParams& params ) override;
+	virtual PDepthStencilState CreateDepthStencilState( const DepthStencilStateParams& params ) override;
+	virtual PDisplay CreateDisplay( const int outputId ) override;
 
-	virtual int GetMultisampleQuality( const int samplesCount ) const override;
+	virtual int GetMaxMultisampleQuality( const int samplesCount ) const override;
+	virtual int GetOutputsCount() const override;
 
 	// implementation interface
 	ID3D11DeviceContext* GetD3D11DeviceContext();
@@ -80,28 +81,7 @@ private:
 	IDXGIAdapter* dxgiAdapter;
 	ID3D11Device* device;
 	ID3D11DeviceContext* context;
-};
-
-class DX11Display: public Display {
-public:
-	DX11Display();
-	~DX11Display();
-	bool Create( ID3D11Device* const device, IDXGIAdapter* const adapter, const int outputId );
-
-	// Display implementation
-	virtual void SetMode( const DisplayMode& mode, Window& window ) override;
-	virtual void SetWindowedMode() override;
-	virtual void GetMode( const int id, DisplayMode& result ) const override;
-	virtual void FindMode( const DisplayMode& request, DisplayMode& result ) const override;
-	virtual void GetBestMode( DisplayMode& result ) const override;
-	
-private:
-	void EnumDisplayModes();
-	
-public:
-	Window* window;
-	IDXGIOutput* dxgiOutput;
-	std::vector< DisplayMode > modes;
+	int outputsCount;
 };
 
 class DX11CommandInterface: public CommandInterface {
@@ -158,6 +138,28 @@ private:
 	ID3D11RasterizerState* currentRasterizerState;
 };
 
+class DX11Display: public Display {
+public:
+	DX11Display();
+	~DX11Display();
+	bool Create( IDXGIAdapter* const dxgiAdapter, const int outputId );
+
+	// Display implementation
+	virtual void SetFullscreenMode( const DisplayMode& mode, Window& window ) override;
+	virtual void SetWindowedMode() override;
+	virtual void GetMode( const int id, DisplayMode& result ) const override;
+	virtual void FindMode( const DisplayMode& request, DisplayMode& result ) const override;
+	virtual void GetBestMode( DisplayMode& result ) const override;
+	
+private:
+	void EnumDisplayModes();
+	
+public:
+	Window* window;
+	IDXGIOutput* dxgiOutput;
+	std::vector< DisplayMode > modes;
+};
+
 class DX11BackBuffer: public BackBuffer {
 public:
 	DX11BackBuffer();
@@ -175,7 +177,6 @@ public:
 
 private:
 	IDXGISwapChain* dxgiSwapChain;
-	ID3D11Device* device;
 	const Window* window;
 	int width;
 	int height;

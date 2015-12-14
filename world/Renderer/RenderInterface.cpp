@@ -3,16 +3,16 @@
 
 using namespace RenderInterface;
 
-Device* RenderInterface::DX11CreateDevice( const DX11CreateDeviceParams& params ) {
+PDevice RenderInterface::DX11CreateDevice( const DX11CreateDeviceParams& params ) {
 	DX11Device* device = new DX11Device();
 	if ( device == nullptr ) {
-		return nullptr;
+		return PDevice( nullptr, Deleter< Device >() );
 	}
 	if ( !device->Create( params ) ) {
 		delete device;
-		return nullptr;
+		device = nullptr;
 	}
-	return device;
+	return PDevice( device, Deleter< Device > );
 }
 
 const FormatInfo RenderInterface::GetFormatInfo( const Format format ) {
