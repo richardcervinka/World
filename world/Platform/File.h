@@ -8,13 +8,13 @@
 // Vrati cely nazev souboru, bez adresarove cesty
 String GetFileName( const String& file );
 
-// Vriti cisty nazev souboru bez pripony: "data/images/image.png" -> "image"
+// Vriti cisty nazev souboru bez pripony, pr.: "data/images/image.png" -> "image"
 String GetFileBase( const String& file );
 
 // Vrati priponu souboru ("png")
 String GetFileExt( const String& file );
 
-// vrati cestu k souboru: "data/images/image.png" -> "data/images/"
+// vrati cestu k souboru, pr.: "data/images/image.png" -> "data/images/"
 String GetFileDir( const String& file );
 
 enum class FileMode {
@@ -99,8 +99,10 @@ public:
 	virtual Float3 ReadFloat3();
 	virtual Float4 ReadFloat4();
 	
-	// Ulozi zakladni datove typy jako little-endian
-	// Data nejsou zarovnana (aligned), tzn. ze typ Float3 se ulozi jako posloupnost 3 x float
+	/*
+	Ulozi zakladni datove typy v little-endian usporadani
+	Data nejsou zarovnana (aligned), tzn. ze typ Float3 se ulozi jako posloupnost 3 x float
+	*/
 	virtual void WriteByte( const Byte value );
 	virtual void WriteInt32( const int32_t value );
 	virtual void WriteUint32( const uint32_t value );
@@ -128,9 +130,10 @@ namespace FileSystem {
 	
 	// RemoveFiles
 	// RemoveDirs
-	
-	// vrati seznam vsech souboru v adresari, napr. "dir/"
-	// je mozne uvest i filtr pro nazev souboru, napr. "dir/*.png"
+	/*
+	Vrati seznam vsech souboru v adresari, napr. "dir/"
+	Je mozne uvest i filtr pro nazev souboru, napr. "dir/*.png"
+	*/
 	bool EnumFiles( const String& path, std::vector< String >& result );
 	
 	// vrati seznam vsech primych podadresaru
@@ -144,3 +147,15 @@ namespace FileSystem {
 #define File FileWindows
 #define FileSystemPlatform FileSystemWindows
 #endif
+
+// Helpers
+
+#include <memory>
+
+// Nacte cely obsah souboru jako retezec char ukonceny nulovym znakem
+std::unique_ptr< char[] > LoadCharFile( const String& path );
+
+// Nacte cely obsah souboru jako pole Bytes
+std::unique_ptr< Byte[] > LoadByteFile( const String& path );
+
+//String LoadStringFile()

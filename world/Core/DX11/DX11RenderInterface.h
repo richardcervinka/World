@@ -56,7 +56,7 @@ public:
 	virtual PRenderTargetView CreateRenderTargetView( BackBuffer* const backBuffer ) override;
 	virtual PRenderTargetView CreateRenderTargetView( Buffer* const textureBuffer ) override;
 	virtual PTextureView CreateTextureView( Buffer* const textureBuffer, Sampler* const sampler ) override;
-	virtual PDepthStencilView CreateDepthStencilView( Buffer* const textureBuffer, const DepthStencilViewParams& params ) override;
+	virtual PDepthStencilView CreateDepthStencilView( Buffer* const textureBuffer, const bool readonly ) override;
 	virtual PConstantBufferView CreateConstantBufferView( Buffer* const constantBuffer, const ConstantBufferViewParams& params ) override;
 	virtual PVertexStream CreateVertexStream( const VertexStreamParams& params ) override;
 
@@ -114,6 +114,7 @@ public:
 	virtual void SetDepthStencilState( DepthStencilState* const state, const uint32_t stencilRef ) override;
 	virtual void SetRasterizerState( RasterizerState* const state ) override;
 	virtual void SetViewports( const Viewport* const viewports[], const int count ) override;
+	virtual void SetScissorRects( const ScissorRect* rects, const int count ) override;
 	virtual void SetVSTextures( const int startSlot, const int count, TextureView* const views[] ) override;
 	virtual void SetPSTextures( const int startSlot, const int count, TextureView* const views[] ) override;
 	virtual void SetGSTextures( const int startSlot, const int count, TextureView* const views[] ) override;
@@ -290,7 +291,7 @@ class DX11DepthStencilView: public DepthStencilView {
 public:
 	DX11DepthStencilView();
 	~DX11DepthStencilView();
-	bool Create( ID3D11Device* const device, Buffer* const textureBuffer, const DepthStencilViewParams& params );
+	bool Create( ID3D11Device* const device, Buffer* const textureBuffer, const bool readonly );
 
 	// implementation interface
 	ID3D11DepthStencilView* GetD3D11DepthStencilView();

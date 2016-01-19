@@ -16,12 +16,6 @@
     <Filter Include="Source Files\Libs">
       <UniqueIdentifier>{843e4000-d663-44b4-befc-d6469d57d181}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Renderer">
-      <UniqueIdentifier>{2be1f3a2-4031-4008-bc41-43f63d2820ba}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Renderer\DX11">
-      <UniqueIdentifier>{83b5a52d-c80e-4418-982a-14d037e195d3}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Framework">
       <UniqueIdentifier>{8193a763-3de5-479d-8be8-4c33581b73ef}</UniqueIdentifier>
     </Filter>
@@ -37,6 +31,15 @@
     <Filter Include="Source Files\Libs\libpng">
       <UniqueIdentifier>{9e5d4958-8d32-4389-8694-be3629197d02}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Core">
+      <UniqueIdentifier>{2be1f3a2-4031-4008-bc41-43f63d2820ba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\DX11">
+      <UniqueIdentifier>{83b5a52d-c80e-4418-982a-14d037e195d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Engine">
+      <UniqueIdentifier>{172d32e5-f80a-49ae-b016-30c7c69513b9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="platform\Application.cpp">
@@ -47,9 +50,6 @@
     </ClCompile>
     <ClCompile Include="framework\Math.cpp">
       <Filter>Source Files\Framework</Filter>
-    </ClCompile>
-    <ClCompile Include="renderer\Renderer.cpp">
-      <Filter>Source Files\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="framework\Color.cpp">
       <Filter>Source Files\Framework</Filter>
@@ -75,14 +75,17 @@
     <ClCompile Include="Platform\windows\WindowsWindow.cpp">
       <Filter>Source Files\Platform\Windows</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\RenderInterface.cpp">
-      <Filter>Source Files\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\DX11\DX11RenderInterface.cpp">
-      <Filter>Source Files\Renderer\DX11</Filter>
-    </ClCompile>
     <ClCompile Include="Platform\Windows\WindowsSystem.cpp">
       <Filter>Source Files\Platform\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Renderer.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\RenderInterface.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\DX11\DX11RenderInterface.cpp">
+      <Filter>Source Files\Core\DX11</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -113,9 +116,6 @@
     <ClInclude Include="framework\Vector.h">
       <Filter>Source Files\Framework</Filter>
     </ClInclude>
-    <ClInclude Include="renderer\Renderer.h">
-      <Filter>Source Files\Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="framework\Types.h">
       <Filter>Source Files\Framework</Filter>
     </ClInclude>
@@ -140,12 +140,6 @@
     <ClInclude Include="Platform\windows\WindowsWindow.h">
       <Filter>Source Files\Platform\Windows</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\RenderInterface.h">
-      <Filter>Source Files\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\DX11\DX11RenderInterface.h">
-      <Filter>Source Files\Renderer\DX11</Filter>
-    </ClInclude>
     <ClInclude Include="libs\fbxsdk\fbxsdk.h">
       <Filter>Source Files\Libs\fbxsdk</Filter>
     </ClInclude>
@@ -154,6 +148,18 @@
     </ClInclude>
     <ClInclude Include="Platform\Windows\WindowsSystem.h">
       <Filter>Source Files\Platform\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Renderer.h">
+      <Filter>Source Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\RenderInterface.h">
+      <Filter>Source Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\DX11\DX11RenderInterface.h">
+      <Filter>Source Files\Core\DX11</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Paths.h">
+      <Filter>Source Files\Engine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -8,7 +8,7 @@
 const DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM;
 
 /*
-Smart pointer (Pouze pro interni pouziti).
+Smart pointer (pouze pro interni pouziti).
 Slouzi ke sprave ukazatelu na COM interface.
 */
 template <typename T>
@@ -420,9 +420,9 @@ PTextureView DX11Device::CreateTextureView( Buffer* const textureBuffer, Sampler
 	return PTextureView( view, Deleter< TextureView >() );
 }
 
-PDepthStencilView DX11Device::CreateDepthStencilView( Buffer* const textureBuffer, const DepthStencilViewParams& params ) {
+PDepthStencilView DX11Device::CreateDepthStencilView( Buffer* const textureBuffer, const bool readonly ) {
 	DX11DepthStencilView* view = new DX11DepthStencilView();
-	if ( !view->Create( device, textureBuffer, params ) ) {
+	if ( !view->Create( device, textureBuffer, readonly ) ) {
 		delete view;
 		view = nullptr;
 	}
@@ -747,7 +747,7 @@ bool DX11BackBuffer::Create( ID3D11Device* const device, IDXGIFactory1* const fa
 		return false;
 	}
 	
-	// vypnuti defaultniho prepinani do rezimu cele obrazovky
+	// vypnuti defaultniho prepinani do fullscreenu
 	factory->MakeWindowAssociation( hwnd, DXGI_MWA_NO_ALT_ENTER  );
 
 	// ulozit vysledek
@@ -866,7 +866,7 @@ bool DX11TextureBuffer::Create( ID3D11Device* const device, const TextureBufferP
 	if ( params.format == Format::DEPTH_24_UNORM_STENCIL_8_UINT ) {
 		bindFlags |= D3D11_BIND_DEPTH_STENCIL;
 	}
-	// d3d11 subresource initial data temporary
+	// D3D11 subresource initial data temporary
 	std::unique_ptr< D3D11_SUBRESOURCE_DATA[] > subresources( nullptr );
 	
 	// initialize subresources temporary
@@ -1241,7 +1241,7 @@ DX11DepthStencilView::~DX11DepthStencilView() {
 	ReleaseCom( &view );
 }
 
-bool DX11DepthStencilView::Create( ID3D11Device* const device, Buffer* const textureBuffer, const DepthStencilViewParams& params ) {
+bool DX11DepthStencilView::Create( ID3D11Device* const device, Buffer* const textureBuffer, const bool readonly ) {
 	if ( device == nullptr || textureBuffer == nullptr ) {
 		return false;
 	}
@@ -1265,11 +1265,9 @@ bool DX11DepthStencilView::Create( ID3D11Device* const device, Buffer* const tex
 	ZeroMemory( &viewDesc, sizeof( viewDesc ) );
 	viewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
-	// Pouze standard depth stencil usage podporuje zapis do bufferu
-	if ( params.depthUsage == DepthStencilUsage::READONLY ) {
+	// readonly flags
+	if ( readonly ) {
 		viewDesc.Flags |= D3D11_DSV_READ_ONLY_DEPTH;
-	}
-	if ( params.stencilUsage == DepthStencilUsage::READONLY ) {
 		viewDesc.Flags |= D3D11_DSV_READ_ONLY_STENCIL;
 	}
 	// texture 2D view dimension
@@ -1861,17 +1859,47 @@ bool DX11DepthStencilState::Create( ID3D11Device* const device, const DepthStenc
 	}
 	D3D11_DEPTH_STENCIL_DESC stateDesc;
 	stateDesc.DepthWriteMask				= D3D11_DEPTH_WRITE_MASK_ALL;
-	stateDesc.DepthEnable					= ( params.enableDepth ? TRUE : FALSE );
+	stateDesc.DepthEnable					= TRUE;
 	stateDesc.DepthFunc						= GetD3D11ComparsionFunc( params.depthFunc );
-	stateDesc.StencilEnable					= ( params.enableStencil ? TRUE : FALSE );
-	stateDesc.StencilReadMask				= D3D11_DEFAULT_STENCIL_READ_MASK;
-	stateDesc.StencilWriteMask				= D3D11_DEFAULT_STENCIL_WRITE_MASK;
+	stateDesc.StencilEnable					= FALSE;
+	stateDesc.StencilReadMask				= 0;
+	stateDesc.StencilWriteMask				= 0;
 	stateDesc.FrontFace.StencilFunc			= GetD3D11ComparsionFunc( params.stencilFunc );
 	stateDesc.FrontFace.StencilPassOp		= GetD3D11StencilOp( params.stencilPassOp );
 	stateDesc.FrontFace.StencilFailOp		= GetD3D11StencilOp( params.stencilFailOp );
 	stateDesc.FrontFace.StencilDepthFailOp	= GetD3D11StencilOp( params.stencilDepthFailOp );
 	stateDesc.BackFace						= stateDesc.FrontFace;
 
+	// depth usage
+	if ( params.depthUsage == DepthStencilUsage::STANDARD ) {
+		stateDesc.DepthEnable = TRUE;
+		stateDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+
+	} else if ( params.depthUsage == DepthStencilUsage::DISABLED ) {
+		stateDesc.DepthEnable = FALSE;
+		stateDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+
+	} else if ( params.depthUsage == DepthStencilUsage::READONLY ) {
+		stateDesc.DepthEnable = TRUE;
+		stateDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+	}
+	// stencil usage
+	if ( params.stencilUsage == DepthStencilUsage::STANDARD ) {
+		stateDesc.StencilEnable = TRUE;
+		stateDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+		stateDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+
+	} else if ( params.stencilUsage == DepthStencilUsage::DISABLED ) {
+		stateDesc.StencilEnable = FALSE;
+		stateDesc.StencilReadMask = 0;
+		stateDesc.StencilWriteMask = 0;
+
+	} else if ( params.stencilUsage == DepthStencilUsage::READONLY ) {
+		stateDesc.StencilEnable = TRUE;
+		stateDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+		stateDesc.StencilWriteMask = 0;
+	}
+	// create state
 	ComPtr< ID3D11DepthStencilState > state;
 	HRESULT hresult = device->CreateDepthStencilState( &stateDesc, &state );
 	if ( FAILED( hresult )  ) {
@@ -1912,14 +1940,17 @@ bool DX11VertexLayout::Create( ID3D11Device* const device, const VertexAttribute
 
 		D3D11_INPUT_ELEMENT_DESC desc;
 		desc.SemanticName			= attribute.semantic;
-		desc.SemanticIndex			= 0; // default value
+		desc.SemanticIndex			= 0; // default value, overwrite later
 		desc.Format					= GetDXGIFormat( attribute.format );
 		desc.InputSlot				= static_cast< UINT >( attribute.slot );
-		desc.AlignedByteOffset		= 0; // default value
+		desc.AlignedByteOffset		= 0; // default value, overwrite later
 		desc.InputSlotClass			= ( attribute.instanceCount == 0 ? D3D11_INPUT_PER_VERTEX_DATA : D3D11_INPUT_PER_INSTANCE_DATA );
 		desc.InstanceDataStepRate	= static_cast< UINT >( attribute.instanceCount );
 
-		// iterate all attribute elements
+		/*
+		Iterate all attribute elements (eg. four-component floats in matrix)
+		Calculate SemanticIndex and AlignedByteOffset
+		*/
 		for ( int i = 0; i < attribute.elementsCount; i++ ) {
 			desc.SemanticIndex		= static_cast< UINT >( attribute.semanticIndex + i );
 			desc.AlignedByteOffset	= static_cast< UINT >( attribute.offset + i * formatInfo.blockByteWidth );
@@ -2420,4 +2451,16 @@ void DX11CommandInterface::SetViewports( const Viewport* const viewports[], cons
 		d3d11Viewports[ i ].MaxDepth	= 1;
 	}
 	context->RSSetViewports( static_cast< UINT >( count ), d3d11Viewports );
+}
+
+void DX11CommandInterface::SetScissorRects( const ScissorRect* rects, const int count ) {
+	D3D11_RECT scissorRects[ MAX_VIEWPORTS ];
+	const int rectsCount = Math::Min( count, MAX_VIEWPORTS );
+	for ( int i = 0; i < rectsCount; i++ ) {
+		scissorRects[ i ].left = static_cast< LONG >( rects[ i ].x );
+		scissorRects[ i ].top = static_cast< LONG >( rects[ i ].y );
+		scissorRects[ i ].right = scissorRects[ i ].left + static_cast< LONG >( rects[ i ].width );
+		scissorRects[ i ].bottom = scissorRects[ i ].top + static_cast< LONG >( rects[ i ].height );
+	}
+	context->RSSetScissorRects( static_cast< UINT >( rectsCount ), scissorRects );
 }

@@ -37,25 +37,25 @@ String::String() {
 	string[ 0 ] = u'\0';
 }
 
-String::String( const char16_t * const strUTF16 ): String() {
+String::String( const char16_t* const strUTF16 ): String() {
 	FromUTF16( strUTF16 );
 }
 
-String::String( const String &str ): String() {
+String::String( const String& str ): String() {
 	Alloc( str.capacity );
 	length = str.length;
 	memcpy( string, str.string, sizeof( char16_t ) * ( length + 1 ) );
 }
 
-String::String( const String &str, const int index, const int size ): String() {
+String::String( const String& str, const int index, const int size ): String() {
 	Set( str, index, size );
 }
 
-String::String( String &&str ) {
+String::String( String&& str ) {
 	Move( str );
 }
 
-String &String::operator=( String &&str ) {
+String &String::operator=( String&& str ) {
 	// uvolnit pamet
 	delete [] stringLong;
 	stringLong = nullptr;
@@ -63,7 +63,7 @@ String &String::operator=( String &&str ) {
 	return *this;
 }
 
-void String::Move( String &str ) {
+void String::Move( String& str ) {
 	// zkopirovat short string
 	if ( str.string == str.stringShort ) {
 		length = str.length;
@@ -85,7 +85,7 @@ String::~String() {
 	delete [] stringLong;
 }
 
-String &String::operator=( const String &str ) {
+String& String::operator=( const String& str ) {
 	if ( &str == this ) {
 		return *this;
 	}
@@ -95,12 +95,12 @@ String &String::operator=( const String &str ) {
 	return *this;
 }
 
-String &String::operator=( const char16_t * const strUTF16 ) {
+String& String::operator=( const char16_t * const strUTF16 ) {
 	FromUTF16( strUTF16 );
 	return *this;
 }
 
-void String::Set( const String &str, const int index, const int size ) {
+void String::Set( const String& str, const int index, const int size ) {
 	if ( index < 0 || size < 0 || size > str.length - index ) {
 		Clear();
 		return;
@@ -111,7 +111,7 @@ void String::Set( const String &str, const int index, const int size ) {
 	string[ length ] = u'\0';
 }
 
-void String::FromUCS( const char * const str ) {
+void String::FromUCS( const char* const str ) {
 	if ( str == nullptr ) {
 		return;
 	}
@@ -125,7 +125,7 @@ void String::FromUCS( const char * const str ) {
 	length = size;
 }
 
-void String::FromUCS2( const char16_t * const str ) {
+void String::FromUCS2( const char16_t* const str ) {
 	if ( str == nullptr ) {
 		return;
 	}
@@ -136,14 +136,14 @@ void String::FromUCS2( const char16_t * const str ) {
 	length = size;
 }
 
-void String::FromUTF8( const char * const str ) {
+void String::FromUTF8( const char* const str ) {
 	if ( str == nullptr ) {
 		return;
 	}
 	int size = LengthUTF8( str );
 	Alloc( size + 1 );
 	
-	const unsigned char *src = reinterpret_cast< const unsigned char * >( str );
+	const unsigned char* src = reinterpret_cast< const unsigned char * >( str );
 	char16_t *dest = string;
 	while ( *src != '\0' ) {
 		// 1 byte znak
@@ -194,15 +194,15 @@ void String::FromUTF8( const char * const str ) {
 	length = size;
 }
 
-void String::FromUTF16( const char16_t * const str ) {
+void String::FromUTF16( const char16_t* const str ) {
 	if ( str == nullptr ) {
 		return;
 	}
 	int size = LengthUTF16( str );
 	Alloc( size + 1 );
 	
-	const char16_t *src = str;
-	char16_t *dest = string;
+	const char16_t* src = str;
+	char16_t* dest = string;
 	while ( *src != u'\0' ) {
 		// 2 bajtovy znak
 		if ( *src < 0xD800 || *src > 0xDFFF ) {
@@ -224,7 +224,7 @@ void String::Expand( const int size ) {
 	if ( size <= capacity ) {
 		return;
 	}
-	char16_t *expanded = new char16_t[ size ];
+	char16_t* expanded = new char16_t[ size ];
 	
 	// zkopirovani puvodniho retezce vcetne znaku 0
 	memcpy( expanded, string, 2 * length + 1 );
@@ -242,7 +242,7 @@ void String::Alloc( const int size ) {
 		length = 0;
 		return;
 	}
-	char16_t *storage = new char16_t[ size ];
+	char16_t* storage = new char16_t[ size ];
 	delete [] stringLong;
 	stringLong = storage;
 	string = stringLong;
@@ -253,7 +253,7 @@ void String::Alloc( const int size ) {
 
 void String::Realloc( const int size ) {
 	if ( size > SHORT_LENGTH ) {
-		char16_t *storage = new char16_t[ size ];
+		char16_t* storage = new char16_t[ size ];
 		delete [] stringLong;
 		stringLong = storage;
 		string = stringLong;
@@ -268,12 +268,12 @@ void String::Realloc( const int size ) {
 	length = 0;
 }
 
-int String::LengthUTF8( const char * const str ) {
+int String::LengthUTF8( const char* const str ) {
 	if ( str == nullptr ) {
 		return 0;
 	}
 	int count = 0;
-	const unsigned char *ch = reinterpret_cast< const unsigned char * >( str );
+	const unsigned char* ch = reinterpret_cast< const unsigned char* >( str );
 	while ( *ch != '\0' ) {
 		count += 1;
 		
@@ -303,12 +303,12 @@ int String::LengthUTF8( const char * const str ) {
 	return count;
 }
 
-int String::LengthUTF16( const char16_t * const str ) {
+int String::LengthUTF16( const char16_t* const str ) {
 	if ( str == nullptr ) {
 		return 0;
 	}
 	int count = 0;
-	const char16_t *ch = str;
+	const char16_t* ch = str;
 	while ( *ch != u'\0' ) {
 		count += 1;
 		
@@ -323,7 +323,7 @@ int String::LengthUTF16( const char16_t * const str ) {
 	return count;
 }
 
-int String::LengthUCS2( const char16_t * const str ) {
+int String::LengthUCS2( const char16_t* const str ) {
 	if ( str == nullptr ) {
 		return 0;
 	}
@@ -336,7 +336,7 @@ int String::LengthUCS2( const char16_t * const str ) {
 	return count;
 }
 
-int String::Compare( const String &right ) const {
+int String::Compare( const String& right ) const {
 	int cmp = memcmp( string, right.string, Math::Min( length * 2, right.length * 2 ) );
 	
 	if ( length == right.length ) {
@@ -349,33 +349,33 @@ int String::Compare( const String &right ) const {
 	return cmp;
 }
 
-bool String::operator==( const String &str ) const {
+bool String::operator==( const String& str ) const {
 	if ( length != str.length ) {
 		return false;
 	}
 	return memcmp( string, str.string, length * 2 ) == 0;
 }
 
-bool String::operator!=( const String &str ) const {
+bool String::operator!=( const String& str ) const {
 	if ( length != str.length ) {
 		return true;
 	}
 	return memcmp( string, str.string, length * 2 ) != 0;
 }
 
-bool String::operator>( const String &str ) const {
+bool String::operator>( const String& str ) const {
 	return Compare( str ) > 0;
 }
 
-bool String::operator>=( const String &str ) const {
+bool String::operator>=( const String& str ) const {
 	return Compare( str ) >= 0;
 }
 
-bool String::operator<( const String &str ) const {
+bool String::operator<( const String& str ) const {
 	return Compare( str ) < 0;
 }
 
-bool String::operator<=( const String &str ) const {
+bool String::operator<=( const String& str ) const {
 	return Compare( str ) <= 0;
 }
 
@@ -391,7 +391,7 @@ void String::ToLower() {
 	}
 }
 
-void String::Append( const String &str ) {
+void String::Append( const String& str ) {
 	if ( str.length <= 0 ) {
 		return;
 	}
@@ -401,12 +401,12 @@ void String::Append( const String &str ) {
 	string[ length  ] = u'\0';
 }
 
-String &String::operator+=( const String &str ) {
+String& String::operator+=( const String& str ) {
 	Append( str );
 	return *this;
 }
 
-String String::operator+( const String &str ) const {
+String String::operator+( const String& str ) const {
 	String result = *this;
 	result.Append( str );
 	return result;
@@ -417,7 +417,7 @@ void String::Clear() {
 	length = 0;
 }
 
-void String::Insert( const String &str, const int index ) {
+void String::Insert( const String& str, const int index ) {
 	if ( str.length <= 0 ) {
 		return;
 	}
@@ -435,7 +435,7 @@ void String::Insert( const String &str, const int index ) {
 		return;
 	}
 	// alokovat novou pamet
-	char16_t *result = new char16_t[ newLength + 1 ];
+	char16_t* result = new char16_t[ newLength + 1 ];
 	memcpy( result, string, index * 2 );
 	memcpy( result + index, str.string, str.length * 2 );
 	memcpy( result + index + str.length, string + index, ( length - index ) * 2 );
@@ -447,7 +447,7 @@ void String::Insert( const String &str, const int index ) {
 	string[ length ] = u'\0';
 }
 
-void String::Join( const String * const strings[], const int count, String separator, String &result ) {
+void String::Join( const String* const strings[], const int count, String separator, String& result ) {
 	if ( strings == nullptr || count <= 0 ) {
 		result.Clear();
 		return;
@@ -470,7 +470,7 @@ void String::Join( const String * const strings[], const int count, String separ
 	result.Append( *strings[ count - 1 ] );
 }
 
-void String::Join( const String strings[], const int count, String separator, String &result ) {
+void String::Join( const String strings[], const int count, String separator, String& result ) {
 	if ( strings == nullptr || count <= 0 ) {
 		result.Clear();
 		return;

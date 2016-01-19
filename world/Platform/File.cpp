@@ -42,7 +42,7 @@ String GetFileDir( const String& file ) {
 	return String( file, 0, slash + 1 );
 }
 
-// class File
+// class IFile
 
 IFile::IFile() { /* does nothing */ }
 
@@ -142,4 +142,31 @@ bool FileSystem::EnumFiles( const String& path, std::vector< String >& result ) 
 
 bool FileSystem::EnumDirs( const String& path, std::vector< String >& result ) {
 	return FileSystemPlatform::EnumDirs( path, result );
+}
+
+// Helpers
+
+std::unique_ptr< char[] > LoadCharFile( const String& path ) {
+	File file;
+	if ( !file.OpenToRead( path, FileAccess::SEQUENTIAL ) ) {
+		return nullptr;
+	}
+	const auto size = file.Size();
+	std::unique_ptr< char[] > string( new char[ size + 1 ] );
+	file.Read( string.get(), size );
+	file.Close();
+	string[ size ] = '\0';
+	return string;
+}
+
+std::unique_ptr< Byte[] > LoadByteFile( const String& path ) {
+	File file;
+	if ( !file.OpenToRead( path, FileAccess::SEQUENTIAL ) ) {
+		return nullptr;
+	}
+	const auto size = file.Size();
+	std::unique_ptr< Byte[] > bytes( new Byte[ size ] );
+	file.Read( bytes.get(), size );
+	file.Close();
+	return bytes;
 }

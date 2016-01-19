@@ -153,6 +153,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Core\DX11\DX11RenderInterface.cpp" />
+    <ClCompile Include="Core\Renderer.cpp" />
+    <ClCompile Include="Core\RenderInterface.cpp" />
     <ClCompile Include="framework\Allocation.cpp" />
     <ClCompile Include="framework\Color.cpp" />
     <ClCompile Include="framework\Math.cpp" />
@@ -165,11 +168,12 @@
     <ClCompile Include="Platform\Windows\WindowsSystem.cpp" />
     <ClCompile Include="Platform\windows\WindowsWindow.cpp" />
     <ClCompile Include="platform\windows\WinMain.cpp" />
-    <ClCompile Include="Renderer\DX11\DX11RenderInterface.cpp" />
-    <ClCompile Include="renderer\Renderer.cpp" />
-    <ClCompile Include="Renderer\RenderInterface.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Core\DX11\DX11RenderInterface.h" />
+    <ClInclude Include="Core\Renderer.h" />
+    <ClInclude Include="Core\RenderInterface.h" />
+    <ClInclude Include="Engine\Paths.h" />
     <ClInclude Include="framework\Allocation.h" />
     <ClInclude Include="framework\Color.h" />
     <ClInclude Include="framework\Core.h" />
@@ -190,9 +194,6 @@
     <ClInclude Include="platform\windows\WindowsFile.h" />
     <ClInclude Include="Platform\Windows\WindowsSystem.h" />
     <ClInclude Include="Platform\windows\WindowsWindow.h" />
-    <ClInclude Include="Renderer\DX11\DX11RenderInterface.h" />
-    <ClInclude Include="renderer\Renderer.h" />
-    <ClInclude Include="Renderer\RenderInterface.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="libs\ATI_Compress_MT.lib" />

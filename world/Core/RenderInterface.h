@@ -82,6 +82,13 @@ namespace RenderInterface {
 	// Maximalni pocet viewportu
 	const int MAX_VIEWPORTS = 8;
 	
+	struct ScissorRect {
+		int x;
+		int y;
+		int width;
+		int height;
+	};
+
 	/*
 	Informace potrebne k vytvoreni objektu DX11Device
 	*/
@@ -277,16 +284,6 @@ namespace RenderInterface {
 		float maxLOD; // <0; MAX_TEXTURE_LOD>
 	};
 
-	enum class DepthStencilUsage {
-		STANDARD,	// read write depth stencil usage
-		READONLY	// readonly depth stencil usage
-	};
-
-	struct DepthStencilViewParams {
-		DepthStencilUsage depthUsage;
-		DepthStencilUsage stencilUsage;
-	};
-
 	enum class DepthStencilComparsion {
 		NEVER,
 		LESS,
@@ -309,12 +306,18 @@ namespace RenderInterface {
 		DECR
 	};
 
+	enum class DepthStencilUsage {
+		DISABLED,	// no read, no write
+		READONLY,	// read, no write
+		STANDARD	// read, write
+	};
+
 	/*
 	Parametry funkce Device::CreateDepthStencilState()
 	*/
 	struct DepthStencilStateParams {
-		bool enableDepth;						// deffault:
-		bool enableStencil;						// deffault:
+		DepthStencilUsage depthUsage;			// deffault: STANDARD
+		DepthStencilUsage stencilUsage;			// deffault: DISABLED
 		DepthStencilComparsion depthFunc;		// default: LESS
 		DepthStencilComparsion stencilFunc;		// default: ALWAYS
 		StencilOperation stencilPassOp;			// default: KEEP
@@ -383,8 +386,8 @@ namespace RenderInterface {
 	};
 
 	struct ShaderParams {
-		char* const string;		// null terminated ASCII string
-		char** const defines;	// null terminated array, seznam identifikatoru vlozenych zacatek kodu (#define)
+		const char* string;		// null terminated ASCII string
+		const char** defines;	// null terminated array, seznam identifikatoru vlozenych zacatek kodu (#define)
 		ShaderType type;
 		ShaderVersion version;
 		ShaderCompileFlags flags;
@@ -399,7 +402,7 @@ namespace RenderInterface {
 		const char* semantic;
 		int semanticIndex;
 		Format format;
-		int offset;					// vzdalenost atributu (v bytech) od zacatku bufferu
+		int offset;					// vzdalenost atributu (v bajtech) od zacatku bufferu
 		int elementsCount;			// pocet elementu (4 pro matice apod.)
 		int slot;					// id vstupniho slotu (bufferu)
 		int instanceCount;			// pocet instanci se stejnym atributem (0 pro per vertex attribute; >0 pro per instance attribute)
@@ -505,11 +508,11 @@ namespace RenderInterface {
 	};
 
 	/*
-	Data namapovaneho bufferu (funkce CommandInterface::Map())
+	Data namapovaneho bufferu (CommandInterface::Map())
 	Data jsou ukladana po radcich (ale pouze 2D a 3D textury mohou mit vice nez jeden radek).
 	Velikost radku nemusi odpovidat ocekavane velikosti, protoze 3D api muze pridat na konec radku volny prostor.
-	Do tohoto prostoru je zakazano zapisovat. Protoze jsou data ulozena po radcich, je nutne pristupovat do
-	bufferu take po radcich.
+	Do tohoto prostoru je zakazano zapisovat (3D API muze tento prostor interne vyuzivat.
+	Protoze jsou data ulozena po radcich, je nutne pristupovat do bufferu take po radcich.
 	*/
 	struct MappedBuffer {
 		void* data;
@@ -581,7 +584,7 @@ namespace RenderInterface {
 		virtual PRenderTargetView CreateRenderTargetView( BackBuffer* const backBuffer ) = 0;
 		virtual PRenderTargetView CreateRenderTargetView( Buffer* const textureBuffer ) = 0;
 		virtual PTextureView CreateTextureView( Buffer* const textureBuffer, Sampler* const sampler ) = 0;
-		virtual PDepthStencilView CreateDepthStencilView( Buffer* const textureBuffer, const DepthStencilViewParams& params ) = 0;
+		virtual PDepthStencilView CreateDepthStencilView( Buffer* const textureBuffer, const bool readonly ) = 0;
 		virtual PConstantBufferView CreateConstantBufferView( Buffer* const constantBuffer, const ConstantBufferViewParams& params ) = 0;
 		virtual PVertexStream CreateVertexStream( const VertexStreamParams& params ) = 0;
 
@@ -638,7 +641,7 @@ namespace RenderInterface {
 		// nastavi stencil buffer na hodnotu stencil
 		virtual void ClearStencil( DepthStencilView* const descriptor, const uint8_t stencil ) = 0;
 
-		// Nastavi objekt Device do vychoziho stavu
+		// Generuje command, ktery nastavi objekt Device do vychoziho stavu
 		virtual void ClearState() = 0;
 
 		/*
@@ -689,7 +692,14 @@ namespace RenderInterface {
 		// Pokud je parametr state nullptr, pouzije se vychozi state.
 		virtual void SetRasterizerState( RasterizerState* const state ) = 0;
 
+		// Nastavi viewporty.
 		virtual void SetViewports( const Viewport* const viewports[], const int count ) = 0;
+
+		/*
+		Nastavi scissor rectangles, kazdy pro jeden viewport, nullptr odstrani vsechny scissor rects.
+		Scissor test se aktivuje pomoci RasterizeState objektu.
+		*/
+		virtual void SetScissorRects( const ScissorRect* rects, const int count ) = 0;
 
 		// Nabinduje textury pro vybrany shader stage. V shaderu je nutne specifikovat slot (bind point).
 		virtual void SetVSTextures( const int startSlot, const int count, TextureView* const views[] ) = 0;
@@ -794,6 +804,8 @@ namespace RenderInterface {
 	/*
 	Shader (VS, PS nebo GS)
 	Shader jazyk je podmnozina HLSL. OpenGL implementace prevadi HLSL kod na GLSL kod.
+	Po vytvoreni objektu RenderProgram muzou byt objekty Shader uvolneny.
+	Jeden Shader muze byt pouzit k vytvoreni vice RenderProgram objektu.
 	*/
 	class Shader: public DeviceObject {
 	public:

@@ -12,7 +12,7 @@ PDevice RenderInterface::DX11CreateDevice( const DX11CreateDeviceParams& params 
 		delete device;
 		device = nullptr;
 	}
-	return PDevice( device, Deleter< Device > );
+	return PDevice( device, Deleter< Device >() );
 }
 
 const FormatInfo RenderInterface::GetFormatInfo( const Format format ) {

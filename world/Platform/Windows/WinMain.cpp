@@ -1,7 +1,8 @@
+#include <memory>
 #include "WindowsWindow.h"
 #include "WindowsApplication.h"
-#include "..\..\Renderer\RenderInterface.h"
-#include "..\..\Renderer\Renderer.h"
+#include "..\..\Core\RenderInterface.h"
+#include "..\..\Core\Renderer.h"
 
 // Testovaci aplikace
 class DevApp: public WindowsApplication {
@@ -12,7 +13,6 @@ public:
 	
 private:
 	WindowsAppWindow *window;
-	RenderInterface::Device *device;
 	Renderer* renderer;
 };
 
@@ -28,7 +28,6 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 DevApp::DevApp() {
 	window = nullptr;
-	device = nullptr;
 	renderer = nullptr;
 }
 
@@ -36,24 +35,26 @@ bool DevApp::Create( const HINSTANCE hInstance ) {
 	if ( !WindowsApplication::Create( hInstance ) ) {
 		return false;
 	}
-
 	// window
 	window = new WindowsAppWindow();
 	window->CreateAppWindow( hInstance, 1024, 768 );
 	window->SetName( String( u"World" ) );
 	window->SetBackgroundColor( Color::BLACK );
 
-	// render device
+	// Nasledujici nahradit necim jako:
+	// InitializeEngine( params... )
+
+	// render interface device
 	RenderInterface::DX11CreateDeviceParams deviceParams;
 	deviceParams.adapter = 0;
 	deviceParams.majorFeatureLevels = 11;
 	deviceParams.minorFeatureLevels = 0;
-	device = RenderInterface::DX11CreateDevice( deviceParams );
+	RenderInterface::PDevice device = RenderInterface::DX11CreateDevice( deviceParams );
 
 	// renderer
-	RendererParams rendererParams;
+	RendererAttributes rendererAttribs;
 	renderer = new Renderer();
-	renderer.Initialize( device, rendererParams );
+	renderer->Initialize( std::move( device ), rendererAttribs );
 
 	// associate renderer with window, this allows drawing into the window
 	window->SetRenderer( renderer );
