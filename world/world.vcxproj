@@ -154,6 +154,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Core\DX11\DX11RenderInterface.cpp" />
+    <ClCompile Include="Core\RenderDeviceResources.cpp" />
     <ClCompile Include="Core\Renderer.cpp" />
     <ClCompile Include="Core\RenderInterface.cpp" />
     <ClCompile Include="framework\Allocation.cpp" />
@@ -171,6 +172,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\DX11\DX11RenderInterface.h" />
+    <ClInclude Include="Core\RenderDeviceResources.h" />
     <ClInclude Include="Core\Renderer.h" />
     <ClInclude Include="Core\RenderInterface.h" />
     <ClInclude Include="Engine\Paths.h" />

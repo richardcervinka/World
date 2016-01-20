@@ -78,14 +78,17 @@
     <ClCompile Include="Platform\Windows\WindowsSystem.cpp">
       <Filter>Source Files\Platform\Windows</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Renderer.cpp">
-      <Filter>Source Files\Core</Filter>
-    </ClCompile>
     <ClCompile Include="Core\RenderInterface.cpp">
       <Filter>Source Files\Core</Filter>
     </ClCompile>
     <ClCompile Include="Core\DX11\DX11RenderInterface.cpp">
       <Filter>Source Files\Core\DX11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\RenderDeviceResources.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Renderer.cpp">
+      <Filter>Source Files\Core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -149,9 +152,6 @@
     <ClInclude Include="Platform\Windows\WindowsSystem.h">
       <Filter>Source Files\Platform\Windows</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Renderer.h">
-      <Filter>Source Files\Core</Filter>
-    </ClInclude>
     <ClInclude Include="Core\RenderInterface.h">
       <Filter>Source Files\Core</Filter>
     </ClInclude>
@@ -160,6 +160,12 @@
     </ClInclude>
     <ClInclude Include="Engine\Paths.h">
       <Filter>Source Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\RenderDeviceResources.h">
+      <Filter>Source Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Renderer.h">
+      <Filter>Source Files\Core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
