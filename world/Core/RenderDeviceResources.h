@@ -1,10 +1,12 @@
 #pragma once
 
+#include  <vector>
 #include "RenderInterface.h"
 
 class Buffer {
 public:
-	Buffer( std::shared_ptr< RenderInterface::Buffer > buffer );
+	Buffer() = default;
+	explicit Buffer( std::shared_ptr< RenderInterface::Buffer > buffer );
 	virtual ~Buffer() = 0;
 
 	// Neni mozne vytvaret kopie
@@ -23,6 +25,7 @@ private:
 
 class VertexBuffer: public Buffer {
 public:
+	VertexBuffer();
 	VertexBuffer( std::shared_ptr< RenderInterface::Buffer > buffer, const int capacity );
 
 	virtual void Release() override;
@@ -34,8 +37,9 @@ private:
 	int capacity;
 };
 
-class IndexBuffer {
+class IndexBuffer: public Buffer {
 public:
+	IndexBuffer();
 	IndexBuffer( std::shared_ptr< RenderInterface::Buffer > buffer, const int capacity );
 
 	virtual void Release() override;
@@ -49,7 +53,7 @@ private:
 
 class Texture2D: public Buffer {
 public:
-	Texture2D( std::shared_ptr< RenderInterface::Buffer > buffer, format, width, height, mipLevels );
+	//Texture2D( std::shared_ptr< RenderInterface::Buffer > buffer, format, width, height, mipLevels );
 
 private:
 };

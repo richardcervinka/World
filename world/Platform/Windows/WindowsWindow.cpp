@@ -3,7 +3,6 @@
 
 #include "WindowsWindow.h"
 #include "..\Application.h"
-#include
 
 WindowsWindow::WindowsWindow():
 	hwnd( 0 ),
@@ -100,8 +99,6 @@ LRESULT CALLBACK WindowsWindow::WndProcStatic( HWND hwnd, UINT message, WPARAM w
 	return DefWindowProc( hwnd, message, wparam, lparam );
 }
 
-#include "..\..\Renderer\DX11\DX11RenderInterface.h"
-
 LRESULT WindowsWindow::WndProc( const HWND hwnd, const UINT message, WPARAM wparam, LPARAM lparam ) {
 	switch ( message ) {
 		case WM_CREATE:
@@ -145,7 +142,7 @@ void WindowsWindow::OnDestroy() {
 
 void WindowsWindow::OnPaint() {
 	// ponecha veskere vykreslovani na rendereru
-	if ( RendererDrawing() ) {
+	if ( IsRendererTarget() ) {
 		ValidateRect( hwnd, NULL );
 		return;
 	}

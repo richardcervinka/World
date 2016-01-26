@@ -20,13 +20,17 @@ RenderInterface::Buffer* Buffer::GetBuffer() {
 
 // VertexBuffer
 
+VertexBuffer::VertexBuffer() {
+	capacity = 0;
+}
+
 VertexBuffer::VertexBuffer( std::shared_ptr< RenderInterface::Buffer > buffer, const int capacity ): Buffer( buffer ) {
 	this->capacity = capacity;
 }
 
 void VertexBuffer::Release() {
 	Buffer::Release();
-	capacity = nullptr;
+	capacity = 0;
 }
 
 int VertexBuffer::GetCapacity() const {
@@ -35,13 +39,17 @@ int VertexBuffer::GetCapacity() const {
 
 // IndexBuffer
 
+IndexBuffer::IndexBuffer() {
+	capacity = 0;
+}
+
 IndexBuffer::IndexBuffer( std::shared_ptr< RenderInterface::Buffer > buffer, const int capacity ): Buffer( buffer ) {
 	this->capacity = capacity;
 }
 
 void IndexBuffer::Release() {
 	Buffer::Release();
-	capacity = nullptr;
+	capacity = 0;
 }
 
 int IndexBuffer::GetCapacity() const {
@@ -54,7 +62,7 @@ RenderDeviceResources::RenderDeviceResources() {
 	memoryUsage = 0;
 }
 
-VertexBuffer RenderDeviceResources::CreateVertexBuffer(
+VertexBuffer&& RenderDeviceResources::CreateVertexBuffer(
 	const int vertexSize,
 	const int capacity,
 	const RenderInterface::BufferUsage usage,
@@ -63,14 +71,14 @@ VertexBuffer RenderDeviceResources::CreateVertexBuffer(
 ) {
 	RenderInterface::PBuffer buffer = device->CreateVertexBuffer( vertexSize * capacity, usage, access, initialData );
 	if ( !buffer ) {
-		return VertexBuffer( nullptr, 0 );
+		return VertexBuffer();
 	}
-	std::shared_ptr< RenderInterface::Buffer > sharedBuffer( buffer );
+	std::shared_ptr< RenderInterface::Buffer > sharedBuffer( std::move( buffer ) );
 	StoreBuffer( sharedBuffer, vertexSize * capacity );
 	return VertexBuffer( sharedBuffer, capacity );
 }
 
-IndexBuffer RenderDeviceResources::CreateIndexBuffer( const RenderInterface::Format format, const int capacity, const void* const initialData ) {
+IndexBuffer&& RenderDeviceResources::CreateIndexBuffer( const RenderInterface::Format format, const int capacity, const void* const initialData ) {
 	int byteWidth = 0;
 	if ( format == RenderInterface::Format::R16_UINT ) {
 		byteWidth = 2 * capacity;
@@ -85,9 +93,9 @@ IndexBuffer RenderDeviceResources::CreateIndexBuffer( const RenderInterface::For
 		initialData
 	);
 	if ( !buffer ) {
-		return VertexBuffer( nullptr, 0 );
+		return IndexBuffer();
 	}
-	std::shared_ptr< RenderInterface::Buffer > sharedBuffer( buffer );
+	std::shared_ptr< RenderInterface::Buffer > sharedBuffer( std::move( buffer ) );
 	StoreBuffer( sharedBuffer, byteWidth );
 	return IndexBuffer( sharedBuffer, capacity );
 }
@@ -96,7 +104,7 @@ void RenderDeviceResources::StoreBuffer( std::shared_ptr< RenderInterface::Buffe
 	if ( buffers.capacity() <= buffers.size() ) {
 		buffers.reserve( buffers.capacity() + 100 );
 	}
-	buffers.push_back( sharedBuffer );
+	buffers.push_back( buffer );
 	memoryUsage += static_cast< unsigned long >( byteWidth );
 }
 
@@ -125,9 +133,4 @@ void RenderDeviceResources::ReleaseUnusedResources() {
 		}
 	}
 	buffers = std::move( usedBuffers );
-}
-
-void RenderDeviceResources::ReleaseUnusedResources() {
-	buffers.clear();
-	buffers.shrink_to_fit();
 }

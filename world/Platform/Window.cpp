@@ -1,4 +1,5 @@
 #include "Window.h"
+#include "..\Core\Renderer.h"
 
 Window::Window() {
 	renderer = nullptr;
@@ -25,12 +26,14 @@ bool Window::IsRendererTarget() const {
 	return renderer != nullptr;
 }
 
+/*
 RenderInterface::BackBuffer* Window::GetBackBuffer() {
 	if ( renderer != nullptr ) {
 		return renderer->GetBackBuffer( *this );
 	}
 	return nullptr;
 }
+*/
 
 void Window::OnResized( const int width, const int height ) {
 	if ( renderer != nullptr ) {

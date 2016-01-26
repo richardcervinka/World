@@ -225,8 +225,8 @@ bool Renderer::CreateRenderBuffers( const int width, const int height, const Ant
 		}
 	}
 	// depth stencil je take renderbuffer
-	RenderBuffer depthStencilBuffer;
-	if ( !depthStencilBuffer.Create( device, RenderInterface::Format::DEPTH_24_UNORM_STENCIL_8_UINT, width, height, samplesCount, samplesQuality ) ) {
+	DepthStencilBuffer depthStencilBuffer;
+	if ( !depthStencilBuffer.Create( device, width, height, samplesCount, samplesQuality ) ) {
 		return false;
 	}
 	// ulozit nove vytvorene buffery
@@ -433,7 +433,7 @@ bool Renderer::LoadShaders() {
 Identifier Renderer::CreateRenderProgram( const Identifier vsid, const Identifier psid, const Identifier gsid ) {
 	// get vertex shader
 	RenderInterface::Shader* vs = nullptr;
-	if ( vsid >= 0 && vsid < shaders.size() ) {
+	if ( vsid >= 0  && vsid < shaders.size() ) {
 		vs = shaders[ vsid ].get();
 	}
 	if ( vs == nullptr ) {

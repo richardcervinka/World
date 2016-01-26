@@ -1,5 +1,6 @@
 #pragma once
 
+//#include "..\Core\RenderInterface.h"
 #include "..\Framework\String.h"
 #include "..\Framework\Color.h"
 
@@ -37,7 +38,7 @@ public:
 	// Propojeni s rendererem
 	void SetRenderer( Renderer* const renderer );
 	bool IsRendererTarget() const;
-	RenderInterface::BackBuffer* GetBackBuffer();
+	//RenderInterface::BackBuffer* GetBackBuffer();
 
 protected:
 	// Musi byt volano pri zmene velikosti okna
