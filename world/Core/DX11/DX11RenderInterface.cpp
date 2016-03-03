@@ -2175,14 +2175,18 @@ void DX11CommandInterface::Unmap( Buffer* const buffer, MappedBuffer& mappedBuff
 	);
 }
 
-bool DX11CommandInterface::UpdateBuffer( Buffer* const buffer, const int subresource, const void* const data ) {
+bool DX11CommandInterface::UpdateSubresource( Buffer* const buffer, const int subresource, const void* const data ) {
 	// map
-	MapPolicy policy = ( buffer->GetUsage() == BufferUsage::DYNAMIC ? MapPolicy::WRITE_DISCARD : MapPolicy::WRITE_ONLY );
+	MapPolicy policy =
+		buffer->GetUsage() == BufferUsage::DYNAMIC ?
+		MapPolicy::WRITE_DISCARD :
+		MapPolicy::WRITE_ONLY;
+
 	MappedBuffer mappedBuffer;
 	if ( !Map( buffer, subresource, policy, mappedBuffer ) ) {
 		return false;
 	}
-	// memcpy
+	// update
 	const Byte* src = static_cast< const Byte* >( data );
 	Byte* dest = static_cast< Byte* >( mappedBuffer.data );
 	const int depthSliceRows = mappedBuffer.rowsCount / mappedBuffer.depthsCount;
@@ -2195,6 +2199,21 @@ bool DX11CommandInterface::UpdateBuffer( Buffer* const buffer, const int subreso
 		dest = static_cast< Byte* >( mappedBuffer.data ) + ( depth * mappedBuffer.depthPitch );
 	}
 	// unmap
+	Unmap( buffer, mappedBuffer );
+	return true;
+}
+
+bool DX11CommandInterface::UpdateBuffer( Buffer* const buffer, const void* const data, const int bytes, const int offset, const bool discatd ) {
+	MapPolicy policy = discatd ? MapPolicy::WRITE_DISCARD : MapPolicy::WRITE_ONLY;
+	MappedBuffer mappedBuffer;
+	if ( !Map( buffer, 0, policy, mappedBuffer ) ) {
+		return false;
+	}
+	if ( mappedBuffer.rowsCount > 1 || ( offset + bytes > mappedBuffer.rowByteWidth ) ) {
+		Unmap( buffer, mappedBuffer );
+		return false;
+	}
+	memcpy( static_cast< Byte* >( mappedBuffer.data ) + offset, buffer, bytes );
 	Unmap( buffer, mappedBuffer );
 	return true;
 }

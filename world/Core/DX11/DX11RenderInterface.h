@@ -103,7 +103,8 @@ public:
 	virtual void ClearState() override;
 	virtual bool Map( Buffer* const buffer, const int subresource, const MapPolicy policy, MappedBuffer& result ) override;
 	virtual void Unmap( Buffer* const buffer, MappedBuffer& mappedBuffer ) override;
-	virtual bool UpdateBuffer( Buffer* const buffer, const int subresource, const void* const data ) override;
+	virtual bool UpdateSubresource( Buffer* const buffer, const int subresource, const void* const data ) override;
+	virtual bool UpdateBuffer( Buffer* const buffer, const void* const data, const int bytes, const int offset, const bool discatd ) override;
 	virtual bool UpdateConstantBuffer( ConstantBufferView* const view, const void* const data ) override;
 	virtual void CopyBuffer( Buffer* const src, Buffer* const dest ) override;
 	virtual void SetConstantBuffers( ConstantBufferView* const views[], const int count ) override;

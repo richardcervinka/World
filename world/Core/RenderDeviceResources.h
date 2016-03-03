@@ -3,17 +3,20 @@
 #include  <vector>
 #include "RenderInterface.h"
 
+/*
+Zakladni trida pro buffery
+*/
 class Buffer {
 public:
 	Buffer() = default;
 	explicit Buffer( std::shared_ptr< RenderInterface::Buffer > buffer );
 	virtual ~Buffer() = 0;
 
-	// Neni mozne vytvaret kopie
+	// Neni mozne vytvaret kopie bufferu, jsou povoleny pouze move operace
 	Buffer( const Buffer& ) = delete;
 	Buffer& operator=( const Buffer& ) = delete;
 
-	// Explicitni uvolneni RenderInterface objektu
+	// Uvolneni RenderInterface bufferu
 	virtual void Release();
 
 	// Pouze pro interni potreby Renderer tridy
@@ -23,20 +26,31 @@ private:
 	std::shared_ptr< RenderInterface::Buffer > buffer;
 };
 
-class VertexBuffer: public Buffer {
+/*
+Vertex buffer
+*/
+template< typename T >
+class TVertexBuffer: public Buffer {
 public:
-	VertexBuffer();
-	VertexBuffer( std::shared_ptr< RenderInterface::Buffer > buffer, const int capacity );
+	TVertexBuffer();
+	TVertexBuffer( std::shared_ptr< RenderInterface::Buffer > buffer );
 
-	virtual void Release() override;
+	int Capacity() const {
+		return GetBuffer()->GetByteWidth() / sizeof( T );
+	}
 
-	// Maximalni pocet vertexu v bufferu
-	int GetCapacity() const;
+	/*
+	void Update( RenderInterface::CommandInterface* const commandInterface, const T* const vertices, const int cout, const bool discard ) {
+		commandInterface->UpdateBuffer( GetBuffer(), vertices, sizeof( T ) * cout, 0, discard );
+	}
+	*/
 
 private:
-	int capacity;
 };
 
+/*
+Index buffer
+*/
 class IndexBuffer: public Buffer {
 public:
 	IndexBuffer();
@@ -45,12 +59,16 @@ public:
 	virtual void Release() override;
 
 	// Maximalni pocet indexu v bufferu
-	int GetCapacity() const;
+	int Capacity() const {
+		return GetBuffer()->GetByteWidth() / 
+	}
 
 private:
-	int capacity;
 };
 
+/*
+2D Texture buffer 
+*/
 class Texture2D: public Buffer {
 public:
 	//Texture2D( std::shared_ptr< RenderInterface::Buffer > buffer, format, width, height, mipLevels );
@@ -58,6 +76,9 @@ public:
 private:
 };
 
+/*
+2D Texture array buffer 
+*/
 class Texture2DArray: public Buffer {
 public:
 
@@ -74,7 +95,7 @@ public:
 	~RenderDeviceResources();
 
 	// Vytvori vertex buffer, pri selhani vrati vertex buffer s nulovou velikosti
-	VertexBuffer CreateVertexBuffer(
+	std::unique_ptr< VertexBuffer > CreateVertexBuffer(
 		const int vertexSize,
 		const int capacity,
 		const RenderInterface::BufferUsage usage,

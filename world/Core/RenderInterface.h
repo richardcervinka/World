@@ -155,7 +155,7 @@ namespace RenderInterface {
 	
 	/*
 	FormatInfo: informace o typu Format
-	nektere vypocty:
+
 	pointPitch = blockByteWidth / blockSize
 	rowPitch = pointPitch * textureWidth
 	*/
@@ -658,14 +658,20 @@ namespace RenderInterface {
 		virtual void Unmap( Buffer* const buffer, MappedBuffer& mappedBuffer ) = 0;
 
 		/*
-		Updatuje cely obsah bufferu, resp. konkretni subresource.
+		Updatuje cely obsah subresource.
 		Pokud ma atribut usage hodnotu DYNAMIC, pouzije se sekvence Map ->memcpy -> Unmap
 		*/
-		virtual bool UpdateBuffer( Buffer* const buffer, const int subresource, const void* const data ) = 0;
+		virtual bool UpdateSubresource( Buffer* const buffer, const int subresource, const void* const data ) = 0;
+
+		/*
+		Updatuje 'bytes' pocet bajtu subresource 0 bufferu.
+		Pokud je parametr discard true, je predchozi stav bufferu oznacen jako nedefinovany.
+		*/
+		virtual bool UpdateBuffer( Buffer* const buffer, const void* const data, const int bytes, const int offset, const bool discatd ) = 0;
 
 		/*
 		Konstant buffer by nemel byt mapovan primo, ale radeji pomoci funkce UpdateConstantBuffer.
-		Objekt ConstantBufferDescriptor obsahuje vsechny potrebne informace o umisteni konstant (byte offset).
+		Objekt ConstantBufferView obsahuje vsechny potrebne informace o umisteni konstant (byte offset).
 		*/
 		virtual bool UpdateConstantBuffer( ConstantBufferView* const view, const void* const data ) = 0;
 
