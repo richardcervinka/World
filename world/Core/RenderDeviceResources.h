@@ -9,20 +9,15 @@ Zakladni trida pro buffery
 class Buffer {
 public:
 	Buffer() = default;
-	explicit Buffer( std::shared_ptr< RenderInterface::Buffer > buffer );
 	virtual ~Buffer() = 0;
 
-	// Neni mozne vytvaret kopie bufferu, jsou povoleny pouze move operace
-	Buffer( const Buffer& ) = delete;
-	Buffer& operator=( const Buffer& ) = delete;
-
-	// Uvolneni RenderInterface bufferu
+	// Uvolneni bufferu
 	virtual void Release();
 
 	// Pouze pro interni potreby Renderer tridy
 	RenderInterface::Buffer* GetBuffer();
 
-private:
+protected:
 	std::shared_ptr< RenderInterface::Buffer > buffer;
 };
 
@@ -32,36 +27,27 @@ Vertex buffer
 template< typename T >
 class TVertexBuffer: public Buffer {
 public:
-	TVertexBuffer();
-	TVertexBuffer( std::shared_ptr< RenderInterface::Buffer > buffer );
+	// sub buffer
+	// TVertexBuffer( TVertexBuffer& buffer, const int offset, const int count )
+
+	void Create( std::shared_ptr< RenderInterface::Buffer > buffer ) {
+		this->buffer = buffer;
+	}
 
 	int Capacity() const {
-		return GetBuffer()->GetByteWidth() / sizeof( T );
+		return buffer->GetByteWidth() / sizeof( T );
 	}
 
-	/*
-	void Update( RenderInterface::CommandInterface* const commandInterface, const T* const vertices, const int cout, const bool discard ) {
-		commandInterface->UpdateBuffer( GetBuffer(), vertices, sizeof( T ) * cout, 0, discard );
-	}
-	*/
-
-private:
+	//int GetVertexByteWidth() const;
 };
 
 /*
-Index buffer
+Index buffer (uint16_t)
 */
 class IndexBuffer: public Buffer {
 public:
-	IndexBuffer();
-	IndexBuffer( std::shared_ptr< RenderInterface::Buffer > buffer, const int capacity );
-
-	virtual void Release() override;
-
-	// Maximalni pocet indexu v bufferu
-	int Capacity() const {
-		return GetBuffer()->GetByteWidth() / 
-	}
+	void Create( std::shared_ptr< RenderInterface::Buffer > buffer );
+	int Capacity() const;
 
 private:
 };
@@ -89,6 +75,7 @@ private:
 Vytvareni a sprava zdroju graficke karty (textury a buffery).
 Objekt uchovava ukazatel na kazdy vytvoreny RenderInterface objekt.
 */
+/*
 class RenderDeviceResources {
 public:
 	RenderDeviceResources();
@@ -139,3 +126,4 @@ private:
 	std::vector< std::shared_ptr< RenderInterface::Buffer > > buffers;
 	unsigned long memoryUsage;
 };
+*/

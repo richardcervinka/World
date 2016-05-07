@@ -4,10 +4,6 @@
 
 // Buffer
 
-Buffer::Buffer( std::shared_ptr< RenderInterface::Buffer > buffer ) {
-	this->buffer = buffer;
-}
-
 Buffer::~Buffer() {}
 
 void Buffer::Release() {
@@ -18,46 +14,19 @@ RenderInterface::Buffer* Buffer::GetBuffer() {
 	return buffer.get();
 }
 
-// VertexBuffer
-
-VertexBuffer::VertexBuffer() {
-	capacity = 0;
-}
-
-VertexBuffer::VertexBuffer( std::shared_ptr< RenderInterface::Buffer > buffer, const int capacity ): Buffer( buffer ) {
-	this->capacity = capacity;
-}
-
-void VertexBuffer::Release() {
-	Buffer::Release();
-	capacity = 0;
-}
-
-int VertexBuffer::GetCapacity() const {
-	return capacity;
-}
-
 // IndexBuffer
 
-IndexBuffer::IndexBuffer() {
-	capacity = 0;
+void IndexBuffer::Create( std::shared_ptr< RenderInterface::Buffer > buffer ) {
+	this->buffer = buffer;
 }
 
-IndexBuffer::IndexBuffer( std::shared_ptr< RenderInterface::Buffer > buffer, const int capacity ): Buffer( buffer ) {
-	this->capacity = capacity;
-}
-
-void IndexBuffer::Release() {
-	Buffer::Release();
-	capacity = 0;
-}
-
-int IndexBuffer::GetCapacity() const {
-	return capacity;
+int IndexBuffer::Capacity() const {
+	return buffer->GetByteWidth() / sizeof( uint16_t );
 }
 
 // RenderDeviceResources
 
+/*
 RenderDeviceResources::RenderDeviceResources() {
 	memoryUsage = 0;
 }
@@ -134,3 +103,4 @@ void RenderDeviceResources::ReleaseUnusedResources() {
 	}
 	buffers = std::move( usedBuffers );
 }
+*/
