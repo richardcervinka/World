@@ -4,15 +4,15 @@
 const int WIN_HOTKEY_ALT_ENTER = 1;
 
 WindowsApplication::WindowsApplication() {
-	handle = 0;
+	instanceHandle = 0;
 }
 
 WindowsApplication::~WindowsApplication() {}
 
-bool WindowsApplication::Create( const HINSTANCE hInstance ) {
-	handle = hInstance;
+bool WindowsApplication::Create( const HINSTANCE hInstance, LPSTR lpCmdLine ) {
+	instanceHandle = hInstance;
 	
-	// register raw input
+	// registrovat raw input
 	RAWINPUTDEVICE rid;
 	rid.usUsagePage = 0x01; 
 	rid.usUsage = 0x02;
@@ -26,10 +26,11 @@ bool WindowsApplication::Create( const HINSTANCE hInstance ) {
 	return true;
 }
 
-bool WindowsApplication::ProcessPlatformMessages() {
+bool WindowsApplication::ProcessMessages() {
+	// precist vsechny zpravy z fronty
 	MSG msg;
 	while ( PeekMessage( &msg, NULL, 0, 0, PM_REMOVE ) ) {
-		// standardni ukonceni Win32 aplikace
+		// ukonceni Win32 aplikace
 		if ( msg.message == WM_QUIT ) {
 			return false;
 		}
@@ -37,13 +38,14 @@ bool WindowsApplication::ProcessPlatformMessages() {
 			// odeslat zpravu oknu
 			TranslateMessage( &msg );
 			DispatchMessage( &msg );
+			continue;
 		}
 	}
 	// Ve fronte nejsou zadne dalsi zpravy, vratit rizeni aplikaci.
 	return true;
 }
 
-bool WindowsApplication::ProcessMessage( const MSG &msg ) {
+bool WindowsApplication::ProcessMessage( const MSG& msg ) {
 	switch ( msg.message ) {
 	case WM_HOTKEY:
 		if ( msg.wParam == WIN_HOTKEY_ALT_ENTER ) {
@@ -72,23 +74,23 @@ void WindowsApplication::OnInput( WPARAM wParam, LPARAM lParam ) {
 	BYTE data[ size ];
 	UINT dataSize = size;
 	UINT loadSize = GetRawInputData( reinterpret_cast< HRAWINPUT >( lParam ), RID_INPUT, data, &dataSize, sizeof( RAWINPUTHEADER ) );
-	
+
 	if ( loadSize == static_cast< UINT >( -1 ) ) {
 		return;
 	}
-	RAWINPUT *ri = reinterpret_cast< RAWINPUT* >( data );
+	RAWINPUT* ri = reinterpret_cast< RAWINPUT* >( data );
 	
-	// mouse
+	// mouse input
 	if ( ri->header.dwType == RIM_TYPEMOUSE ) {
 		if ( ri->data.mouse.usFlags == MOUSE_MOVE_RELATIVE ) {
 			// x = ri->data.mouse.lLastX
 			// y = ri->data.mouse.lLastY
 		}
+		return;
 	}
 }
 
 void WindowsApplication::ExitApp() {
-	// standardni zpusob ukonceni Win32 aplikace
 	PostQuitMessage( 0 );
 }
 
@@ -96,6 +98,6 @@ void WindowsApplication::AbortApp() {
 	abort();
 }
 
-void WindowsApplication::AbortApp( const String &errorMessage ) {
+void WindowsApplication::AbortApp( const String& errorMessage ) {
 	abort();
 }

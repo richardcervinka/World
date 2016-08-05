@@ -5,7 +5,7 @@
 #include "..\Application.h"
 
 WindowsWindow::WindowsWindow():
-	hwnd( 0 ),
+	hwnd( NULL ),
 	width( 0 ),
 	height( 0 ),
 	clientWidth( 0 ),
@@ -15,19 +15,24 @@ WindowsWindow::WindowsWindow():
 {}
 
 WindowsWindow::~WindowsWindow() {
-	// Pokud objekt vlastni platny handle okna, jedna se o chybne odstraneni objektu.
-	// Pokud je objekt WindowsWindow propojen s oknem, je nutne toto spojeni zrusit
-	// Kdyby nebylo spojeni zruseno, odkazovaly by se zpravy okna na neexistujici objekt.
+	/*
+	Pokud objekt vlastni platny handle okna, je nutne zrusit spojeni s timto oknem a zavolat DestroyWindow().
+	Kdyby nebylo spojeni zruseno, odkazovaly by se zpravy okna na neexistujici objekt WindowsWindow.
+	*/
 	if ( hwnd ) {
 		SetWindowLongPtr( hwnd, 0, 0 );
 		DestroyWindow( hwnd );
 	}
 }
 
-bool WindowsWindow::Create( const CreateWindowsWindowParams &params ) {
+bool WindowsWindow::Create( const CreateWindowsWindowParams& params ) {
 	
-	const WCHAR *className = L"WindowsWindow";
+	const WCHAR* const className = L"WindowsWindow";
 	
+	// okno je uz vytvoreno
+	if ( hwnd != NULL ) {
+		return false;
+	}
 	// registrovat tridu okna
 	WNDCLASSEXW wc;
 	wc.cbSize			= sizeof( WNDCLASSEXW );
@@ -65,66 +70,57 @@ bool WindowsWindow::Create( const CreateWindowsWindowParams &params ) {
 	if ( hwnd == 0 ) {
 		return false;
 	}
-	// zobrazit okno, prijde tak zprava WM_SIZE
+	// zobrazit okno (prijde zprava WM_SIZE)
 	ShowWindow( hwnd, SW_SHOW );
 	UpdateWindow( hwnd );
-	
-	return true;
-}
 
-void WindowsWindow::Destroy() {
-	if ( hwnd ) {
-		DestroyWindow( hwnd );
-	}
+	return true;
 }
 
 LRESULT CALLBACK WindowsWindow::WndProcStatic( HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam ) {
 	
 	// WM_CREATE, ulozit ukazatel na objekt WindowsWindow predany v lparam
-	if ( message == WM_CREATE ) {
+	if ( WM_CREATE == message ) {
 		LPCREATESTRUCT cs = reinterpret_cast< LPCREATESTRUCT >( lparam );
-		WindowsWindow *window = reinterpret_cast< WindowsWindow* >( cs->lpCreateParams );
+		WindowsWindow* window = reinterpret_cast< WindowsWindow* >( cs->lpCreateParams );
 		SetWindowLongPtr( hwnd, 0, reinterpret_cast< LONG >( window ) );
 		return window->WndProc( hwnd, message, wparam, lparam );
 	}
 	
 	// predat zpracovani zpravy instanci tridy WindowsWindow
 	LONG_PTR ptr = GetWindowLongPtr( hwnd, 0 );
-	if ( ptr != 0 ) {
-		WindowsWindow *window = reinterpret_cast< WindowsWindow* >( ptr );
+	if ( ptr != NULL ) {
+		WindowsWindow* window = reinterpret_cast< WindowsWindow* >( ptr );
 		return window->WndProc( hwnd, message, wparam, lparam );
 	}
 	
-	// zprava nepatri registrovanemu oknu, predat zpracovani systemu
+	// zprava nepatri zadnemu registrovanemu oknu, predat zpracovani windows
 	return DefWindowProc( hwnd, message, wparam, lparam );
 }
 
 LRESULT WindowsWindow::WndProc( const HWND hwnd, const UINT message, WPARAM wparam, LPARAM lparam ) {
 	switch ( message ) {
-		case WM_CREATE:
-			OnCreate();
-			return 0;
+	case WM_CREATE:
+		OnCreate();
+		return 0;
 
-		case WM_PAINT:
-			OnPaint();
-			return 0;
+	case WM_PAINT:
+		OnPaint();
+		return 0;
 
-		case WM_SIZE:
-			OnSize(
-				static_cast< int >( LOWORD( lparam ) ),
-				static_cast< int >( HIWORD( lparam ) )
-			);
-			return 0;
+	case WM_SIZE:
+		OnSize(
+			static_cast< int >( LOWORD( lparam ) ),
+			static_cast< int >( HIWORD( lparam ) )
+		);
+		return 0;
 
-		case WM_KEYDOWN:
-			break;
+	case WM_ERASEBKGND:
+		return 0;
 
-		case WM_ERASEBKGND:
-			return 0;
-
-		case WM_DESTROY:
-			OnDestroy();
-			return 0;
+	case WM_DESTROY:
+		OnDestroy();
+		return 0;
 	}
 	return DefWindowProc( hwnd, message, wparam, lparam );
 }
@@ -141,32 +137,27 @@ void WindowsWindow::OnDestroy() {
 }
 
 void WindowsWindow::OnPaint() {
-	// ponecha veskere vykreslovani na rendereru
-	if ( IsRendererTarget() ) {
-		ValidateRect( hwnd, NULL );
-		return;
-	}
+	ValidateRect( hwnd, NULL );
+	return;
+
 	// renderer neni aktivni, vyplni klientskou oblast okna barvou pozadi
 	PAINTSTRUCT ps;
 	HDC hdc = BeginPaint( hwnd, &ps );
-	ColorUnorm color = backgroundColor.ToUnorm();
-	HBRUSH brush = CreateSolidBrush( RGB( color.r, color.g, color.b ) );
-	RECT rect;
-	GetClientRect( hwnd, &rect );
-	InvalidateRect( hwnd, NULL, false );
-	FillRect( hdc, &rect, brush );
-	DeleteObject( brush );
 	EndPaint( hwnd, &ps );
 }
 
-void WindowsWindow::OnSize( const int cx, const int cy ) {
-	clientWidth = cx;
-	clientHeight = cy;
+void WindowsWindow::OnSize( const int width, const int height ) {
+	clientWidth = width;
+	clientHeight = height;
+
+	// zjistit velikost celeho okna
 	RECT rect;
 	GetWindowRect( hwnd, &rect );
-	width = rect.right - rect.left;
-	height = rect.bottom - rect.top;
-	OnResized( clientWidth, clientHeight );
+	this->width = rect.right - rect.left;
+	this->height = rect.bottom - rect.top;
+
+	// default handler
+	Window::OnSize( width, height );
 }
 
 void WindowsWindow::Show() {
@@ -182,25 +173,18 @@ void WindowsWindow::Hide() {
 	}
 }
 
-void WindowsWindow::Resize( const int width, const int height ) {
-	if ( hwnd ) {
-		SetWindowPos( hwnd, 0, 0, 0, width, height, SWP_NOMOVE | SWP_NOZORDER );
-	}
-}
-
-void WindowsWindow::ResizeClient( const int width, const int height ) {
-	Resize(
-		width + this->width - this->clientWidth,
-		height + this->height - this->clientHeight
-	);
-}
-
 int WindowsWindow::GetWidth() const {
 	return width;
 }
 
 int WindowsWindow::GetHeight() const {
 	return height;
+}
+
+void WindowsWindow::Resize( const int width, const int height ) {
+	if ( hwnd ) {
+		SetWindowPos( hwnd, 0, 0, 0, width, height, SWP_NOMOVE | SWP_NOZORDER );
+	}
 }
 
 int WindowsWindow::GetClientWidth() const {
@@ -210,12 +194,31 @@ int WindowsWindow::GetClientWidth() const {
 int WindowsWindow::GetClientHeight() const {
 	return clientHeight;
 }
-	
-HWND WindowsWindow::GetHandle() const {
+
+void WindowsWindow::ResizeClient( const int width, const int height ) {
+	Resize(
+		width + this->width - this->clientWidth,
+		height + this->height - this->clientHeight
+	);
+}
+
+void WindowsWindow::SetPosition( const int x, const int y ) {
+	if ( hwnd ) {
+		SetWindowPos( hwnd, 0, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER );
+	}
+}
+
+HWND WindowsWindow::GetHandle() const noexcept {
 	return hwnd;
 }
 
-void WindowsWindow::SetBackgroundColor( const Color &color ) {
+void WindowsWindow::SetBackgroundColor( const Color& color ) {
+	ColorUnorm rgb8 = color.ToUnorm();
+	HBRUSH brush = CreateSolidBrush( RGB( rgb8.r, rgb8.g, rgb8.b ) );
+	HBRUSH prevBrush = ( HBRUSH )SetClassLongPtr( hwnd, GCLP_HBRBACKGROUND, LONG_PTR( brush ) );
+	if ( prevBrush != NULL ) {
+		DeleteObject( prevBrush );
+	}
 	backgroundColor = color;
 }
 
@@ -229,13 +232,7 @@ void WindowsWindow::Update() {
 	}
 }
 
-void WindowsWindow::SetPosition( const int x, const int y ) {
-	if ( hwnd ) {
-		SetWindowPos( hwnd, 0, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER );
-	}
-}
-
-void WindowsWindow::SetName( const String &str ) {
+void WindowsWindow::SetName( const String& str ) {
 	if ( hwnd ) {
 		name = str;
 		SetWindowTextW( hwnd, reinterpret_cast< LPCWSTR >( str.Raw() ) );
@@ -246,9 +243,7 @@ const String WindowsWindow::GetName() const {
 	return name;
 }
 
-// WindowsAppWindow
-
-bool WindowsAppWindow::CreateAppWindow( const HINSTANCE hInstance, const int clientWidth, const int clientHeight ) {	
+bool WindowsWindow::CreateAppWindow( const HINSTANCE hInstance, const int clientWidth, const int clientHeight ) {	
 	CreateWindowsWindowParams params;
 	params.classStyle 		= 0;
 	params.hIcon			= LoadIcon( hInstance, IDI_APPLICATION );
@@ -266,22 +261,18 @@ bool WindowsAppWindow::CreateAppWindow( const HINSTANCE hInstance, const int cli
 	params.hMenu			= NULL;
 	params.hInstance		= hInstance;
 	
-	// vypocet rozmeru okna z pozadovanych rozmeru klientske oblasti
+	// vypocet rozmeru okna z pozadovanych rozmeru klientske oblasti:
+
 	RECT dimmension;
 	dimmension.left = 0;
 	dimmension.top = 0;
 	dimmension.right = clientWidth;
 	dimmension.bottom = clientHeight;
+
 	BOOL adjusted = AdjustWindowRectEx( &dimmension, params.windowStyle, params.hMenu != NULL, params.windowExStyle );
 	if ( adjusted ) {
 		params.width = dimmension.right - dimmension.left;
 		params.height = dimmension.bottom - dimmension.top;
 	}
-	
-	return WindowsWindow::Create( params );
-}
-
-void WindowsAppWindow::OnDestroy() {
-	WindowsWindow::OnDestroy();
-	Application::Exit();
+	return Create( params );
 }

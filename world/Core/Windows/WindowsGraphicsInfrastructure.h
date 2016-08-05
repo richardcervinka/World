@@ -31,7 +31,7 @@ public:
 
 	//PDisplay CreateDisplay( const int outputId ) noexcept;
 
-	RenderInterface::PDevice CreateD3D11Device() noexcept;
+	RenderInterface::PDevice CreateDX11Device() noexcept;
 
 private:
 	IDXGIAdapter1* adapter;

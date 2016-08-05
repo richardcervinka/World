@@ -5,76 +5,65 @@
 #include "..\..\Core\Renderer.h"
 #include "..\..\Core\Windows\WindowsGraphicsInfrastructure.h"
 
+//----------------------------------------------------------------------------------------------------------------------------------
 // Testovaci aplikace
 class DevApp: public WindowsApplication {
 public:
 	DevApp();
-	virtual bool Create( const HINSTANCE hInstance ) override;
+	virtual bool Create( const HINSTANCE hInstance, LPSTR lpCmdLine ) override;
 	//virtual void Update() override;
 	
 private:
-	WindowsAppWindow *window;
+	WindowsWindow window;
 	Renderer* renderer;
 };
+//----------------------------------------------------------------------------------------------------------------------------------
 
 // Windows entry point
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow ) {
 	DevApp app;
-	app.Create( hInstance );
+	app.Create( hInstance, lpCmdLine );
 	app.Run();
 	return 0;
 }
 
+//----------------------------------------------------------------------------------------------------------------------------------
 // DevApp class implementation
 
 DevApp::DevApp() {
-	window = nullptr;
 	renderer = nullptr;
 }
 
-bool DevApp::Create( const HINSTANCE hInstance ) {
-	if ( !WindowsApplication::Create( hInstance ) ) {
+bool DevApp::Create( const HINSTANCE hInstance, LPSTR lpCmdLine ) {
+	if ( !WindowsApplication::Create( hInstance, lpCmdLine ) ) {
 		return false;
 	}
 	// window
-	window = new WindowsAppWindow();
-	window->CreateAppWindow( hInstance, 1024, 768 );
-	window->SetName( String( u"World" ) );
-	window->SetBackgroundColor( Color::BLACK );
-
-	WindowsGraphicsInfrastructure gi;
+	window.CreateAppWindow( hInstance, 1024, 768 );
+	window.SetName( String( u"World" ) );
+	window.SetBackgroundColor( Color::BLACK );
 
 	// adapter capabilities
-	WindowsAdapterCapabilities adapterCapabilities;
-	adapterCapabilities.api = WindowsRenderApi::DIRECTX_11_0;
-	adapterCapabilities.requiredVideoMemory = 512;
+	WindowsAdapterCapabilities wac;
+	wac.api = WindowsRenderApi::DIRECTX_11_0;
+	wac.requiredVideoMemory = 512;
 
 	// create adapter
-	auto adapter = gi.CreateAdapter( adapterCapabilities );
+	WindowsGraphicsInfrastructure gi;
+	auto adapter = gi.CreateAdapter( wac );
 	if ( adapter == nullptr ) {
 		return false;
 	}
 
 	// create Device
-	auto device = adapter->CreateDirectXDevice();
+	auto device = adapter->CreateDX11Device();
 	if ( device == nullptr ) {
 		return false;
 	}
 
 	// create Renderer
 
-
-	// Nasledujici nahradit necim jako:
-	// InitializeEngine( params... )
-
-	// render interface device
 	/*
-	RenderInterface::DX11CreateDeviceParams deviceParams;
-	deviceParams.adapter = 0;
-	deviceParams.majorFeatureLevels = 11;
-	deviceParams.minorFeatureLevels = 0;
-	RenderInterface::PDevice device = RenderInterface::DX11CreateDevice( deviceParams );
-
 	// renderer
 	RendererAttributes rendererAttribs;
 	renderer = new Renderer();

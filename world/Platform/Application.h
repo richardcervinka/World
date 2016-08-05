@@ -2,43 +2,54 @@
 
 #include "..\Framework\String.h"
 
-// Klient by nemel vytvaret vice nez jeden objekt Application
-//
+/*
+Klient by nemel vytvaret vice nez jeden objekt Application!
+Vsechny staticke metody nejdrive ziskaji ukazatel na globalni objekt Application
+a pote volaji verejne nestaticke metody tohoto objektu.
+*/
 class Application {
 public:
-	Application();
+	Application() = default;
 	virtual ~Application();
 	
-	// neni mozne vytvaret kopie aplikace
+	// no copy
 	Application( const Application& ) = delete;
-	Application &operator=( const Application& ) = delete;
+	Application& operator=( const Application& ) = delete;
 	
-	// Vstip do smycky zprav. Navrat je pouze pri radnem ukonceni aplikace
+	/*
+	Vstup do message loop.
+	Zaroven nastavi globalni ukazatel na objekt Application.
+	*/
 	void Run();
 	
-	// Metoda Update() je cyklicky volana funkci Run(), predefinovana verze by mela aktualizovat novy snimek
-	//virtual void Update();
+	// Funkce Update() je volana vzdy po navratu funkce ProcessMessages()
+	virtual void Update() noexcept;
 	
-	// Standardni zpusob ukonceni aplikace.
+	// Standardni ukonceni bezici aplikace.
 	static void Exit();
 	
-	// Ukonceni aplikace pri vyskytu kriticke chyby
+	// Ukonceni bezici aplikace pri vyskytu kriticke chyby
 	static void Abort();
 	
-	// Ukonceni aplikace pri vyskytu kriticke chyby
-	static void Abort( const String &errorMessage );
+	/*
+	Ukonceni bezici aplikace pri vyskytu kriticke chyby.
+	Pred ukoncenim vypise zpravu errorMessage.
+	*/
+	static void Abort( const String& errorMessage );
 	
 private:
-	// Implementace statickych metod, static members volaji primo tyto non-static members
+	/*
+	Implementace volani statickych metod pro konkretni platformu.
+	Staticke metody nejdrive ziskaji ukazatel na globalni objekt
+	aplikace a pote volaji nasledujici metody.
+	*/
 	virtual void ExitApp() = 0;
 	virtual void AbortApp() = 0;
-	virtual void AbortApp( const String &errorMessage ) = 0;
+	virtual void AbortApp( const String& errorMessage ) = 0;
 	
-	// Funkce je volana funkci Run() dokud vraci hodnotu true, pokud vrati false, aplikace je standardnim zpusobem ukoncena.
-	// Ukolem funkce je zpracovavat systemove zpravy.
-	// Ve Windows muze napr. zachytit zpravu WM_KEYDOWN, musi ji vsak poslat take oknu pomoci DispatchMessage().
-	virtual bool ProcessPlatformMessages() = 0;
-	
-private:
-	static Application *app;
+	/*
+	Funkce je volana funkci Run() dokud vraci hodnotu true.
+	Hodnota false ukonci standardnim zpusobem aplikaci.
+	*/
+	virtual bool ProcessMessages() = 0;
 };

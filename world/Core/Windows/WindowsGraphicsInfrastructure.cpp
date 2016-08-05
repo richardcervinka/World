@@ -1,7 +1,7 @@
 #include <d3d11.h>
 #include <dxgi1_2.h>
-#include "WindowsGraphicsInfrastructure.h"
 #include "..\DX11\DX11RenderInterface.h"
+#include "WindowsGraphicsInfrastructure.h"
 
 // WindowsAdapter
 
@@ -40,7 +40,6 @@ bool WindowsAdapter::CheckCapabilities( const WindowsAdapterCapabilities& capabi
 
 		D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
 		D3D_FEATURE_LEVEL createdFeatureLevel;
-		UINT flags = 0;
 		
 		// create temporary device
 		ID3D11Device* device = nullptr;
@@ -48,7 +47,7 @@ bool WindowsAdapter::CheckCapabilities( const WindowsAdapterCapabilities& capabi
 			adapter,
 			D3D_DRIVER_TYPE_HARDWARE,
 			NULL,
-			flags,
+			0,
 			&featureLevel,
 			1,
 			D3D11_SDK_VERSION,
@@ -63,11 +62,10 @@ bool WindowsAdapter::CheckCapabilities( const WindowsAdapterCapabilities& capabi
 		device->Release();
 		return true;
 	}
-	
 	return false;
 }
 
-RenderInterface::PDevice WindowsAdapter::CreateD3D11Device() noexcept {
+RenderInterface::PDevice WindowsAdapter::CreateDX11Device() noexcept {
 	std::shared_ptr< DX11Device > device( new( std::nothrow ) DX11Device() );
 	if ( device == nullptr ) {
 		return nullptr;
@@ -107,10 +105,12 @@ std::unique_ptr< WindowsAdapter > WindowsGraphicsInfrastructure::CreateAdapter( 
 }
 
 std::unique_ptr< WindowsAdapter > WindowsGraphicsInfrastructure::CreateAdapter( const WindowsAdapterCapabilities& capabilities ) noexcept {
+	if ( factory == nullptr ) {
+		return nullptr;
+	}
 	int id = 0;
 	auto adapter = CreateAdapter( id );
 	while ( adapter != nullptr ) {
-		// check capabilities
 		if ( adapter->CheckCapabilities( capabilities ) ) {
 			return adapter;
 		}
