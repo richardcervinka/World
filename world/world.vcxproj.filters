@@ -40,6 +40,9 @@
     <Filter Include="Source Files\Engine">
       <UniqueIdentifier>{172d32e5-f80a-49ae-b016-30c7c69513b9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Core\Windows">
+      <UniqueIdentifier>{38c867e0-79ee-4cfc-8b4c-c336bfdf19c7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="platform\Application.cpp">
@@ -89,6 +92,9 @@
     </ClCompile>
     <ClCompile Include="Core\Renderer.cpp">
       <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Windows\WindowsGraphicsInfrastructure.cpp">
+      <Filter>Source Files\Core\Windows</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -166,6 +172,9 @@
     </ClInclude>
     <ClInclude Include="Core\Renderer.h">
       <Filter>Source Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Windows\WindowsGraphicsInfrastructure.h">
+      <Filter>Source Files\Core\Windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

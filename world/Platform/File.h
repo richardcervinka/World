@@ -144,8 +144,6 @@ namespace FileSystem {
 
 #ifdef PLATFORM_WINDOWS
 #include "windows/WindowsFile.h"
-#define File FileWindows
-#define FileSystemPlatform FileSystemWindows
 #endif
 
 // Helpers

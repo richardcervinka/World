@@ -10,9 +10,9 @@ class Window;
 namespace RenderInterface {
 	
 	// forward declarations
+	class Adapter;
 	class Device;
-	class BackBuffer;
-	class Display;
+	//class Display;
 	class CommandInterface;
 	class CommandList;
 	class Buffer;
@@ -29,36 +29,26 @@ namespace RenderInterface {
 	class VertexLayout;
 	class VertexStream;
 
-	// Deleter for device object unique_ptr
-	template< typename T >
-	class Deleter {
-	public:
-		void operator()( T* const ptr ) const {
-			ptr->Release();
-		}
-	};
+	// device object smart pointers
+	using PDevice				= std::shared_ptr< Device >;
+	//using PDisplay				= std::shared_ptr< Display >;
+	using PCommandInterface		= std::shared_ptr< CommandInterface >;
+	using PCommandList			= std::shared_ptr< CommandList >;
+	using PBuffer				= std::shared_ptr< Buffer >;
+	using PTextureView			= std::shared_ptr< TextureView >;
+	using PRenderTargetView		= std::shared_ptr< RenderTargetView >;
+	using PDepthStencilView		= std::shared_ptr< DepthStencilView >;
+	using PConstantBufferView	= std::shared_ptr< ConstantBufferView >;
+	using PShader				= std::shared_ptr< Shader >;
+	using PRenderProgram		= std::shared_ptr< RenderProgram >;
+	using PSampler				= std::shared_ptr< Sampler >;
+	using PBlendState			= std::shared_ptr< BlendState >;
+	using PRasterizerState		= std::shared_ptr< RasterizerState >;
+	using PDepthStencilState	= std::shared_ptr< DepthStencilState >;
+	using PVertexLayout			= std::shared_ptr< VertexLayout >;
+	using PVertexStream			= std::shared_ptr< VertexStream >;
 
-	// device objects template alliases
-	using PDevice				= std::unique_ptr< Device, Deleter< Device > >;
-	using PBackBuffer			= std::unique_ptr< BackBuffer, Deleter< BackBuffer > >;
-	using PDisplay				= std::unique_ptr< Display, Deleter< Display > >;
-	using PCommandInterface		= std::unique_ptr< CommandInterface, Deleter< CommandInterface > >;
-	using PCommandList			= std::unique_ptr< CommandList, Deleter< CommandList > >;
-	using PBuffer				= std::unique_ptr< Buffer, Deleter< Buffer > >;
-	using PTextureView			= std::unique_ptr< TextureView, Deleter< TextureView > >;
-	using PRenderTargetView		= std::unique_ptr< RenderTargetView, Deleter< RenderTargetView > >;
-	using PDepthStencilView		= std::unique_ptr< DepthStencilView, Deleter< DepthStencilView > >;
-	using PConstantBufferView	= std::unique_ptr< ConstantBufferView, Deleter< ConstantBufferView > >;
-	using PShader				= std::unique_ptr< Shader, Deleter< Shader > >;
-	using PRenderProgram		= std::unique_ptr< RenderProgram, Deleter< RenderProgram > >;
-	using PSampler				= std::unique_ptr< Sampler, Deleter< Sampler > >;
-	using PBlendState			= std::unique_ptr< BlendState, Deleter< BlendState > >;
-	using PRasterizerState		= std::unique_ptr< RasterizerState, Deleter< RasterizerState > >;
-	using PDepthStencilState	= std::unique_ptr< DepthStencilState, Deleter< DepthStencilState > >;
-	using PVertexLayout			= std::unique_ptr< VertexLayout, Deleter< VertexLayout > >;
-	using PVertexStream			= std::unique_ptr< VertexStream, Deleter< VertexStream > >;
-
-	// Maximalni kvalita multisample algoritmu
+	// Maximalni kvalita multisamplingu
 	const int MAX_MULTISAMPLE_QUALITY = -1;
 
 	// max texture lod
@@ -81,25 +71,6 @@ namespace RenderInterface {
 
 	// Maximalni pocet viewportu
 	const int MAX_VIEWPORTS = 8;
-	
-	struct ScissorRect {
-		int x;
-		int y;
-		int width;
-		int height;
-	};
-
-	/*
-	Informace potrebne k vytvoreni objektu DX11Device
-	*/
-	struct DX11CreateDeviceParams {
-		int adapter;				// id adapteru, 0 je vychozi adapter
-		int majorFeatureLevels;
-		int minorFeatureLevels;
-	};
-	
-	// Vytvori Device objekt (DirectX implementace)
-	PDevice DX11CreateDevice( const DX11CreateDeviceParams& params );
 
 	enum class Format {
 		UNKNOWN = 0,
@@ -371,7 +342,7 @@ namespace RenderInterface {
 	};
 
 	/*
-	Nastaveni kompilatoru shaderu
+	Nastaveni optimalizace kompilatoru shaderu
 	*/
 	enum class ShaderOptimization {
 		DISABLED,	// optimalizace vypnuta (nejrychlejsi kompilace)
@@ -534,278 +505,319 @@ namespace RenderInterface {
 		float height;
 	};
 
+	struct ScissorRect { //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		int x;
+		int y;
+		int width;
+		int height;
+	};
+
+	enum class SwapChainPresentMode {
+		IMMEDIATE,	// no vsync with teering
+		VSYNC		// best vertical synchronization node
+	};
+
 	/*
-	Fullscreen rezim displeje
+	Rezim displeje
 	*/
+	/*
 	struct DisplayMode {
 		int width;
 		int height;
 		int refreshRateNumerator;
 		int refreshRateDenominator;
 	};
+	*/
 
 	// Vypocet rozmeru mipmapy
-	void GetMipDimmensions( const int width, const int height, const int depth, const int mipLevel, TextureDimmensions& result );
+	void GetMipDimmensions( const int width, const int height, const int depth, const int mipLevel, TextureDimmensions& result ) noexcept;
 
 	/*
 	DeviceObject: Zakladni trida pro vsechny objekty vytvarene tridou Device.
-	Uvolnovani a vytvareni device objektu je nutne synchronizovat v jednom vlakne:
-
-	thread 0:  create -> draw commands ---> synchronize ------> release
-	thread 1:         -> draw commands --------> synchronize ->
+	Uvolnovani a vytvareni device objektu je nutne synchronizovat v jednom vlakne.
 	*/
 	class DeviceObject {
 	public:
-		DeviceObject();
-		virtual ~DeviceObject() = 0;
+		DeviceObject() = default;
+		virtual ~DeviceObject() = 0 {};
 		
 		// Neni mozne vytvaret kopie device objektu
 		DeviceObject( const DeviceObject& ) = delete;
 		DeviceObject& operator=( const DeviceObject& ) = delete;
-		
-		// Uvolni objekt z pameti, objekt nesmi byt dale pouzivan!
-		void Release();
+
+		// move implementation ?
 	};
 	
 	/*
 	Device reprezentuje graficky adapter, vytvari veskere device objekty.
-	Zadny device objekt neuklada ukazatel na jiny device objekt (ktery muze pouzit pri svem vytvareni)
+	Zadny device objekt neuklada ukazatel na jiny device objekt (ktere ale muze pouzivat pri svem vytvareni)
 	*/
-	class Device: public DeviceObject {
+	class Device : public DeviceObject {
 	public:
 		// buffers
-		virtual PBackBuffer CreateBackBuffer( const Window& window ) = 0;
-		virtual PBuffer CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) = 0;
-		virtual PBuffer CreateVertexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) = 0;
-		virtual PBuffer CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) = 0;
-		virtual PBuffer CreateConstantBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData ) = 0;
+		//virtual PBackBuffer CreateBackBuffer( const Window& window ) noexcept = 0;
+		virtual PBuffer CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) noexcept = 0;
+		virtual PBuffer CreateVertexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) noexcept = 0;
+		virtual PBuffer CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) noexcept = 0;
+		virtual PBuffer CreateConstantBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData ) noexcept = 0;
 
 		// views
-		virtual PRenderTargetView CreateRenderTargetView( BackBuffer* const backBuffer ) = 0;
-		virtual PRenderTargetView CreateRenderTargetView( Buffer* const textureBuffer ) = 0;
-		virtual PTextureView CreateTextureView( Buffer* const textureBuffer, Sampler* const sampler ) = 0;
-		virtual PDepthStencilView CreateDepthStencilView( Buffer* const textureBuffer, const bool readonly ) = 0;
-		virtual PConstantBufferView CreateConstantBufferView( Buffer* const constantBuffer, const ConstantBufferViewParams& params ) = 0;
-		virtual PVertexStream CreateVertexStream( const VertexStreamParams& params ) = 0;
+		virtual PRenderTargetView CreateRenderTargetView( const PBuffer& textureBuffer ) noexcept = 0;
+		virtual PTextureView CreateTextureView( const PBuffer& textureBuffer, const PSampler& sampler ) noexcept = 0;
+		virtual PDepthStencilView CreateDepthStencilView( const PBuffer& textureBuffer, const bool readonly ) noexcept = 0;
+		virtual PConstantBufferView CreateConstantBufferView( const PBuffer& constantBuffer, const ConstantBufferViewParams& params ) noexcept = 0;
+		virtual PVertexStream CreateVertexStream( const VertexStreamParams& params ) noexcept = 0;
 
 		// objects
-		virtual PCommandInterface CreateCommandInterface() = 0;
-		virtual PShader CreateShader( const ShaderParams& params ) = 0;
-		virtual PRenderProgram CreateRenderProgram( Shader* const vs, Shader* const ps, Shader* const gs ) = 0;
-		virtual PSampler CreateSampler( const SamplerParams& params ) = 0;
-		virtual PVertexLayout CreateVertexLayout( const VertexAttribute* const attributes, const int attributesCount, RenderProgram* const program ) = 0;
-		virtual PBlendState CreateBlendState( const BlendStateParams& params ) = 0;
-		virtual PRasterizerState CreateRasterizerState( const RasterizerStateParams& params ) = 0;
-		virtual PDepthStencilState CreateDepthStencilState( const DepthStencilStateParams& params ) = 0;
-		virtual PDisplay CreateDisplay( const int outputId ) = 0;
+		virtual PCommandInterface CreateCommandInterface() noexcept = 0;
+		virtual PShader CreateShader( const ShaderParams& params ) noexcept = 0;
+		virtual PRenderProgram CreateRenderProgram( const PShader& vs, const PShader& ps, const PShader& gs ) noexcept = 0;
+		virtual PSampler CreateSampler( const SamplerParams& params ) noexcept = 0;
+		virtual PVertexLayout CreateVertexLayout( const VertexAttribute* const attributes, const int attributesCount, const PRenderProgram& program ) noexcept = 0;
+		virtual PBlendState CreateBlendState( const BlendStateParams& params ) noexcept = 0;
+		virtual PRasterizerState CreateRasterizerState( const RasterizerStateParams& params ) noexcept = 0;
+		virtual PDepthStencilState CreateDepthStencilState( const DepthStencilStateParams& params ) noexcept = 0;
 
 		/*
 		Vrati max quality pro pozadovany pocet samplu.
 		Pokud neni hodnota samplesCount podporovana, vraci 0.
 		*/
-		virtual int GetMaxMultisampleQuality( const int samplesCount ) const = 0;
-
-		// vraci pocet vystupu (monitoru) pripojenych ke graficke karte
-		virtual int GetOutputsCount() const = 0;
+		virtual int GetMaxMultisampleQuality( const int samplesCount ) const noexcept = 0;
 	};
 	
 	/*
 	CommandInterface slouzi ke generovani commandu graficke karty
 	*/
-	class CommandInterface: public DeviceObject {
+	class CommandInterface : public DeviceObject {
 	public:
-		// zahajeni posilani commanu primo do graficke karty
-		virtual void Begin( Device* const device ) = 0;
+		// zahajeni generovani commanu do graficke karty
+		virtual void Begin( const PDevice& device ) noexcept = 0;
 	
-		// zahajeni posilani commandu do CommandListu
-		virtual void Begin( CommandList* const commandList ) = 0;
+		// zahajeni command listu
+		virtual void Begin( const PCommandList& commandList ) noexcept = 0;
 	
-		// ukonceni sekvence commandu
-		virtual void End() = 0;
+		// ukonceni commandu
+		virtual void End() noexcept = 0;
 
 		// Odesle obsah command bufferu do GPU
-		virtual void Flush() = 0;
+		virtual void Flush() noexcept = 0;
 		
-		// Nastavi multiple render targets a depth stencil buffer (pokud je nullptr, pouzije se vychozi depth stencil state)
-		virtual void SetRenderTargets( RenderTargetView* const renderTargets[], const int count, DepthStencilView* const depthStencil ) = 0;
+		// Nastavi multiple render targets a depth stencil buffer
+		virtual void SetRenderTargets( const PRenderTargetView* const renderTargets, const int count, const PDepthStencilView& depthStencilView ) noexcept = 0;
 		
 		// Vyplni render target barvou
-		virtual void ClearRenderTarget( RenderTargetView* const renderTarget, const Color& color ) = 0;
+		virtual void ClearRenderTarget( const PRenderTargetView& renderTargetView, const Color& color ) noexcept = 0;
 
 		// nastavi depth i stencil buffer na pozadovanou hodnotu
-		virtual void ClearDepthStencil( DepthStencilView* const descriptor, const float depth, const uint8_t stencil ) = 0;
+		virtual void ClearDepthStencil( const PDepthStencilView& depthStencilView, const float depth, const uint8_t stencil ) noexcept = 0;
 
 		// nastavi depth buffer na hodnotu depth
-		virtual void ClearDepth( DepthStencilView* const descriptor, const float depth ) = 0;
+		virtual void ClearDepth( const PDepthStencilView& depthStencilView, const float depth ) noexcept = 0;
 
 		// nastavi stencil buffer na hodnotu stencil
-		virtual void ClearStencil( DepthStencilView* const descriptor, const uint8_t stencil ) = 0;
+		virtual void ClearStencil( const PDepthStencilView& depthStencilView, const uint8_t stencil ) noexcept = 0;
 
 		// Generuje command, ktery nastavi objekt Device do vychoziho stavu
-		virtual void ClearState() = 0;
+		virtual void ClearState() noexcept = 0;
 
 		/*
 		Vrati ukazatel bufferu, parametr subresource se pouziva jen u textur.
 		Blizsi info o parametru result v popisu struktury MappedBuffer.
 		Vracene hodnoty parametru result jsou urcene jen pro cteni a nesmi byt upravovany (dokud neni zavolana funkce Unmap())
 		*/
-		virtual bool Map( Buffer* const buffer, const int subresource, const MapPolicy policy, MappedBuffer& result ) = 0;
+		virtual bool Map( const PBuffer& buffer, const int subresource, const MapPolicy policy, MappedBuffer& result ) noexcept = 0;
 
 		/*
 		Uvolni namapovany buffer graficke karte.
 		Ukazatel na namapovana data nesmi byt dale pouzivan (ukazatel data parametru mappedBuffer je nastaven na nullptr).
 		*/
-		virtual void Unmap( Buffer* const buffer, MappedBuffer& mappedBuffer ) = 0;
+		virtual void Unmap( const PBuffer& buffer, MappedBuffer& mappedBuffer ) noexcept = 0;
 
 		/*
 		Updatuje cely obsah subresource.
 		Pokud ma atribut usage hodnotu DYNAMIC, pouzije se sekvence Map ->memcpy -> Unmap
 		*/
-		virtual bool UpdateSubresource( Buffer* const buffer, const int subresource, const void* const data ) = 0;
+		virtual bool UpdateSubresource( const PBuffer& buffer, const int subresource, const void* const data ) noexcept = 0;
 
 		/*
 		Updatuje 'bytes' pocet bajtu subresource 0 bufferu.
 		Pokud je parametr discard true, je predchozi stav bufferu oznacen jako nedefinovany.
 		*/
-		virtual bool UpdateBuffer( Buffer* const buffer, const void* const data, const int bytes, const int offset, const bool discatd ) = 0;
+		virtual bool UpdateBuffer( const PBuffer& buffer, const void* const data, const int bytes, const int offset, const bool discatd ) noexcept = 0;
 
 		/*
 		Konstant buffer by nemel byt mapovan primo, ale radeji pomoci funkce UpdateConstantBuffer.
 		Objekt ConstantBufferView obsahuje vsechny potrebne informace o umisteni konstant (byte offset).
 		*/
-		virtual bool UpdateConstantBuffer( ConstantBufferView* const view, const void* const data ) = 0;
+		virtual bool UpdateConstantBuffer( const PConstantBufferView& view, const void* const data ) noexcept = 0;
 
 		//Kopirovani obsahu bufferu pomoci GPU. Cilovy buffer musi mit shodnou velikost a kompatibilni format
-		virtual void CopyBuffer( Buffer* const src, Buffer* const dest ) = 0;
+		virtual void CopyBuffer( const PBuffer& src, const PBuffer& dest ) noexcept = 0;
 
 		// Binduje konstant buffery do odpovidajicich slotu. Pokud je parametr descriptors nullptr, jsou vsechny buffery odpojeny.
-		virtual void SetConstantBuffers( ConstantBufferView* const views[], const int count ) = 0;
+		virtual void SetConstantBuffers( const PConstantBufferView* const views, const int count ) noexcept = 0;
 
 		// Nastavi vertex buffer, index buffer a input layout (podobne jako OpenGL VAO)
-		virtual void SetVertexStream( VertexStream* const stream ) = 0;
+		virtual void SetVertexStream( const PVertexStream& stream ) noexcept = 0;
 
 		// nastavi render program (vertex shader, pixel shader a geometry shader)
-		virtual void SetRenderProgram( RenderProgram* const program ) = 0;
+		virtual void SetRenderProgram( const PRenderProgram& program ) noexcept = 0;
 
-		virtual void SetPrimitiveTopology( const PrimitiveTopology topology ) = 0;
-
-		// Pokud je parametr state nullptr, pouzije se vychozi state.
-		virtual void SetBlendState( BlendState* const state ) = 0;
+		virtual void SetPrimitiveTopology( const PrimitiveTopology topology ) noexcept = 0;
 
 		// Pokud je parametr state nullptr, pouzije se vychozi state.
-		virtual void SetDepthStencilState( DepthStencilState* const state, const uint32_t stencilRef ) = 0;
+		virtual void SetBlendState( const PBlendState& state ) noexcept = 0;
 
 		// Pokud je parametr state nullptr, pouzije se vychozi state.
-		virtual void SetRasterizerState( RasterizerState* const state ) = 0;
+		virtual void SetDepthStencilState( const PDepthStencilState& state, const uint32_t stencilRef ) noexcept = 0;
+
+		// Pokud je parametr state nullptr, pouzije se vychozi state.
+		virtual void SetRasterizerState( const PRasterizerState& state ) noexcept = 0;
 
 		// Nastavi viewporty.
-		virtual void SetViewports( const Viewport* const viewports[], const int count ) = 0;
+		virtual void SetViewports( const Viewport* const viewports[], const int count ) noexcept = 0;
 
 		/*
 		Nastavi scissor rectangles, kazdy pro jeden viewport, nullptr odstrani vsechny scissor rects.
 		Scissor test se aktivuje pomoci RasterizeState objektu.
 		*/
-		virtual void SetScissorRects( const ScissorRect* rects, const int count ) = 0;
+		virtual void SetScissorRects( const ScissorRect* rects, const int count ) noexcept = 0;
 
 		// Nabinduje textury pro vybrany shader stage. V shaderu je nutne specifikovat slot (bind point).
-		virtual void SetVSTextures( const int startSlot, const int count, TextureView* const views[] ) = 0;
-		virtual void SetPSTextures( const int startSlot, const int count, TextureView* const views[] ) = 0;
-		virtual void SetGSTextures( const int startSlot, const int count, TextureView* const views[] ) = 0;
+		virtual void SetVSTextures( const int startSlot, const int count, const PTextureView* const views ) noexcept = 0;
+		virtual void SetPSTextures( const int startSlot, const int count, const PTextureView* const views ) noexcept = 0;
+		virtual void SetGSTextures( const int startSlot, const int count, const PTextureView* const views ) noexcept = 0;
 
 		// Nabinduje samplery pro vybrany shader stage. Parametr nullptr odpoji vsechny samplery.
-		virtual void SetVSSamplers( Sampler* const samplers[ MAX_SAMPLERS ] ) = 0;
-		virtual void SetPSSamplers( Sampler* const samplers[ MAX_SAMPLERS ] ) = 0;
-		virtual void SetGSSamplers( Sampler* const samplers[ MAX_SAMPLERS ] ) = 0;
+		virtual void SetVSSamplers( Sampler* const samplers[ MAX_SAMPLERS ] ) noexcept = 0; //------------------------------------------------------------------------------------------------------------
+		virtual void SetPSSamplers( Sampler* const samplers[ MAX_SAMPLERS ] ) noexcept = 0;
+		virtual void SetGSSamplers( Sampler* const samplers[ MAX_SAMPLERS ] ) noexcept = 0;
 
 		// Draw commands
-		virtual void Draw( const int verticesCount, const int startVertex ) = 0;
-		virtual void DrawIndexed( const int indicesCount, const int startIndex ) = 0;
-		virtual void DrawInstanced( const int verticesCount, const int startVertex, const int instancesCount, const int startInstance ) = 0;
-		virtual void DrawIndexedInstanced( const int indicesCount, const int startIndex, const int instancesCount, const int startInstance ) = 0;
+		virtual void Draw( const int verticesCount, const int startVertex ) noexcept = 0;
+		virtual void DrawIndexed( const int indicesCount, const int startIndex ) noexcept = 0;
+		virtual void DrawInstanced( const int verticesCount, const int startVertex, const int instancesCount, const int startInstance ) noexcept = 0;
+		virtual void DrawIndexedInstanced( const int indicesCount, const int startIndex, const int instancesCount, const int startInstance ) noexcept = 0;
 	};
 	
 	/*
 	Slouzi k ukladani GPU commandu. Po prehrani commandu je obsah command listu vyprazdnen.
 	*/
-	class CommandList: public DeviceObject {};
+	class CommandList : public DeviceObject {};
 	
 	/*
 	Displej pripojeny k vystupu graficke karty.
 	Pro nastaveni rezimu obrazovky je nutny objekt Window s pripojenym rendererem
 	*/
-	class Display: public DeviceObject {
+
+	/*
+	class Display : public DeviceObject {
 	public:
 		// Nastavi rezim co nejvice odpovidajici pozadavku (na desktopu prepne do rezimu cele obrazovky)
-		virtual void SetFullscreenMode( const DisplayMode& mode, Window& window ) = 0;
+		virtual void SetFullscreenMode( const DisplayMode& mode, Window& window ) noexcept = 0;
 
 		// Nastavi vychozi rezim pro danou platformu (napr. na windows prepne z celoobrazovkoveho rezimu)
-		virtual void SetWindowedMode() = 0;
-	
+		virtual void SetWindowedMode() noexcept = 0;
+
 		// Ziskani rezimu, pokud rezim s pozadovanym id neexistuje, vrati false
-		virtual void GetMode( const int id, DisplayMode& result ) const = 0;
+		virtual void GetMode( const int id, DisplayMode& result ) const noexcept = 0;
 
 		// Najde rezim, ktery co nejlepe (ovsem ne nutne nejvice) odpovida pozadovanemu rezimu
-		virtual void FindMode( const DisplayMode& request, DisplayMode& result ) const = 0;
+		virtual void FindMode( const DisplayMode& request, DisplayMode& result ) const noexcept = 0;
 
 		// Najde nejlepsi dostupny rezim pro cilove zarizeni
-		virtual void GetBestMode( DisplayMode& result ) const = 0;
+		virtual void GetBestMode( DisplayMode& result ) const noexcept = 0;
 	};
+	*/
+
+
 
 	/*
 	Umoznuje zobrazit obsahu back bufferu do klientske oblasti okna. Objekt je asociovan s oknem pri vytvoreni.
 	*/
+	/*
 	class BackBuffer: public DeviceObject {
 	public:
-		virtual void Present( const int vsync ) = 0;
-		virtual void Resize() = 0;
-		virtual int GetWidth() const = 0;
-		virtual int GetHeight() const = 0;
+		virtual void Present( const int vsync ) noexcept = 0;
+		virtual void Resize() noexcept = 0;
+		virtual int GetWidth() const noexcept = 0;
+		virtual int GetHeight() const noexcept = 0;
+	};
+	*/
+
+	class SwapChain : public DeviceObject {
+	public:
+		/*
+		RenderTargetView back bufferu, do ktereho je mozne vykreslovat (nabindovat do pipeline).
+		Platnost ukazatele konci volanim funkce present, pote nesmi byt ukazatel pouzivan.
+		Pokud neni dostupny zadny RenderTargetView, vraci nullptr;
+		*/
+		virtual RenderTargetView* AcquireRenderTargetView() noexcept = 0;
+
+		/*
+		Zobrazi obsah backbufferu (aktualni RenderTargetView).
+		*/
+		virtual void Present() noexcept = 0;
+
+		/*
+		Prepne do fullscreen rezimu (zmeni styl okna).
+		Pokud je parametr diplay nullptr, prepne do windowed rezimu.
+		*/
+		virtual void SetFullscreen( Display* const display ) noexcept = 0;
+
+		virtual void SetPresentMode( const SwapChainPresentMode mode ) noexcept = 0;
+
+		/*
+		Rozmery back bufferu
+		*/
+		virtual int GetWidth() const noexcept = 0;
+		virtual int GetHeight() const noexcept = 0;
 	};
 
 	/*
 	Buffer je blok pameti rezervovany v pameti graficke karty.
 	Veskera data jsou do graficke karty posilana pomoci bufferu.
 	*/
-	class Buffer: public DeviceObject {
+	class Buffer : public DeviceObject {
 	public:
-		virtual void GetInfo( BufferInfo& result ) const = 0;
-		virtual BufferType GetType() const = 0;
-		virtual int GetByteWidth() const = 0;
-		virtual BufferUsage GetUsage() const = 0;
-		virtual BufferAccess GetAccess() const = 0;
-		virtual int GetSubresourcesCount() const = 0;
+		virtual void GetInfo( BufferInfo& result ) const noexcept = 0;
+		virtual BufferType GetType() const noexcept = 0;
+		virtual int GetByteWidth() const noexcept = 0;
+		virtual BufferUsage GetUsage() const noexcept = 0;
+		virtual BufferAccess GetAccess() const noexcept = 0;
+		virtual int GetSubresourcesCount() const noexcept = 0;
 	};
 
 	/*
 	Umoznuje nabindovat texturu jako render target.
 	Pouze nasledujici textury muzou byt pouzity jako render target: TEXTURE_1D, TEXTURE_2D, TEXTURE_2D_MS
 	*/
-	class RenderTargetView: public DeviceObject {};
+	class RenderTargetView : public DeviceObject {};
 
 	/*
 	K vytvoreni potrebuje Sampler objekt. To zavazuje klienta, ze bude textura samplovana timto samplerem.
 	Hlavne v HLSL implementaci je nutne dbat na dodrzeni tohoto pravidla (neexistuje kontrolni mechanismus).
 	Sampler muze byt nullptr, pak se pouzije vychozi point sampler.
 	*/
-	class TextureView: public DeviceObject {};
+	class TextureView : public DeviceObject {};
 	
 	/*
 	Umoznuje nabindovat DepthStencilBuffer do pipeline.
 	Podporovane formaty asociovaneho texture bufferu: TEXTURE_2D a TEXTURE_2D_MS
 	*/
-	class DepthStencilView: public DeviceObject {};
+	class DepthStencilView : public DeviceObject {};
 	
 	/*
 	Sampler
 	*/
-	class Sampler: public DeviceObject {};
+	class Sampler : public DeviceObject {};
 
 	/*
 	Format, umisteni a usporadani konstant v constant bufferu. Pomoci tohoto objektu jsou data mapovana do bufferu.
 	Descriptor je vytvoren pro konkretni render program, objekt je ovsem mozne pouzit pro vice render programu,
 	pokud je dodrzen stejny layout constant bufferu.
 	*/
-	class ConstantBufferView: public DeviceObject {};
+	class ConstantBufferView : public DeviceObject {};
 	
 	/*
 	Shader (VS, PS nebo GS)
@@ -813,32 +825,32 @@ namespace RenderInterface {
 	Po vytvoreni objektu RenderProgram muzou byt objekty Shader uvolneny.
 	Jeden Shader muze byt pouzit k vytvoreni vice RenderProgram objektu.
 	*/
-	class Shader: public DeviceObject {
+	class Shader : public DeviceObject {
 	public:
-		virtual ShaderType GetType() const = 0;
-		virtual ShaderVersion GetVersion() const = 0;
+		virtual ShaderType GetType() const noexcept = 0;
+		virtual ShaderVersion GetVersion() const noexcept = 0;
 	};
 
 	/*
 	Seskupuje vertex shader, pixel shader a geometry shader do jednoho objektu.
 	Neudrzuje ukazatel na objekty Shader, po vytvoreni objektu RenderProgram muzou byt objekty Shader uvolneny.
 	*/
-	class RenderProgram: public DeviceObject {};
+	class RenderProgram : public DeviceObject {};
 
 	/*
 	Render target blending
 	*/
-	class BlendState: public DeviceObject {};
+	class BlendState : public DeviceObject {};
 
 	/*
 	RasterizerState
 	*/
-	class RasterizerState: public DeviceObject {};
+	class RasterizerState : public DeviceObject {};
 
 	/*
 	DepthStencilState
 	*/
-	class DepthStencilState: public DeviceObject {};
+	class DepthStencilState : public DeviceObject {};
 
 	/*
 	VertexLayout:
@@ -854,7 +866,7 @@ namespace RenderInterface {
 		{ "matrix",		"MATRIX",	0, Format::R32G32B32A32_FLOAT, ... }
 	}
 	*/
-	class VertexLayout: public DeviceObject {
+	class VertexLayout : public DeviceObject {
 	public:
 		//bool CheckInputSignature( Shader* const vertexShader );
 	};
@@ -863,6 +875,6 @@ namespace RenderInterface {
 	Popisuje umisteni a usporadani vstupnich dat vertex shaderu.
 	Objekt vznikl kvuli podpore OpenGL VAO.
 	*/
-	class VertexStream: public DeviceObject {};
+	class VertexStream : public DeviceObject {};
 	
 } // namespace RenderInterface

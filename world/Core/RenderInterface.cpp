@@ -1,19 +1,7 @@
 #include "RenderInterface.h"
-#include "DX11\DX11RenderInterface.h"
+//#include "DX11\DX11RenderInterface.h"
 
 using namespace RenderInterface;
-
-PDevice RenderInterface::DX11CreateDevice( const DX11CreateDeviceParams& params ) {
-	DX11Device* device = new DX11Device();
-	if ( device == nullptr ) {
-		return PDevice( nullptr, Deleter< Device >() );
-	}
-	if ( !device->Create( params ) ) {
-		delete device;
-		device = nullptr;
-	}
-	return PDevice( device, Deleter< Device >() );
-}
 
 const FormatInfo RenderInterface::GetFormatInfo( const Format format ) {
 	switch ( format ) {									//channels	chan.bytes	blockSize	blockBytes
@@ -60,19 +48,9 @@ const FormatInfo RenderInterface::GetFormatInfo( const Format format ) {
 	return { 0, 0, 1, 0 };
 }
 
-void RenderInterface::GetMipDimmensions( const int width, const int height, const int depth, const int mipLevel, TextureDimmensions& result ) {
+void RenderInterface::GetMipDimmensions( const int width, const int height, const int depth, const int mipLevel, TextureDimmensions& result ) noexcept {
 	const int denominator = Math::Pow2( mipLevel );
 	result.width = Math::Max( 1, width / denominator );
 	result.height = Math::Max( 1, height / denominator );
 	result.depth = Math::Max( 1, depth / denominator );
-}
-
-// DeviceObject 
-
-DeviceObject::DeviceObject() {}
-
-DeviceObject::~DeviceObject() {}
-
-void DeviceObject::Release() {
-	delete this;
 }

@@ -157,6 +157,7 @@
     <ClCompile Include="Core\RenderDeviceResources.cpp" />
     <ClCompile Include="Core\Renderer.cpp" />
     <ClCompile Include="Core\RenderInterface.cpp" />
+    <ClCompile Include="Core\Windows\WindowsGraphicsInfrastructure.cpp" />
     <ClCompile Include="framework\Allocation.cpp" />
     <ClCompile Include="framework\Color.cpp" />
     <ClCompile Include="framework\Math.cpp" />
@@ -175,6 +176,7 @@
     <ClInclude Include="Core\RenderDeviceResources.h" />
     <ClInclude Include="Core\Renderer.h" />
     <ClInclude Include="Core\RenderInterface.h" />
+    <ClInclude Include="Core\Windows\WindowsGraphicsInfrastructure.h" />
     <ClInclude Include="Engine\Paths.h" />
     <ClInclude Include="framework\Allocation.h" />
     <ClInclude Include="framework\Color.h" />

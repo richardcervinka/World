@@ -121,27 +121,27 @@ void IFile::WriteFloat4( const Float4& value ) {
 // namespace FileSystem
 
 bool FileSystem::CreateDir( const String& path ) {
-	return FileSystemPlatform::CreateDir( path );
+	return FileSystem::CreateDir( path );
 }
 
 bool FileSystem::RemoveDir( const String& path ) {
-	return FileSystemPlatform::RemoveDir( path );
+	return FileSystem::RemoveDir( path );
 }
 
 bool FileSystem::RemoveDirContent( const String& path ) {
-	return FileSystemPlatform::RemoveDirContent( path );
+	return FileSystem::RemoveDirContent( path );
 }
 
 bool FileSystem::RemoveFile( const String& fullname ) {
-	return FileSystemPlatform::RemoveFile( fullname );
+	return FileSystem::RemoveFile( fullname );
 }
 
 bool FileSystem::EnumFiles( const String& path, std::vector< String >& result ) {
-	return FileSystemPlatform::EnumFiles( path, result );
+	return FileSystem::EnumFiles( path, result );
 }
 
 bool FileSystem::EnumDirs( const String& path, std::vector< String >& result ) {
-	return FileSystemPlatform::EnumDirs( path, result );
+	return FileSystem::EnumDirs( path, result );
 }
 
 // Helpers

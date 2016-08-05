@@ -1,11 +1,11 @@
 #pragma once
 
-class FileWindows: public IFile {
+class File: public IFile {
 public:
 	using IFile::END_OF_FILE;
 
-	FileWindows();
-	virtual ~FileWindows();
+	File();
+	virtual ~File();
 	
 	// implementace rozhrani IFile
 	virtual bool OpenToRead( const String& fullname, const FileAccess access ) override;
@@ -36,7 +36,7 @@ private:
 	String fullname;
 };
 
-namespace FileSystemWindows {
+namespace FileSystem {
 
 	bool CreateDir( const String& path );
 	bool RemoveDir( const String& path );

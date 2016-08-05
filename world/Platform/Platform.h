@@ -2,12 +2,8 @@
 
 /*
 Platform identifiers:
-
 PLATFORM_WINDOWS
-PLATFORM_LINUX
-PLATFORM_IOS
-PLATFORM_ANDROID
 */
 
-// definice cilove platformy, pro kterou bude proveden preklad
+// current platform
 #define PLATFORM_WINDOWS

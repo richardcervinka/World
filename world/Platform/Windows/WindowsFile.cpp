@@ -6,17 +6,17 @@
 #include "..\File.h"
 #include "WindowsFile.h"
 
-// class FileWindows
+// class File
 
-FileWindows::FileWindows() {
+File::File() {
 	handle = 0;
 }
 
-FileWindows::~FileWindows() {
-	FileWindows::Close();
+File::~File() {
+	File::Close();
 }
 
-bool FileWindows::CreateFile( const String& fullname, const FileMode mode, const FileAccess access, const unsigned int disposition ) {
+bool File::CreateFile( const String& fullname, const FileMode mode, const FileAccess access, const unsigned int disposition ) {
 	if ( handle != 0 ) {
 		return false;
 	}
@@ -67,23 +67,23 @@ bool FileWindows::CreateFile( const String& fullname, const FileMode mode, const
 	return true;
 }
 
-bool FileWindows::OpenToRead( const String& fullname, const FileAccess access ) {
+bool File::OpenToRead( const String& fullname, const FileAccess access ) {
 	return CreateFile( fullname, FileMode::READ, access, OPEN_EXISTING );
 }
 
-bool FileWindows::OpenToWrite( const String& fullname, const FileAccess access ) {
+bool File::OpenToWrite( const String& fullname, const FileAccess access ) {
 	return CreateFile( fullname, FileMode::WRITE, access, OPEN_EXISTING );
 }
 
-bool FileWindows::Create( const String& fullname ) {
+bool File::Create( const String& fullname ) {
 	return CreateFile( fullname, FileMode::WRITE, FileAccess::SEQUENTIAL, CREATE_NEW );
 }
 
-bool FileWindows::CreateNew( const String& fullname ) {
+bool File::CreateNew( const String& fullname ) {
 	return CreateFile( fullname, FileMode::WRITE, FileAccess::SEQUENTIAL, CREATE_ALWAYS );
 }
 
-void FileWindows::Close() {
+void File::Close() {
 	if ( handle != 0 ) {
 		CloseHandle( reinterpret_cast< HANDLE >( handle ) );
 		handle = 0;
@@ -91,27 +91,27 @@ void FileWindows::Close() {
 	}
 }
 
-bool FileWindows::IsOpen() const {
+bool File::IsOpen() const {
 	return handle != 0;
 }
 
-const String FileWindows::GetName() const {
+const String File::GetName() const {
 	return GetFileName( fullname );
 }
 
-const String FileWindows::GetExt() const {
+const String File::GetExt() const {
 	return GetFileExt( fullname );
 }
 
-const String FileWindows::GetBase() const {
+const String File::GetBase() const {
 	return GetFileBase( fullname );
 }
 
-const String FileWindows::GetDir() const {
+const String File::GetDir() const {
 	return GetFileDir( fullname );
 }
 
-unsigned long FileWindows::Size() const {
+unsigned long File::Size() const {
 	if ( handle == 0 ) {
 		return 0;
 	}
@@ -120,7 +120,7 @@ unsigned long FileWindows::Size() const {
 	return static_cast< unsigned long >( size.QuadPart );
 }
 
-unsigned long FileWindows::Read( void* const buffer, const unsigned long bytes ) {
+unsigned long File::Read( void* const buffer, const unsigned long bytes ) {
 	if ( handle == 0 ) {
 		return 0;
 	}
@@ -132,7 +132,7 @@ unsigned long FileWindows::Read( void* const buffer, const unsigned long bytes )
 	return static_cast< unsigned long >( reads );
 }
 
-unsigned long FileWindows::Write( const void* const buffer, const unsigned long bytes ) {
+unsigned long File::Write( const void* const buffer, const unsigned long bytes ) {
 	if ( handle == 0 ) {
 		return 0;
 	}
@@ -144,7 +144,7 @@ unsigned long FileWindows::Write( const void* const buffer, const unsigned long 
 	return static_cast< unsigned long >( writes );
 }
 
-void FileWindows::Clear() {
+void File::Clear() {
 	if ( handle == 0 ) {
 		return;
 	}
@@ -152,7 +152,7 @@ void FileWindows::Clear() {
 	SetEndOfFile( reinterpret_cast< HANDLE >( handle ) );
 }
 
-unsigned long FileWindows::GetPointer() const {
+unsigned long File::GetPointer() const {
 	if ( handle == 0 ) {
 		return 0;
 	}
@@ -163,7 +163,7 @@ unsigned long FileWindows::GetPointer() const {
 	return static_cast< unsigned long >( pointer.QuadPart );
 }
 
-unsigned long FileWindows::SetPointer( const unsigned long position ) {
+unsigned long File::SetPointer( const unsigned long position ) {
 	if ( handle == 0 ) {
 		return 0;
 	}
@@ -180,7 +180,7 @@ unsigned long FileWindows::SetPointer( const unsigned long position ) {
 	return static_cast< unsigned long >( pointer.QuadPart );
 }
 
-unsigned long FileWindows::MovePointer( const int distance ) {
+unsigned long File::MovePointer( const int distance ) {
 	if ( handle == 0 ) {
 		return 0;
 	}
@@ -191,7 +191,7 @@ unsigned long FileWindows::MovePointer( const int distance ) {
 	return static_cast< unsigned long >( pointer.QuadPart );
 }
 
-void FileWindows::Flush() {
+void File::Flush() {
 	if ( handle != 0 ) {
 		FlushFileBuffers( reinterpret_cast< HANDLE >( handle ) );
 	}
@@ -199,20 +199,20 @@ void FileWindows::Flush() {
 
 // FileSystemWindows
 
-bool FileSystemWindows::CreateDir( const String& path ) {
+bool FileSystem::CreateDir( const String& path ) {
 	return CreateDirectoryW( reinterpret_cast< LPCWSTR >( path.Raw() ), NULL ) == TRUE;
 }
 
-bool FileSystemWindows::RemoveDir( const String& path ) {
+bool FileSystem::RemoveDir( const String& path ) {
 	return RemoveDirectoryW( reinterpret_cast< LPCWSTR >( path.Raw() ) ) == TRUE;
 }
 
-bool FileSystemWindows::RemoveDirContent( const String& path ) {
+bool FileSystem::RemoveDirContent( const String& path ) {
 	// not implemented
 	return false;
 }
 
-bool FileSystemWindows::RemoveFile( const String& fullname ) {
+bool FileSystem::RemoveFile( const String& fullname ) {
 	return DeleteFileW( reinterpret_cast< LPCWSTR >( fullname.Raw() ) ) == TRUE;
 }
 
@@ -264,10 +264,10 @@ bool FindFiles( const String& path, FindFilesMode mode, std::vector< String >& r
 	return true;
 }
 
-bool FileSystemWindows::EnumFiles( const String& path, std::vector< String >& result ) {
+bool FileSystem::EnumFiles( const String& path, std::vector< String >& result ) {
 	return FindFiles( path, FindFilesMode::FILE, result );
 }
 
-bool FileSystemWindows::EnumDirs( const String& path, std::vector< String >& result ) {
+bool FileSystem::EnumDirs( const String& path, std::vector< String >& result ) {
 	return FindFiles( path, FindFilesMode::DIR, result );
 }
