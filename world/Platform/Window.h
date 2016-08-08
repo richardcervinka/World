@@ -24,10 +24,8 @@ public:
 	virtual int GetClientHeight() const noexcept = 0;
 	virtual void ResizeClient( const int width, const int height ) noexcept = 0;
 	virtual void SetPosition( const int x, const int y ) noexcept = 0;
-
 	virtual void SetBackgroundColor( const Color& color ) noexcept = 0;
 	virtual const Color GetBackgroundColor() const noexcept = 0;
-
 	virtual void Show() noexcept = 0;
 	virtual void Hide() noexcept = 0;
 	virtual void SetName( const String& str ) noexcept = 0;

@@ -14,7 +14,7 @@ public:
 	//virtual void Update() override;
 	
 private:
-	WindowsWindow window;
+	WindowsWindow* window;
 	Renderer* renderer;
 };
 //----------------------------------------------------------------------------------------------------------------------------------
@@ -39,19 +39,27 @@ bool DevApp::Create( const HINSTANCE hInstance, LPSTR lpCmdLine ) {
 		return false;
 	}
 	// window
-	window.CreateAppWindow( hInstance, 1024, 768 );
-	window.SetName( String( u"World" ) );
-	window.SetBackgroundColor( Color::BLACK );
+	window = new WindowsWindow();
+	window->CreateAppWindow( hInstance, 1024, 768 );
+	window->SetName( String( u"World" ) );
+	window->SetBackgroundColor( Color::BLACK );
+	window->onSizeHandler = nullptr;
 
 	// adapter capabilities
 	WindowsAdapterCapabilities wac;
 	wac.api = WindowsRenderApi::DIRECTX_11_0;
-	wac.requiredVideoMemory = 512;
+	wac.requiredVideoMemory = 1024;
 
 	// create adapter
 	WindowsGraphicsInfrastructure gi;
 	auto adapter = gi.CreateAdapter( wac );
 	if ( adapter == nullptr ) {
+		return false;
+	}
+
+	// primary adapter's output (display)
+	auto display = adapter->CreateDisplay( 0 );
+	if ( display == nullptr ) {
 		return false;
 	}
 

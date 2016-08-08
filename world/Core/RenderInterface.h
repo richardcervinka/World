@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include "Graphicsinfrastructure.h"
 #include "..\Framework\Math.h"
 #include "..\Framework\Color.h"
 
@@ -10,7 +11,7 @@ class Window;
 namespace RenderInterface {
 	
 	// forward declarations
-	class Adapter;
+	//class Adapter;
 	class Device;
 	//class Display;
 	class CommandInterface;
@@ -516,18 +517,6 @@ namespace RenderInterface {
 		IMMEDIATE,	// no vsync with teering
 		VSYNC		// best vertical synchronization node
 	};
-
-	/*
-	Rezim displeje
-	*/
-	/*
-	struct DisplayMode {
-		int width;
-		int height;
-		int refreshRateNumerator;
-		int refreshRateDenominator;
-	};
-	*/
 
 	// Vypocet rozmeru mipmapy
 	void GetMipDimmensions( const int width, const int height, const int depth, const int mipLevel, TextureDimmensions& result ) noexcept;

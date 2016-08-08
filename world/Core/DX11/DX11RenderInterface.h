@@ -6,10 +6,11 @@
 #include <vector>
 #include "..\RenderInterface.h"
 
+const DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM;
+
 // forward declarations
 class DX11Device;
 class DX11BackBuffer;
-class DX11Display;
 class DX11CommandInterface;
 class DX11CommandList;
 class DX11Buffer;
@@ -121,32 +122,6 @@ private:
 	ID3D11DepthStencilState* currentDepthStencilState;
 	ID3D11RasterizerState* currentRasterizerState;
 };
-
-
-
-/*
-class DX11Display: public Display {
-public:
-	DX11Display();
-	~DX11Display();
-	bool Create( IDXGIAdapter* const dxgiAdapter, const int outputId ) noexcept;
-
-	// Display implementation
-	virtual void SetFullscreenMode( const DisplayMode& mode, Window& window ) noexcept override;
-	virtual void SetWindowedMode() noexcept override;
-	virtual void GetMode( const int id, DisplayMode& result ) const noexcept override;
-	virtual void FindMode( const DisplayMode& request, DisplayMode& result ) const noexcept override;
-	virtual void GetBestMode( DisplayMode& result ) const noexcept override;
-	
-private:
-	void EnumDisplayModes();
-	
-public:
-	Window* window;
-	IDXGIOutput* dxgiOutput;
-	std::vector< DisplayMode > modes;
-};
-*/
 
 
 

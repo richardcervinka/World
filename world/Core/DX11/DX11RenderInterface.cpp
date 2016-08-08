@@ -3,8 +3,6 @@
 #include "..\..\Framework\Math.h"
 #include "..\..\Framework\Debug.h"
 
-const DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM;
-
 // uvolneni COM objektu
 template < typename T >
 inline void ReleaseCom( T** target ) {
@@ -511,50 +509,6 @@ ID3D11DeviceContext* DX11Device::GetD3D11DeviceContext() noexcept {
 
 
 /*
-DX11Display::DX11Display() {
-	window = nullptr;
-	dxgiOutput = nullptr;
-}
-
-DX11Display::~DX11Display() {
-	ReleaseCom( &dxgiOutput );
-}
-
-bool DX11Display::Create( IDXGIAdapter* const adapter, const int outputId ) noexcept {
-	// ziskat output s pozadovanym id
-	ComPtr< IDXGIOutput > output;
-	HRESULT hresult = adapter->EnumOutputs( static_cast< UINT >( outputId ), &output );
-	if ( FAILED( hresult ) ) {
-		return false;
-	}
-	this->dxgiOutput = output.Ref();
-	EnumDisplayModes();
-	return true;
-}
-
-void DX11Display::EnumDisplayModes() noexcept {
-	HRESULT hresult = 0;
-
-	// zjisteni poctu rezimu
-	UINT count = 0;
-	dxgiOutput->GetDisplayModeList( BACK_BUFFER_FORMAT, 0, &count, NULL );
-
-	// ziskat vsechny rezimy
-	std::unique_ptr< DXGI_MODE_DESC[] > dxgiModes( new DXGI_MODE_DESC[ count ] );
-	dxgiOutput->GetDisplayModeList( BACK_BUFFER_FORMAT, 0, &count, dxgiModes.get() );
-
-	// ulozit rezimy ve formatu DisplayMode
-	modes.clear();
-	modes.reserve( count );
-	for ( UINT i = 0; i < count; i++ ) {
-		DisplayMode mode;
-		mode.width = static_cast< int >( dxgiModes[ i ].Width );
-		mode.height = static_cast< int >( dxgiModes[ i ].Height );
-		mode.refreshRateNumerator = static_cast< int >( dxgiModes[ i ].RefreshRate.Numerator );
-		mode.refreshRateDenominator = static_cast< int >( dxgiModes[ i ].RefreshRate.Denominator );
-		modes.push_back( mode );
-	}
-}
 
 void DX11Display::SetWindowedMode() noexcept {
 	//Pri vstupu do fullscreen rezimu je ulozen ukazatel na objekt Window.
@@ -608,67 +562,6 @@ void DX11Display::SetFullscreenMode( const DisplayMode& mode, Window& window ) n
 	swapChain->ResizeTarget( &desc );
 
 	this->window = &window;
-}
-
-void DX11Display::GetMode( const int id, DisplayMode &result ) const noexcept {
-	if ( id < 0 || id >= static_cast< int >( modes.size() ) ) {
-		ZeroMemory( &result, sizeof( DisplayMode ) );
-		return;
-	}
-	result = modes[ id ];
-}
-
-void DX11Display::FindMode( const DisplayMode& request, DisplayMode& result ) const noexcept {
-	if ( modes.size() == 0 ) {
-		ZeroMemory( &result, sizeof( DisplayMode ) );
-		return;
-	}
-	const DisplayMode* best = &modes[ 0 ];
-	int bestDivergence = Math::Abs( request.width - best->width ) + Math::Abs( request.height - best->height );
-	int bestId = 0;
-
-	for ( int i = 1; i < static_cast< int >( modes.size() ); i++ ) {
-		const DisplayMode& mode = modes[ i ];
-		int divergence = Math::Abs( mode.width - request.width ) + Math::Abs( mode.height - request.height );
-
-		// horsi odchylka rozlyseni, porovnat dalsi rezim
-		if ( divergence > bestDivergence ) {
-			continue;
-		}
-		// stejna odchylka rozlyseni, porovnat refresh rate
-		if ( divergence == bestDivergence ) {
-
-			// porovnat refresh rate
-			const float refreshRate = static_cast< float >( mode.refreshRateNumerator ) / static_cast< float >( mode.refreshRateDenominator );
-			const float bestRefreshRate = static_cast< float >( best->refreshRateNumerator ) / static_cast< float >( best->refreshRateDenominator );
-			
-			// nalezeny mod ma horsi refresh rate, hledat dal
-			if ( refreshRate < bestRefreshRate ) {
-				continue;
-			}
-			// nalezeny mod ma lepsi refresh rate, ulozit novy mod
-			best = &mode;
-			bestDivergence = divergence;
-			bestId = i;
-			continue;
-		}
-		// lepsi odchylka rozlyseni, ulozit mod
-		best = &mode;
-		bestDivergence = divergence;
-		bestId = i;
-	}
-	result = *best;
-}
-
-void DX11Display::GetBestMode( DisplayMode& result ) const noexcept {
-	DXGI_OUTPUT_DESC desc;
-	dxgiOutput->GetDesc( &desc );
-	DisplayMode mode;
-	mode.width = static_cast< int >( desc.DesktopCoordinates.right - desc.DesktopCoordinates.left );
-	mode.height = static_cast< int >( desc.DesktopCoordinates.bottom - desc.DesktopCoordinates.top );
-	mode.refreshRateNumerator = 1000;
-	mode.refreshRateDenominator = 1;
-	FindMode( mode, result );
 }
 
 */

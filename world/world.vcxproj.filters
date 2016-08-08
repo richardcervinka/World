@@ -96,6 +96,9 @@
     <ClCompile Include="Core\Windows\WindowsGraphicsInfrastructure.cpp">
       <Filter>Source Files\Core\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="Core\GraphicsInfrastructure.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="platform\Application.h">
@@ -175,6 +178,9 @@
     </ClInclude>
     <ClInclude Include="Core\Windows\WindowsGraphicsInfrastructure.h">
       <Filter>Source Files\Core\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Graphicsinfrastructure.h">
+      <Filter>Source Files\Core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

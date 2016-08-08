@@ -65,6 +65,16 @@ bool WindowsAdapter::CheckCapabilities( const WindowsAdapterCapabilities& capabi
 	return false;
 }
 
+std::shared_ptr< Display > WindowsAdapter::CreateDisplay( const int outputId ) noexcept {
+	IDXGIOutput* output = nullptr;
+	HRESULT hresult = adapter->EnumOutputs( static_cast< UINT >( outputId ), &output );
+	if ( FAILED( hresult ) ) {
+		return nullptr;
+	}
+	auto* display = new( std::nothrow ) WindowsDisplay( output );
+	return std::shared_ptr< Display >( display );
+}
+
 RenderInterface::PDevice WindowsAdapter::CreateDX11Device() noexcept {
 	std::shared_ptr< DX11Device > device( new( std::nothrow ) DX11Device() );
 	if ( device == nullptr ) {
@@ -74,6 +84,69 @@ RenderInterface::PDevice WindowsAdapter::CreateDX11Device() noexcept {
 		return nullptr;
 	}
 	return device;
+}
+
+// WindowsDisplay
+
+WindowsDisplay::WindowsDisplay( IDXGIOutput* const output ) {
+	this->output = output;
+	EnumModes();
+}
+
+WindowsDisplay::~WindowsDisplay() {
+	if ( output != nullptr ) {
+		output->Release();
+	}
+}
+
+void WindowsDisplay::EnumModes() noexcept {
+	if ( output == nullptr ) {
+		return;
+	}
+	HRESULT hresult = 0;
+
+	// zjistit pocet display modes
+	UINT count = 0;
+	output->GetDisplayModeList( BACK_BUFFER_FORMAT, 0, &count, NULL );
+
+	// enumerate modes
+	std::vector< DXGI_MODE_DESC > dxgiModes( static_cast< size_t >( count ) );
+	output->GetDisplayModeList( BACK_BUFFER_FORMAT, 0, &count, dxgiModes.data() );
+
+	// ulozit rezimy ve formatu DisplayMode
+	modes.reserve( count );
+	for ( UINT i = 0; i < count; i++ ) {
+		DisplayMode mode;
+		mode.width = static_cast< int >( dxgiModes[ i ].Width );
+		mode.height = static_cast< int >( dxgiModes[ i ].Height );
+		mode.refreshRateNumerator = static_cast< int >( dxgiModes[ i ].RefreshRate.Numerator );
+		mode.refreshRateDenominator = static_cast< int >( dxgiModes[ i ].RefreshRate.Denominator );
+		modes.push_back( mode );
+	}
+}
+
+bool WindowsDisplay::GetMode( const int id, DisplayMode& result ) const noexcept {
+	if ( id < 0 || id >= static_cast< int >( modes.size() ) ) {
+		return false;
+	}
+	result = modes[ id ];
+	return true;
+}
+
+bool WindowsDisplay::GetBestMode( DisplayMode& result ) const noexcept {
+	if ( output == nullptr ) {
+		return false;
+	}
+	DXGI_OUTPUT_DESC desc;
+	output->GetDesc( &desc );
+
+	DisplayMode mode;
+	mode.width = static_cast< int >( desc.DesktopCoordinates.right - desc.DesktopCoordinates.left );
+	mode.height = static_cast< int >( desc.DesktopCoordinates.bottom - desc.DesktopCoordinates.top );
+	mode.refreshRateNumerator = 1000;
+	mode.refreshRateDenominator = 1;
+
+	return FindMode( mode, result );
 }
 
 // WindowsGraphicsInfrastructure
