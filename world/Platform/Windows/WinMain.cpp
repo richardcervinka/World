@@ -14,7 +14,7 @@ public:
 	//virtual void Update() override;
 	
 private:
-	WindowsWindow* window;
+	WindowsWindow window;
 	Renderer* renderer;
 };
 //----------------------------------------------------------------------------------------------------------------------------------
@@ -38,21 +38,22 @@ bool DevApp::Create( const HINSTANCE hInstance, LPSTR lpCmdLine ) {
 	if ( !WindowsApplication::Create( hInstance, lpCmdLine ) ) {
 		return false;
 	}
-	// window
-	window = new WindowsWindow();
-	window->CreateAppWindow( hInstance, 1024, 768 );
-	window->SetName( String( u"World" ) );
-	window->SetBackgroundColor( Color::BLACK );
-	window->onSizeHandler = nullptr;
+	// app window
+	window.CreateAppWindow( hInstance, 1024, 768 );
+	window.SetName( String( u"World" ) );
+	window.SetBackgroundColor( Color::BLACK );
+	window.onSizeHandler = nullptr;
 
 	// adapter capabilities
-	WindowsAdapterCapabilities wac;
-	wac.api = WindowsRenderApi::DIRECTX_11_0;
-	wac.requiredVideoMemory = 1024;
+	WindowsAdapterCapabilities adapterCapabilities;
+	adapterCapabilities.api = WindowsRenderApi::DIRECTX_11_0;
+	adapterCapabilities.requiredVideoMemory = 1024;
+
+	// windows GI
+	WindowsGraphicsInfrastructure gi;
 
 	// create adapter
-	WindowsGraphicsInfrastructure gi;
-	auto adapter = gi.CreateAdapter( wac );
+	auto adapter = gi.CreateAdapter( adapterCapabilities );
 	if ( adapter == nullptr ) {
 		return false;
 	}
@@ -69,7 +70,14 @@ bool DevApp::Create( const HINSTANCE hInstance, LPSTR lpCmdLine ) {
 		return false;
 	}
 
+	// swap chain
+	auto swapChain = gi.CreateSwapChain( window, device );
+	if ( swapChain == nullptr ) {
+		return false;
+	}
+
 	// create Renderer
+	// ...
 
 	/*
 	// renderer

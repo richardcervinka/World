@@ -10,7 +10,6 @@ const DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM;
 
 // forward declarations
 class DX11Device;
-class DX11BackBuffer;
 class DX11CommandInterface;
 class DX11CommandList;
 class DX11Buffer;
@@ -123,33 +122,6 @@ private:
 	ID3D11RasterizerState* currentRasterizerState;
 };
 
-
-
-
-/*
-class DX11BackBuffer: public BackBuffer {
-public:
-	DX11BackBuffer();
-	~DX11BackBuffer();
-	bool Create( ID3D11Device* const device, IDXGIFactory1* const factory, const Window& window ) noexcept;
-
-	// BackBuffer implementation
-	virtual void Present( const int vsync ) noexcept override;
-	virtual void Resize() noexcept override;
-	virtual int GetWidth() const noexcept override;
-	virtual int GetHeight() const noexcept override;
-
-	// implementation interface
-	IDXGISwapChain* GetDXGISwapChain() noexcept;
-
-private:
-	IDXGISwapChain* dxgiSwapChain;
-	const Window* window;
-	int width;
-	int height;
-};
-*/
-
 class DX11Buffer: public Buffer {
 public:
 	DX11Buffer();
@@ -232,7 +204,6 @@ class DX11RenderTargetView: public RenderTargetView {
 public:
 	DX11RenderTargetView();
 	~DX11RenderTargetView();
-	//bool Create( ID3D11Device* const device, BackBuffer* const backBuffer ) noexcept;
 	bool Create( ID3D11Device* const device, const PBuffer& textureBuffer ) noexcept;
 
 	// implementation interface

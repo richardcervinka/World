@@ -1419,8 +1419,7 @@ bool DX11Shader::Compile( ID3D11Device* const device, const ShaderParams& params
 	switch ( params.optimization ) {
 	case ShaderOptimization::DISABLED:	flags |= D3DCOMPILE_SKIP_OPTIMIZATION;   break;
 	case ShaderOptimization::LOW:		flags |= D3DCOMPILE_OPTIMIZATION_LEVEL0; break;
-	case ShaderOptimization::MEDIUM:	flags |= D3DCOMPILE_OPTIMIZATION_LEVEL3; break;
-	case ShaderOptimization::HIGH:		flags |= D3DCOMPILE_OPTIMIZATION_LEVEL2; break;
+	case ShaderOptimization::HIGH:		flags |= D3DCOMPILE_OPTIMIZATION_LEVEL3; break;
 	}
 	// compile
 	ComPtr< ID3DBlob > code;
@@ -2040,10 +2039,13 @@ bool DX11CommandInterface::UpdateSubresource( const PBuffer& buffer, const int s
 	if ( !Map( buffer, subresource, policy, mappedBuffer ) ) {
 		return false;
 	}
+
 	// update
+
 	const Byte* src = static_cast< const Byte* >( data );
 	Byte* dest = static_cast< Byte* >( mappedBuffer.data );
 	const int depthSliceRows = mappedBuffer.rowsCount / mappedBuffer.depthsCount;
+
 	for ( int depth = 0; depth < mappedBuffer.depthsCount; depth++ ) {
 		for ( int row = 0; row < depthSliceRows; row++ ) {
 			memcpy( dest, src, mappedBuffer.rowByteWidth );

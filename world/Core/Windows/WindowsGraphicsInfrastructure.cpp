@@ -1,5 +1,6 @@
 #include <d3d11.h>
 #include <dxgi1_2.h>
+#include "..\..\Platform\Windows\WindowsWindow.h"
 #include "..\DX11\DX11RenderInterface.h"
 #include "WindowsGraphicsInfrastructure.h"
 
@@ -35,7 +36,7 @@ bool WindowsAdapter::CheckCapabilities( const WindowsAdapterCapabilities& capabi
 	if ( static_cast< unsigned int >( adapterDesc.DedicatedVideoMemory ) < capabilities.requiredVideoMemory ) {
 		return false;
 	}
-	// pokusit se vytvorit ID3D11Device objekt
+	// zkusit vytvorit ID3D11Device objekt
 	if ( WindowsRenderApi::DIRECTX_11_0 == capabilities.api ) {
 
 		D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
@@ -75,7 +76,7 @@ std::shared_ptr< Display > WindowsAdapter::CreateDisplay( const int outputId ) n
 	return std::shared_ptr< Display >( display );
 }
 
-RenderInterface::PDevice WindowsAdapter::CreateDX11Device() noexcept {
+std::shared_ptr< DX11Device > WindowsAdapter::CreateDX11Device() noexcept {
 	std::shared_ptr< DX11Device > device( new( std::nothrow ) DX11Device() );
 	if ( device == nullptr ) {
 		return nullptr;
@@ -149,19 +150,76 @@ bool WindowsDisplay::GetBestMode( DisplayMode& result ) const noexcept {
 	return FindMode( mode, result );
 }
 
+// WindowsSwapChain
+
+WindowsSwapChain::WindowsSwapChain() {
+	swapChain = nullptr;
+	window = nullptr;
+	width = 0;
+	height = 0;
+}
+
+bool WindowsSwapChain::Create( WindowsWindow* const window, ID3D11Device* const device, IDXGIFactory1* const factory ) noexcept {
+	DXGI_SWAP_CHAIN_DESC desc = { 0 };
+	desc.BufferCount						= 2;
+	desc.BufferDesc.Width					= window->GetClientWidth();
+	desc.BufferDesc.Height					= window->GetClientHeight();
+	desc.BufferDesc.Format					= BACK_BUFFER_FORMAT;
+	desc.BufferDesc.RefreshRate.Numerator	= 0;
+	desc.BufferDesc.RefreshRate.Denominator = 0;
+	desc.BufferUsage						= DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	desc.SampleDesc.Count					= 1;
+	desc.SampleDesc.Quality					= 0;
+	desc.OutputWindow						= window->GetHandle();
+	desc.Windowed							= TRUE;
+	desc.SwapEffect							= DXGI_SWAP_EFFECT_DISCARD;
+	desc.BufferDesc.Scaling					= DXGI_MODE_SCALING_STRETCHED;
+	desc.Flags								= DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+
+	IDXGISwapChain* swapChain = nullptr;
+	HRESULT hresult = factory->CreateSwapChain( device, &desc, &swapChain );
+	if ( FAILED( hresult ) ) {
+		return false;
+	}
+	
+	// vypnuti defaultniho prepinani do fullscreenu
+	factory->MakeWindowAssociation( window->GetHandle(), DXGI_MWA_NO_ALT_ENTER  );
+
+	// ulozit vysledek
+	this->window = window;
+	this->swapChain = swapChain;
+	this->width = window->GetClientWidth();
+	this->height = window->GetClientHeight();
+
+	return true;
+}
+
+void WindowsSwapChain::Present() noexcept {}
+
+void WindowsSwapChain::SetFullscreen( Display* const display ) noexcept {}
+
+int WindowsSwapChain::GetWidth() const noexcept {
+	return width;
+}
+
+int WindowsSwapChain::GetHeight() const noexcept {
+	return height;
+}
+
+bool WindowsSwapChain::Valid() const noexcept {
+	return width == window->GetClientWidth() && height == window->GetClientHeight();
+}
+
 // WindowsGraphicsInfrastructure
 
 WindowsGraphicsInfrastructure::WindowsGraphicsInfrastructure() {
-	HRESULT hresult = CreateDXGIFactory1( __uuidof( IDXGIFactory1 ), reinterpret_cast< void** >( &factory ) );
-	if ( FAILED( hresult ) ) {
-		return;
-	}
+	factory = nullptr;
+	CreateDXGIFactory1( __uuidof( IDXGIFactory1 ), reinterpret_cast< void** >( &factory ) );
 }
 
 WindowsGraphicsInfrastructure::~WindowsGraphicsInfrastructure() {
 	if ( factory != nullptr ) {
 		factory->Release();
-		factory = nullptr;
 	}
 }
 
@@ -169,12 +227,12 @@ std::unique_ptr< WindowsAdapter > WindowsGraphicsInfrastructure::CreateAdapter( 
 	if ( factory == nullptr ) {
 		return nullptr;
 	}
-	IDXGIAdapter* adapter = nullptr; 
-	HRESULT hresult = factory->EnumAdapters( id, &adapter );
+	IDXGIAdapter1* adapter = nullptr;
+	HRESULT hresult = factory->EnumAdapters1( id, &adapter );
 	if ( FAILED( hresult ) ) {
 		return nullptr;
 	}
-	return std::make_unique< WindowsAdapter >( adapter );
+	return std::make_unique< WindowsAdapter >( adapter ); 
 }
 
 std::unique_ptr< WindowsAdapter > WindowsGraphicsInfrastructure::CreateAdapter( const WindowsAdapterCapabilities& capabilities ) noexcept {
@@ -184,6 +242,7 @@ std::unique_ptr< WindowsAdapter > WindowsGraphicsInfrastructure::CreateAdapter( 
 	int id = 0;
 	auto adapter = CreateAdapter( id );
 	while ( adapter != nullptr ) {
+		// check capabilities
 		if ( adapter->CheckCapabilities( capabilities ) ) {
 			return adapter;
 		}
@@ -191,5 +250,9 @@ std::unique_ptr< WindowsAdapter > WindowsGraphicsInfrastructure::CreateAdapter( 
 		id += 1;
 		adapter = CreateAdapter( id );
 	}
+	return nullptr;
+}
+
+std::unique_ptr< WindowsSwapChain > WindowsGraphicsInfrastructure::CreateSwapChain( WindowsWindow& window, const std::shared_ptr< DX11Device >& device ) noexcept {
 	return nullptr;
 }

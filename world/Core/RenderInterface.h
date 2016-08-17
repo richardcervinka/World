@@ -11,9 +11,7 @@ class Window;
 namespace RenderInterface {
 	
 	// forward declarations
-	//class Adapter;
 	class Device;
-	//class Display;
 	class CommandInterface;
 	class CommandList;
 	class Buffer;
@@ -32,7 +30,6 @@ namespace RenderInterface {
 
 	// device object smart pointers
 	using PDevice				= std::shared_ptr< Device >;
-	//using PDisplay				= std::shared_ptr< Display >;
 	using PCommandInterface		= std::shared_ptr< CommandInterface >;
 	using PCommandList			= std::shared_ptr< CommandList >;
 	using PBuffer				= std::shared_ptr< Buffer >;
@@ -348,7 +345,6 @@ namespace RenderInterface {
 	enum class ShaderOptimization {
 		DISABLED,	// optimalizace vypnuta (nejrychlejsi kompilace)
 		LOW,
-		MEDIUM,
 		HIGH		// nejlepsi mozna optimalizace (nejpomalejsi kompilace)
 	};
 
@@ -534,7 +530,7 @@ namespace RenderInterface {
 		DeviceObject( const DeviceObject& ) = delete;
 		DeviceObject& operator=( const DeviceObject& ) = delete;
 
-		// move implementation ?
+		// move?
 	};
 	
 	/*
@@ -693,75 +689,37 @@ namespace RenderInterface {
 	Slouzi k ukladani GPU commandu. Po prehrani commandu je obsah command listu vyprazdnen.
 	*/
 	class CommandList : public DeviceObject {};
-	
-	/*
-	Displej pripojeny k vystupu graficke karty.
-	Pro nastaveni rezimu obrazovky je nutny objekt Window s pripojenym rendererem
-	*/
 
 	/*
-	class Display : public DeviceObject {
-	public:
-		// Nastavi rezim co nejvice odpovidajici pozadavku (na desktopu prepne do rezimu cele obrazovky)
-		virtual void SetFullscreenMode( const DisplayMode& mode, Window& window ) noexcept = 0;
-
-		// Nastavi vychozi rezim pro danou platformu (napr. na windows prepne z celoobrazovkoveho rezimu)
-		virtual void SetWindowedMode() noexcept = 0;
-
-		// Ziskani rezimu, pokud rezim s pozadovanym id neexistuje, vrati false
-		virtual void GetMode( const int id, DisplayMode& result ) const noexcept = 0;
-
-		// Najde rezim, ktery co nejlepe (ovsem ne nutne nejvice) odpovida pozadovanemu rezimu
-		virtual void FindMode( const DisplayMode& request, DisplayMode& result ) const noexcept = 0;
-
-		// Najde nejlepsi dostupny rezim pro cilove zarizeni
-		virtual void GetBestMode( DisplayMode& result ) const noexcept = 0;
-	};
-	*/
-
-
-
-	/*
-	Umoznuje zobrazit obsahu back bufferu do klientske oblasti okna. Objekt je asociovan s oknem pri vytvoreni.
-	*/
-	/*
-	class BackBuffer: public DeviceObject {
-	public:
-		virtual void Present( const int vsync ) noexcept = 0;
-		virtual void Resize() noexcept = 0;
-		virtual int GetWidth() const noexcept = 0;
-		virtual int GetHeight() const noexcept = 0;
-	};
-	*/
-
 	class SwapChain : public DeviceObject {
 	public:
-		/*
+		
 		RenderTargetView back bufferu, do ktereho je mozne vykreslovat (nabindovat do pipeline).
 		Platnost ukazatele konci volanim funkce present, pote nesmi byt ukazatel pouzivan.
 		Pokud neni dostupny zadny RenderTargetView, vraci nullptr;
-		*/
+		
 		virtual RenderTargetView* AcquireRenderTargetView() noexcept = 0;
 
-		/*
+		
 		Zobrazi obsah backbufferu (aktualni RenderTargetView).
-		*/
+		
 		virtual void Present() noexcept = 0;
 
-		/*
+		
 		Prepne do fullscreen rezimu (zmeni styl okna).
 		Pokud je parametr diplay nullptr, prepne do windowed rezimu.
-		*/
+		
 		virtual void SetFullscreen( Display* const display ) noexcept = 0;
 
 		virtual void SetPresentMode( const SwapChainPresentMode mode ) noexcept = 0;
 
-		/*
+		
 		Rozmery back bufferu
-		*/
+		
 		virtual int GetWidth() const noexcept = 0;
 		virtual int GetHeight() const noexcept = 0;
 	};
+	*/
 
 	/*
 	Buffer je blok pameti rezervovany v pameti graficke karty.

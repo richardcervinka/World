@@ -8,14 +8,11 @@
 struct IDXGIFactory1;
 struct IDXGIAdapter1;
 struct IDXGIOutput;
+class DX11Device;
+class WindowsWindow;
 
 enum class WindowsRenderApi {
 	DIRECTX_11_0
-	//DIRECTX_11_1,
-	//DIRECTX_12_0,
-	//OPENGL_4_0,
-	//OPENGL_4_3,
-	//VULKAN_1_0
 };
 
 struct WindowsAdapterCapabilities {
@@ -35,7 +32,7 @@ public:
 	
 	virtual std::shared_ptr< Display > CreateDisplay( const int outputId ) noexcept override;
 	
-	RenderInterface::PDevice CreateDX11Device() noexcept;
+	std::shared_ptr< DX11Device > CreateDX11Device() noexcept;
 
 private:
 	IDXGIAdapter1* adapter;
@@ -57,21 +54,42 @@ private:
 	std::vector< DisplayMode > modes;
 };
 
+class WindowsSwapChain : public SwapChain {
+public:
+	WindowsSwapChain();
+	~WindowsSwapChain();
+	bool Create( WindowsWindow* const window, ID3D11Device* const device, IDXGIFactory1* const factory ) noexcept;
+
+	// SwapChain implementation
+	virtual void Present() noexcept override;
+	virtual void SetFullscreen( Display* const display ) noexcept override;
+	virtual int GetWidth() const noexcept override;
+	virtual int GetHeight() const noexcept override;
+	virtual bool Valid() const noexcept override;
+
+private:
+	IDXGISwapChain* swapChain;
+	WindowsWindow* window;
+	int width;
+	int height;
+};
+
 /*
-Temporary factory.
-Po vytvoreni objektu Adapter je mozne objekt WindowsGraphicsInfrastructure bezpecne uvolnit z pameti.
+Temporary factory
 */
 class WindowsGraphicsInfrastructure {
 public:
 	WindowsGraphicsInfrastructure();
 	~WindowsGraphicsInfrastructure();
 
-	// no copy
+	// nocopy
 	WindowsGraphicsInfrastructure( const WindowsGraphicsInfrastructure& ) = delete;
 	WindowsGraphicsInfrastructure& operator=( const WindowsGraphicsInfrastructure& ) = delete;
 
+	// factory interface
 	std::unique_ptr< WindowsAdapter > CreateAdapter( const int id ) noexcept;
 	std::unique_ptr< WindowsAdapter > CreateAdapter( const WindowsAdapterCapabilities& capabilities ) noexcept;
+	std::unique_ptr< WindowsSwapChain > CreateSwapChain( WindowsWindow& window, const std::shared_ptr< DX11Device >& device ) noexcept;
 
 private:
 	IDXGIFactory1* factory;

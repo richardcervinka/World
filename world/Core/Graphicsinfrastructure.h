@@ -49,3 +49,39 @@ public:
 	// Vytvori objekt Display reprezentujici displej pripojeny k vystupu graficke karty
 	virtual std::shared_ptr< Display > CreateDisplay( const int outputId ) noexcept = 0;
 };
+
+class SwapChain {
+public:
+	virtual ~SwapChain() = default;
+
+	/*
+	RenderTargetView back bufferu, do ktereho je mozne vykreslovat (nabindovat do pipeline).
+	Platnost ukazatele konci volanim funkce present, pote nesmi byt ukazatel pouzivan.
+	Pokud neni dostupny zadny RenderTargetView, vraci nullptr;
+	*/
+	//virtual RenderTargetView* AcquireRenderTargetView() noexcept = 0;
+
+	/*
+	Zobrazi obsah backbufferu (aktualni RenderTargetView).
+	*/
+	virtual void Present() noexcept = 0;
+
+	/*
+	Prepne do fullscreen rezimu (zmeni styl okna).
+	Pokud je parametr diplay nullptr, prepne do windowed rezimu.
+	*/
+	virtual void SetFullscreen( Display* const display ) noexcept = 0;
+
+	//virtual void SetPresentMode( const SwapChainPresentMode mode ) noexcept = 0;
+
+	/*
+	Rozmery back bufferu
+	*/
+	virtual int GetWidth() const noexcept = 0;
+	virtual int GetHeight() const noexcept = 0;
+
+	/*
+	Pokud vraci false, je nutne provest recreate!
+	*/
+	virtual bool Valid() const noexcept = 0;
+};
