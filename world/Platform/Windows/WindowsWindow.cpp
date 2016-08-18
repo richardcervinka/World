@@ -83,7 +83,7 @@ LRESULT CALLBACK WindowsWindow::WndProcStatic( HWND hwnd, UINT message, WPARAM w
 	if ( WM_CREATE == message ) {
 		LPCREATESTRUCT cs = reinterpret_cast< LPCREATESTRUCT >( lparam );
 		WindowsWindow* window = reinterpret_cast< WindowsWindow* >( cs->lpCreateParams );
-		SetWindowLongPtr( hwnd, 0, reinterpret_cast< LONG >( window ) );
+		SetWindowLongPtr( hwnd, 0, reinterpret_cast< LONG_PTR >( window ) );
 		return window->WndProc( hwnd, message, wparam, lparam );
 	}
 	
@@ -160,59 +160,59 @@ void WindowsWindow::OnSize( const int width, const int height ) {
 	Window::OnSize( width, height );
 }
 
-void WindowsWindow::Show() {
+void WindowsWindow::Show() noexcept {
 	if ( hwnd ) {
 		ShowWindow( hwnd, SW_SHOW );
 		UpdateWindow( hwnd );
 	}
 }
 
-void WindowsWindow::Hide() {
+void WindowsWindow::Hide() noexcept {
 	if ( hwnd ) {
 		ShowWindow( hwnd, SW_HIDE );
 	}
 }
 
-int WindowsWindow::GetWidth() const {
+int WindowsWindow::GetWidth() const noexcept {
 	return width;
 }
 
-int WindowsWindow::GetHeight() const {
+int WindowsWindow::GetHeight() const noexcept {
 	return height;
 }
 
-void WindowsWindow::Resize( const int width, const int height ) {
+void WindowsWindow::Resize( const int width, const int height ) noexcept {
 	if ( hwnd ) {
 		SetWindowPos( hwnd, 0, 0, 0, width, height, SWP_NOMOVE | SWP_NOZORDER );
 	}
 }
 
-int WindowsWindow::GetClientWidth() const {
+int WindowsWindow::GetClientWidth() const noexcept {
 	return clientWidth;
 }
 
-int WindowsWindow::GetClientHeight() const {
+int WindowsWindow::GetClientHeight() const noexcept {
 	return clientHeight;
 }
 
-void WindowsWindow::ResizeClient( const int width, const int height ) {
+void WindowsWindow::ResizeClient( const int width, const int height ) noexcept {
 	Resize(
 		width + this->width - this->clientWidth,
 		height + this->height - this->clientHeight
 	);
 }
 
-void WindowsWindow::SetPosition( const int x, const int y ) {
+void WindowsWindow::SetPosition( const int x, const int y ) noexcept {
 	if ( hwnd ) {
 		SetWindowPos( hwnd, 0, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER );
 	}
 }
 
-HWND WindowsWindow::GetHandle() const noexcept {
-	return hwnd;
+void* WindowsWindow::GetHandle() noexcept {
+	return reinterpret_cast< void* >( hwnd );
 }
 
-void WindowsWindow::SetBackgroundColor( const Color& color ) {
+void WindowsWindow::SetBackgroundColor( const Color& color ) noexcept {
 	ColorUnorm rgb8 = color.ToUnorm();
 	HBRUSH brush = CreateSolidBrush( RGB( rgb8.r, rgb8.g, rgb8.b ) );
 	HBRUSH prevBrush = ( HBRUSH )SetClassLongPtr( hwnd, GCLP_HBRBACKGROUND, LONG_PTR( brush ) );
@@ -222,24 +222,24 @@ void WindowsWindow::SetBackgroundColor( const Color& color ) {
 	backgroundColor = color;
 }
 
-const Color WindowsWindow::GetBackgroundColor() const {
+const Color WindowsWindow::GetBackgroundColor() const noexcept {
 	return backgroundColor;
 }
 
-void WindowsWindow::Update() {
+void WindowsWindow::Update() noexcept {
 	if ( hwnd ) {
 		UpdateWindow( hwnd );
 	}
 }
 
-void WindowsWindow::SetName( const String& str ) {
+void WindowsWindow::SetName( const String& str ) noexcept {
 	if ( hwnd ) {
 		name = str;
 		SetWindowTextW( hwnd, reinterpret_cast< LPCWSTR >( str.Raw() ) );
 	}
 }
 
-const String WindowsWindow::GetName() const {
+const String WindowsWindow::GetName() const noexcept {
 	return name;
 }
 

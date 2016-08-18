@@ -49,11 +49,8 @@ bool DevApp::Create( const HINSTANCE hInstance, LPSTR lpCmdLine ) {
 	adapterCapabilities.api = WindowsRenderApi::DIRECTX_11_0;
 	adapterCapabilities.requiredVideoMemory = 1024;
 
-	// windows GI
-	WindowsGraphicsInfrastructure gi;
-
 	// create adapter
-	auto adapter = gi.CreateAdapter( adapterCapabilities );
+	auto adapter = CreateWindowsAdapter( adapterCapabilities );
 	if ( adapter == nullptr ) {
 		return false;
 	}
@@ -70,8 +67,8 @@ bool DevApp::Create( const HINSTANCE hInstance, LPSTR lpCmdLine ) {
 		return false;
 	}
 
-	// swap chain
-	auto swapChain = gi.CreateSwapChain( window, device );
+	// swap chain associated with window
+	auto swapChain = device->CreateSwapChain( &window );
 	if ( swapChain == nullptr ) {
 		return false;
 	}

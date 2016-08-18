@@ -31,6 +31,7 @@ public:
 	virtual void SetName( const String& str ) noexcept = 0;
 	virtual const String GetName() const noexcept = 0;
 	virtual void Update() noexcept = 0;
+	virtual void* GetHandle() noexcept = 0;
 
 protected:
 	// defaultni event handlery

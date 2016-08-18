@@ -5,13 +5,91 @@
 #include <memory>
 #include <vector>
 #include "..\RenderInterface.h"
+#include "..\..\Platform\Windows\WindowsWindow.h"
 
 const DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+/*
+COM temporary smart pointer (pouze pro interni pouziti).
+*/
+template <typename T>
+class ComPtr {
+public:
+	ComPtr() {
+		ptr = nullptr;
+	}
+	
+	~ComPtr() {
+		Release();
+	}
+
+	ComPtr( const ComPtr& cp ) {
+		ptr = cp.Ref();
+	}
+
+	ComPtr& operator=( const nullptr_t ptr ) {
+		Release();
+	}
+
+	template <typename P>
+	ComPtr& operator=( const ComPtr< P >& cp ) {
+		T* cpptr = cp.Ref();
+		Release();
+		ptr = cpptr;
+	}
+
+	template <typename P>
+	ComPtr& operator=( ComPtr< P >&& cp ) {
+		T* cpptr = cp.ptr;
+		cp.ptr = nullptr;
+		ptr = cpptr;
+	}
+
+	bool operator==( void* const ptr ) const noexcept {
+		return this->ptr == ptr;
+	}
+
+	bool operator!=( void* const ptr ) const noexcept {
+		return this->ptr != ptr;
+	}
+
+	T* operator->() const noexcept {
+		return ptr;
+	}
+	
+	T** operator&() noexcept {
+		return &ptr;
+	}
+
+	T* Raw() const noexcept {
+		return ptr;
+	}
+
+private:
+
+	T* Ref() noexcept {
+		if ( ptr != nullptr ) {
+			ptr->AddRef();
+		}
+		return ptr;
+	}
+
+	void Release() noexcept {
+		if ( ptr != nullptr ) {
+			ptr->Release();
+			ptr = nullptr;
+		}
+	}
+
+private:
+	T* ptr;
+};
 
 // forward declarations
 class DX11Device;
 class DX11CommandInterface;
 class DX11CommandList;
+class DX11SwapChain;
 class DX11Buffer;
 class DX11TextureBuffer;
 class DX11GenericBuffer;
@@ -36,6 +114,10 @@ public:
 	~DX11Device();
 	bool Create( IDXGIAdapter1* const adapter, const D3D_FEATURE_LEVEL featureLevel ) noexcept;
 
+	// Device implementation
+
+	virtual PSwapChain CreateSwapChain( Window* const window ) noexcept override;
+
 	virtual PBuffer CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) noexcept override;
 	virtual PBuffer CreateVertexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) noexcept override;
 	virtual PBuffer CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) noexcept override;
@@ -58,12 +140,12 @@ public:
 
 	virtual int GetMaxMultisampleQuality( const int samplesCount ) const noexcept override;
 
-	// implementation interface
+	// directx accessors
 	ID3D11DeviceContext* GetD3D11DeviceContext() noexcept;
 
 private:
-	ID3D11Device* device;
-	ID3D11DeviceContext* context;
+	ComPtr< ID3D11Device > device;
+	ComPtr< ID3D11DeviceContext > context;
 };
 
 class DX11CommandInterface: public CommandInterface {
@@ -122,6 +204,27 @@ private:
 	ID3D11RasterizerState* currentRasterizerState;
 };
 
+class DX11SwapChain : public SwapChain {
+public:
+	DX11SwapChain();
+	~DX11SwapChain();
+	bool Create( const ComPtr< ID3D11Device >& device, Window* const window ) noexcept;
+
+	// SwapChain implementation
+	virtual void Present() noexcept override;
+	virtual void SetFullscreen( Display* const display ) noexcept override;
+	virtual int GetWidth() const noexcept override;
+	virtual int GetHeight() const noexcept override;
+	virtual bool Valid() const noexcept override;
+
+private:
+	ComPtr< IDXGISwapChain > swapChain;
+	PRenderTargetView view;
+	Window* window;
+	int width;
+	int height;
+};
+
 class DX11Buffer: public Buffer {
 public:
 	DX11Buffer();
@@ -135,22 +238,22 @@ public:
 	virtual BufferAccess GetAccess() const noexcept override;
 	virtual int GetSubresourcesCount() const noexcept override;
 
-	// implementation interface
+	// DX11Buffer interface
 	ID3D11Resource* GetD3D11Resource() noexcept;
 	virtual bool Map( ID3D11DeviceContext* const context, const int subresource, const D3D11_MAP mapType, MappedBuffer& result ) noexcept = 0;
 
 protected:
-	void SetBuffer( ID3D11Resource* const resource, const BufferInfo& bufferInfo ) noexcept;
+	//void SetBuffer( ID3D11Resource* const resource, const BufferInfo& bufferInfo ) noexcept;
 
-private:
-	ID3D11Resource* resource;
+protected:
+	ComPtr< ID3D11Resource > resource;
 	BufferInfo bufferInfo;
 };
 
 class DX11TextureBuffer: public DX11Buffer {
 public:
 	DX11TextureBuffer();
-	bool Create( ID3D11Device* const device, const TextureBufferParams& params, const void* const initialData[] ) noexcept;
+	bool Create( const ComPtr< ID3D11Device >& device, const TextureBufferParams& params, const void* const initialData[] ) noexcept;
 
 	// prekryti funkce GetSubresourcesCount, pouze texture buffery muzou mit vice subresources
 	virtual int GetSubresourcesCount() const noexcept override;
@@ -185,7 +288,7 @@ private:
 class DX11GenericBuffer: public DX11Buffer {
 public:
 	bool Create(
-		ID3D11Device* const device,
+		const ComPtr< ID3D11Device >& device,
 		const BufferType type,
 		const int byteWidth,
 		const BufferUsage usage,
@@ -204,39 +307,40 @@ class DX11RenderTargetView: public RenderTargetView {
 public:
 	DX11RenderTargetView();
 	~DX11RenderTargetView();
-	bool Create( ID3D11Device* const device, const PBuffer& textureBuffer ) noexcept;
+	bool Create( const ComPtr< ID3D11Device >& device, const PBuffer& textureBuffer ) noexcept;
+	void Create( ComPtr< ID3D11RenderTargetView >& view ) noexcept;
 
 	// implementation interface
 	ID3D11RenderTargetView* GetD3D11RenderTargetView() noexcept;
 
 private:
-	ID3D11RenderTargetView* view;
+	ComPtr< ID3D11RenderTargetView > view;
 };
 
 class DX11TextureView: public TextureView {
 public:
 	DX11TextureView();
 	~DX11TextureView();
-	bool Create( ID3D11Device* const device, const PBuffer& textureBuffer ) noexcept;
+	bool Create( const ComPtr< ID3D11Device >& device, const PBuffer& textureBuffer ) noexcept;
 
 	// implementation interface
 	ID3D11ShaderResourceView* GetD3D11ShaderResourceView() noexcept;
 
 private:
-	ID3D11ShaderResourceView* view;
+	ComPtr< ID3D11ShaderResourceView > view;
 };
 
 class DX11DepthStencilView: public DepthStencilView {
 public:
 	DX11DepthStencilView();
 	~DX11DepthStencilView();
-	bool Create( ID3D11Device* const device, const PBuffer& textureBuffer, const bool readonly ) noexcept;
+	bool Create( const ComPtr< ID3D11Device >& device, const PBuffer& textureBuffer, const bool readonly ) noexcept;
 
 	// implementation interface
 	ID3D11DepthStencilView* GetD3D11DepthStencilView() noexcept;
 
 private:
-	ID3D11DepthStencilView* view;
+	ComPtr< ID3D11DepthStencilView > view;
 };
 
 class DX11ConstantBufferView: public ConstantBufferView {
@@ -255,7 +359,7 @@ public:
 	int GetGSSlot() const noexcept;
 
 private:
-	ID3D11Buffer* buffer;
+	ComPtr< ID3D11Buffer > buffer;
 	int constantsCount;
 	int constantsSize;
 
@@ -277,7 +381,7 @@ class DX11Shader: public Shader {
 public:
 	DX11Shader();
 	~DX11Shader();
-	bool Compile( ID3D11Device* const device, const ShaderParams& params ) noexcept;
+	bool Compile( const ComPtr< ID3D11Device >& device, const ShaderParams& params ) noexcept;
 
 	// Shader implementation
 	virtual ShaderType GetType() const noexcept override;
@@ -290,8 +394,8 @@ public:
 	ID3D11GeometryShader* GetD3D11GeometryShader() noexcept;
 
 private:
-	ID3DBlob* code;
-	ID3D11DeviceChild* shader;
+	ComPtr< ID3DBlob > code;
+	ComPtr< ID3D11DeviceChild > shader;
 	ShaderType type;
 	ShaderVersion version;
 };
@@ -311,77 +415,77 @@ public:
 	ID3DBlob* GetGeometryShaderByteCode() noexcept;
 
 private:
-	ID3D11VertexShader* vs;
-	ID3D11PixelShader* ps;
-	ID3D11GeometryShader* gs;
-	ID3DBlob* vsByteCode;
-	ID3DBlob* psByteCode;
-	ID3DBlob* gsByteCode;
+	ComPtr< ID3D11VertexShader > vs;
+	ComPtr< ID3D11PixelShader > ps;
+	ComPtr< ID3D11GeometryShader > gs;
+	ComPtr< ID3DBlob > vsByteCode;
+	ComPtr< ID3DBlob > psByteCode;
+	ComPtr< ID3DBlob > gsByteCode;
 };
 
 class DX11Sampler: public Sampler {
 public:
 	DX11Sampler();
 	~DX11Sampler();
-	bool Create( ID3D11Device* const device, const SamplerParams& params ) noexcept;
+	bool Create( const ComPtr< ID3D11Device >& device, const SamplerParams& params ) noexcept;
 
 	// implementation interface
 	ID3D11SamplerState* GetD3D11SamplerState() noexcept;
 
 private:
-	ID3D11SamplerState* sampler;
+	ComPtr< ID3D11SamplerState > sampler;
 };
 
 class DX11BlendState: public BlendState {
 public:
 	DX11BlendState();
 	~DX11BlendState();
-	bool Create( ID3D11Device* const device, const BlendStateParams& params ) noexcept;
+	bool Create( const ComPtr< ID3D11Device >& device, const BlendStateParams& params ) noexcept;
 
 	// implementation interface
 	ID3D11BlendState* GetD3D11BlendState() noexcept;
 
 private:
-	ID3D11BlendState* state;
+	ComPtr< ID3D11BlendState > state;
 };
 
 class DX11RasterizerState: public RasterizerState {
 public:
 	DX11RasterizerState();
 	~DX11RasterizerState();
-	bool Create( ID3D11Device* const device, const RasterizerStateParams& params ) noexcept;
+	bool Create( const ComPtr< ID3D11Device >& device, const RasterizerStateParams& params ) noexcept;
 
 	// implementation interface
 	ID3D11RasterizerState* GetD3D11RasterizerState() noexcept;
 
 private:
-	ID3D11RasterizerState* state;
+	ComPtr< ID3D11RasterizerState > state;
 };
 
 class DX11DepthStencilState: public DepthStencilState {
 public:
 	DX11DepthStencilState();
 	~DX11DepthStencilState();
-	bool Create( ID3D11Device* const device, const DepthStencilStateParams& params ) noexcept;
+	bool Create( const ComPtr< ID3D11Device >& device, const DepthStencilStateParams& params ) noexcept;
 
 	// implementation interface
 	ID3D11DepthStencilState* GetD3D11DepthStencilState() noexcept;
 
 private:
-	ID3D11DepthStencilState* state;
+	ComPtr< ID3D11DepthStencilState > state;
 };
 
 class DX11VertexLayout: public VertexLayout {
 public:
 	DX11VertexLayout();
 	~DX11VertexLayout();
-	bool Create( ID3D11Device* const device, const VertexAttribute* const attributes, const int attributesCount, const PRenderProgram& program ) noexcept;
+	bool Create( const ComPtr< ID3D11Device >& device, const VertexAttribute* const attributes, const int attributesCount, const PRenderProgram& program ) noexcept;
 
 	// implementation interface
 	ID3D11InputLayout* GetD3D11InputLayout() noexcept;
 
 private:
-	ID3D11InputLayout* inputLayout;
+	ComPtr< ID3D11InputLayout > inputLayout;
 };
 
 class DX11VertexStream: public VertexStream {

@@ -6,10 +6,10 @@
 /*
 Zakladni trida pro buffery
 */
-class Buffer {
+class Buffer_ {
 public:
-	Buffer() = default;
-	virtual ~Buffer() = 0;
+	Buffer_() = default;
+	virtual ~Buffer_() = 0;
 
 	// Uvolneni bufferu
 	virtual void Release();
@@ -25,7 +25,7 @@ protected:
 Vertex buffer
 */
 template< typename T >
-class TVertexBuffer: public Buffer {
+class TVertexBuffer: public Buffer_ {
 public:
 	// sub buffer
 	// TVertexBuffer( TVertexBuffer& buffer, const int offset, const int count )

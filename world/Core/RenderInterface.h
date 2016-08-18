@@ -14,6 +14,7 @@ namespace RenderInterface {
 	class Device;
 	class CommandInterface;
 	class CommandList;
+	class SwapChain;
 	class Buffer;
 	class TextureView;
 	class RenderTargetView;
@@ -32,6 +33,7 @@ namespace RenderInterface {
 	using PDevice				= std::shared_ptr< Device >;
 	using PCommandInterface		= std::shared_ptr< CommandInterface >;
 	using PCommandList			= std::shared_ptr< CommandList >;
+	using PSwapChain			= std::shared_ptr< SwapChain >;
 	using PBuffer				= std::shared_ptr< Buffer >;
 	using PTextureView			= std::shared_ptr< TextureView >;
 	using PRenderTargetView		= std::shared_ptr< RenderTargetView >;
@@ -539,8 +541,10 @@ namespace RenderInterface {
 	*/
 	class Device : public DeviceObject {
 	public:
+		// swap chain
+		virtual PSwapChain CreateSwapChain( Window* const window ) noexcept = 0;
+
 		// buffers
-		//virtual PBackBuffer CreateBackBuffer( const Window& window ) noexcept = 0;
 		virtual PBuffer CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) noexcept = 0;
 		virtual PBuffer CreateVertexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) noexcept = 0;
 		virtual PBuffer CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) noexcept = 0;
@@ -690,36 +694,39 @@ namespace RenderInterface {
 	*/
 	class CommandList : public DeviceObject {};
 
-	/*
 	class SwapChain : public DeviceObject {
 	public:
-		
+		/*
 		RenderTargetView back bufferu, do ktereho je mozne vykreslovat (nabindovat do pipeline).
 		Platnost ukazatele konci volanim funkce present, pote nesmi byt ukazatel pouzivan.
 		Pokud neni dostupny zadny RenderTargetView, vraci nullptr;
-		
-		virtual RenderTargetView* AcquireRenderTargetView() noexcept = 0;
+		*/
+		//virtual RenderTargetView* AcquireRenderTargetView() noexcept = 0;
 
-		
+		/*
 		Zobrazi obsah backbufferu (aktualni RenderTargetView).
-		
+		*/
 		virtual void Present() noexcept = 0;
 
-		
+		/*
 		Prepne do fullscreen rezimu (zmeni styl okna).
 		Pokud je parametr diplay nullptr, prepne do windowed rezimu.
-		
+		*/
 		virtual void SetFullscreen( Display* const display ) noexcept = 0;
 
-		virtual void SetPresentMode( const SwapChainPresentMode mode ) noexcept = 0;
+		//virtual void SetPresentMode( const SwapChainPresentMode mode ) noexcept = 0;
 
-		
+		/*
 		Rozmery back bufferu
-		
+		*/
 		virtual int GetWidth() const noexcept = 0;
 		virtual int GetHeight() const noexcept = 0;
+
+		/*
+		Pokud vraci false, je nutne provest recreate!
+		*/
+		virtual bool Valid() const noexcept = 0;
 	};
-	*/
 
 	/*
 	Buffer je blok pameti rezervovany v pameti graficke karty.

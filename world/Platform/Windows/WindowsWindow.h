@@ -36,23 +36,22 @@ public:
 
 	bool CreateAppWindow( const HINSTANCE hInstance, const int clientWidth, const int clientHeight );
 
-	HWND GetHandle() const noexcept;
-
 	// implementace rozhrani Window
-	virtual int GetWidth() const override;
-	virtual int GetHeight() const override;
+	virtual int GetWidth() const noexcept override;
+	virtual int GetHeight() const noexcept override;
 	virtual void Resize( const int width, const int height ) noexcept override;
-	virtual int GetClientWidth() const override;
-	virtual int GetClientHeight() const override;
+	virtual int GetClientWidth() const noexcept override;
+	virtual int GetClientHeight() const noexcept override;
 	virtual void ResizeClient( const int width, const int height ) noexcept override;
-	virtual void SetPosition( const int x, const int y ) override;
-	virtual void Show() override;
-	virtual void Hide() override;
-	virtual void SetName( const String& str ) override;
-	virtual const String GetName() const override;
-	virtual void Update() override;
-	virtual void SetBackgroundColor( const Color& color ) override;
-	virtual const Color GetBackgroundColor() const override;
+	virtual void SetPosition( const int x, const int y ) noexcept override;
+	virtual void Show() noexcept override;
+	virtual void Hide() noexcept override;
+	virtual void SetName( const String& str ) noexcept override;
+	virtual const String GetName() const noexcept override;
+	virtual void Update() noexcept override;
+	virtual void SetBackgroundColor( const Color& color ) noexcept override;
+	virtual const Color GetBackgroundColor() const noexcept override;
+	virtual void* GetHandle() noexcept override;
 	
 protected:
 	// message handlers

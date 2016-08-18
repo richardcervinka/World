@@ -2,13 +2,14 @@
 
 #include <memory>
 #include "..\RenderInterface.h"
+#include "..\DX11\DX11RenderInterface.h"
 #include "..\Graphicsinfrastructure.h"
 
 // forward declarations
 struct IDXGIFactory1;
 struct IDXGIAdapter1;
 struct IDXGIOutput;
-class DX11Device;
+//class DX11Device;
 class WindowsWindow;
 
 enum class WindowsRenderApi {
@@ -32,7 +33,7 @@ public:
 	
 	virtual std::shared_ptr< Display > CreateDisplay( const int outputId ) noexcept override;
 	
-	std::shared_ptr< DX11Device > CreateDX11Device() noexcept;
+	RenderInterface::PDevice CreateDX11Device() noexcept;
 
 private:
 	IDXGIAdapter1* adapter;
@@ -54,6 +55,7 @@ private:
 	std::vector< DisplayMode > modes;
 };
 
+/*
 class WindowsSwapChain : public SwapChain {
 public:
 	WindowsSwapChain();
@@ -73,10 +75,19 @@ private:
 	int width;
 	int height;
 };
+*/
+
+
+
+std::unique_ptr< WindowsAdapter > CreateWindowsAdapter( const int id ) noexcept;
+std::unique_ptr< WindowsAdapter > CreateWindowsAdapter( const WindowsAdapterCapabilities& capabilities ) noexcept;
+
 
 /*
 Temporary factory
 */
+
+/*
 class WindowsGraphicsInfrastructure {
 public:
 	WindowsGraphicsInfrastructure();
@@ -89,8 +100,9 @@ public:
 	// factory interface
 	std::unique_ptr< WindowsAdapter > CreateAdapter( const int id ) noexcept;
 	std::unique_ptr< WindowsAdapter > CreateAdapter( const WindowsAdapterCapabilities& capabilities ) noexcept;
-	std::unique_ptr< WindowsSwapChain > CreateSwapChain( WindowsWindow& window, const std::shared_ptr< DX11Device >& device ) noexcept;
+	//std::unique_ptr< WindowsSwapChain > CreateSwapChain( WindowsWindow& window, const std::shared_ptr< DX11Device >& device ) noexcept;
 
 private:
 	IDXGIFactory1* factory;
 };
+*/

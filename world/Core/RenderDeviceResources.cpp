@@ -4,13 +4,13 @@
 
 // Buffer
 
-Buffer::~Buffer() {}
+Buffer_::~Buffer_() {}
 
-void Buffer::Release() {
+void Buffer_::Release() {
 	buffer = nullptr;
 }
 
-RenderInterface::Buffer* Buffer::GetBuffer() {
+RenderInterface::Buffer* Buffer_::GetBuffer() {
 	return buffer.get();
 }
 

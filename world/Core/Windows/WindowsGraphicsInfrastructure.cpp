@@ -1,7 +1,7 @@
 #include <d3d11.h>
 #include <dxgi1_2.h>
 #include "..\..\Platform\Windows\WindowsWindow.h"
-#include "..\DX11\DX11RenderInterface.h"
+//#include "..\DX11\DX11RenderInterface.h"
 #include "WindowsGraphicsInfrastructure.h"
 
 // WindowsAdapter
@@ -76,7 +76,7 @@ std::shared_ptr< Display > WindowsAdapter::CreateDisplay( const int outputId ) n
 	return std::shared_ptr< Display >( display );
 }
 
-std::shared_ptr< DX11Device > WindowsAdapter::CreateDX11Device() noexcept {
+RenderInterface::PDevice WindowsAdapter::CreateDX11Device() noexcept {
 	std::shared_ptr< DX11Device > device( new( std::nothrow ) DX11Device() );
 	if ( device == nullptr ) {
 		return nullptr;
@@ -152,6 +152,7 @@ bool WindowsDisplay::GetBestMode( DisplayMode& result ) const noexcept {
 
 // WindowsSwapChain
 
+/*
 WindowsSwapChain::WindowsSwapChain() {
 	swapChain = nullptr;
 	window = nullptr;
@@ -254,5 +255,53 @@ std::unique_ptr< WindowsAdapter > WindowsGraphicsInfrastructure::CreateAdapter( 
 }
 
 std::unique_ptr< WindowsSwapChain > WindowsGraphicsInfrastructure::CreateSwapChain( WindowsWindow& window, const std::shared_ptr< DX11Device >& device ) noexcept {
+	return nullptr;
+}
+*/
+
+
+
+std::unique_ptr< WindowsAdapter > CreateAdapter( IDXGIFactory1* const factory, const int id ) noexcept {
+	if ( factory == nullptr ) {
+		return nullptr;
+	}
+	IDXGIAdapter1* adapter = nullptr;
+	HRESULT hresult = factory->EnumAdapters1( id, &adapter );
+	if ( FAILED( hresult ) ) {
+		return nullptr;
+	}
+	return std::make_unique< WindowsAdapter >( adapter ); 
+}
+
+std::unique_ptr< WindowsAdapter > CreateWindowsAdapter( const int id ) noexcept {
+	IDXGIFactory1* factory = nullptr;
+	auto hresult = CreateDXGIFactory1( __uuidof( IDXGIFactory1 ), reinterpret_cast< void** >( &factory ) );
+	if ( FAILED( hresult ) ) {
+		return nullptr;
+	}
+	auto adapter = CreateAdapter( factory, id );
+	factory->Release();
+	return adapter;
+}
+
+std::unique_ptr< WindowsAdapter > CreateWindowsAdapter( const WindowsAdapterCapabilities& capabilities ) noexcept {
+	IDXGIFactory1* factory = nullptr;
+	auto hresult = CreateDXGIFactory1( __uuidof( IDXGIFactory1 ), reinterpret_cast< void** >( &factory ) );
+	if ( FAILED( hresult ) ) {
+		return nullptr;
+	}
+	int id = 0;
+	auto adapter = CreateAdapter( factory, id );
+	while ( adapter != nullptr ) {
+		// check capabilities
+		if ( adapter->CheckCapabilities( capabilities ) ) {
+			factory->Release();
+			return adapter;
+		}
+		// next adapter
+		id += 1;
+		adapter = CreateAdapter( factory, id );
+	}
+	factory->Release();
 	return nullptr;
 }
