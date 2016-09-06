@@ -1,4 +1,4 @@
-#include "..\System.h"
+#include "Platform/System.h"
 
 class WindowsSystem: public System {
 public:

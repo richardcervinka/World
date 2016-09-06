@@ -1,6 +1,6 @@
 #include "Allocation.h"
 #include "String.h"
-#include "..\Platform\Application.h"
+#include "Platform/Application.h"
 
 // 16 byte aligned heap allocations
 

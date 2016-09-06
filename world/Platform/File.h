@@ -2,8 +2,8 @@
 
 #include <vector>
 #include "Platform.h"
-#include "..\Framework\Types.h"
-#include "..\Framework\String.h"
+#include "Framework/Types.h"
+#include "Framework/String.h"
 
 // Vrati cely nazev souboru, bez adresarove cesty
 String GetFileName( const String& file );

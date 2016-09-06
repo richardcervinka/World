@@ -4,7 +4,7 @@
 //#define _UNICODE
 
 #include <Windows.h>
-#include "..\Window.h"
+#include "Platform/Window.h"
 
 struct CreateWindowsWindowParams {
 	// parametry WNDCLASSEX

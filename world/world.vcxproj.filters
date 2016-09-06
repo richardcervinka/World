@@ -182,6 +182,9 @@
     <ClInclude Include="Core\Graphicsinfrastructure.h">
       <Filter>Source Files\Core</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Windows\ComPtr.h">
+      <Filter>Source Files\Core\Windows</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="libs\ATI_Compress_MT.lib">

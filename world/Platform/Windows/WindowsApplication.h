@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Windows.h>
-#include "..\Application.h"
+#include "Platform/Application.h"
 
 class WindowsApplication: public Application {
 public:

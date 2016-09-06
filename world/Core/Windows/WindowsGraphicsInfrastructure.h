@@ -1,15 +1,16 @@
 #pragma once
 
 #include <memory>
-#include "..\RenderInterface.h"
-#include "..\DX11\DX11RenderInterface.h"
-#include "..\Graphicsinfrastructure.h"
+#include <vector>
+#include "Core/Windows/ComPtr.h"
+#include "Core/RenderInterface.h"
+#include "Core/DX11/DX11RenderInterface.h"
+#include "Core/Graphicsinfrastructure.h"
 
 // forward declarations
 struct IDXGIFactory1;
 struct IDXGIAdapter1;
 struct IDXGIOutput;
-//class DX11Device;
 class WindowsWindow;
 
 enum class WindowsRenderApi {
@@ -23,7 +24,7 @@ struct WindowsAdapterCapabilities {
 
 class WindowsAdapter : public Adapter {
 public:
-	WindowsAdapter( IDXGIAdapter1* const adapter );
+	WindowsAdapter( const ComPtr< IDXGIAdapter1 >& adapter );
 	~WindowsAdapter();
 
 	// vraci true, pokud ma adapter vsechny pozadovane vlastnosti
@@ -33,15 +34,15 @@ public:
 	
 	virtual std::shared_ptr< Display > CreateDisplay( const int outputId ) noexcept override;
 	
-	RenderInterface::PDevice CreateDX11Device() noexcept;
+	std::shared_ptr< Directx11RenderInterface::Device > CreateDirectx11Device() noexcept;
 
 private:
-	IDXGIAdapter1* adapter;
+	ComPtr< IDXGIAdapter1 > adapter;
 };
 
 class WindowsDisplay : public Display {
 public:
-	WindowsDisplay( IDXGIOutput* const output );
+	WindowsDisplay( const ComPtr< IDXGIOutput >& output );
 	~WindowsDisplay();
 
 	virtual bool GetMode( const int id, DisplayMode& result ) const noexcept override;
@@ -51,7 +52,7 @@ private:
 	void EnumModes() noexcept;
 
 private:
-	IDXGIOutput* output;
+	ComPtr< IDXGIOutput > output;
 	std::vector< DisplayMode > modes;
 };
 
@@ -81,6 +82,8 @@ private:
 
 std::unique_ptr< WindowsAdapter > CreateWindowsAdapter( const int id ) noexcept;
 std::unique_ptr< WindowsAdapter > CreateWindowsAdapter( const WindowsAdapterCapabilities& capabilities ) noexcept;
+
+// CreateWindowsSwapChain( device, window )
 
 
 /*

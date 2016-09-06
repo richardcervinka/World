@@ -2,7 +2,7 @@
 //#define _UNICODE
 
 #include "WindowsWindow.h"
-#include "..\Application.h"
+#include "Platform/Application.h"
 
 WindowsWindow::WindowsWindow():
 	hwnd( NULL ),

@@ -1,5 +1,5 @@
 #include "Graphicsinfrastructure.h"
-#include "..\Framework\Math.h"
+#include "Framework/Math.h"
 
 /*
 Funkce FindMode() je umistena je v zakladni tride, aby bylo zajisteno, ze je algoritmus

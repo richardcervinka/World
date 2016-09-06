@@ -31,7 +31,7 @@ private:
 	bool CreateFile( const String& fullname, const FileMode mode, const FileAccess access, const unsigned int disposition );
 	
 private:
-	unsigned long handle;
+	void* handle;
 	FileMode mode;
 	String fullname;
 };

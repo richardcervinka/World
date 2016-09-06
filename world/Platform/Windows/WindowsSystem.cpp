@@ -3,7 +3,7 @@
 #include <dxgi1_2.h>
 #include <cstdint>
 #include "WindowsSystem.h"
-#include "..\..\Framework\String.h"
+#include "Framework/String.h"
 
 // WindowsSystem
 

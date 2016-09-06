@@ -1,7 +1,8 @@
+#include <vector>
 #include <d3dcompiler.h>
 #include "DX11RenderInterface.h"
-#include "..\..\Framework\Math.h"
-#include "..\..\Framework\Debug.h"
+#include "Framework/Math.h"
+#include "Framework/Debug.h"
 
 template< typename T, typename TPtr >
 T* down_cast( TPtr* const ptr ) {
@@ -21,180 +22,180 @@ T* down_cast( const std::shared_ptr< TPtr >& ptr ) {
 
 // RenderInterface to DX11 enum wrappers
 
-DXGI_FORMAT GetDXGIFormat(const Format format) {
+DXGI_FORMAT GetDXGIFormat( const RenderInterface::Format format ) {
 	switch ( format ) {
-	case Format::UNKNOWN:						return DXGI_FORMAT_UNKNOWN;
-	case Format::R32G32B32A32_FLOAT:			return DXGI_FORMAT_R32G32B32A32_FLOAT;
-	case Format::R32G32B32A32_UINT:				return DXGI_FORMAT_R32G32B32A32_UINT;
-	case Format::R32G32B32_FLOAT:				return DXGI_FORMAT_R32G32B32_FLOAT;
-	case Format::R32G32B32_UINT:				return DXGI_FORMAT_R32G32B32_UINT;
-	case Format::R32G32_FLOAT:					return DXGI_FORMAT_R32G32_FLOAT;
-	case Format::R32G32_UINT:					return DXGI_FORMAT_R32G32_UINT;
-	case Format::R32_FLOAT:						return DXGI_FORMAT_R32_FLOAT;
-	case Format::R32_UINT:						return DXGI_FORMAT_R32_UINT;
-	case Format::R16G16B16A16_FLOAT:			return DXGI_FORMAT_R16G16B16A16_FLOAT;
-	case Format::R16G16B16A16_UINT:				return DXGI_FORMAT_R16G16B16A16_UINT;
-	case Format::R16G16B16A16_UNORM:			return DXGI_FORMAT_R16G16B16A16_UNORM;
-	case Format::R16G16B16A16_SINT:				return DXGI_FORMAT_R16G16B16A16_SINT;
-	case Format::R16G16B16A16_SNORM:			return DXGI_FORMAT_R16G16B16A16_SNORM;
-	case Format::R16G16_FLOAT:					return DXGI_FORMAT_R16G16_FLOAT;
-	case Format::R16G16_UINT:					return DXGI_FORMAT_R16G16_UINT;
-	case Format::R16G16_UNORM:					return DXGI_FORMAT_R16G16_UNORM;
-	case Format::R16G16_SINT:					return DXGI_FORMAT_R16G16_SINT;
-	case Format::R16G16_SNORM:					return DXGI_FORMAT_R16G16_SNORM;
-	case Format::R16_FLOAT:						return DXGI_FORMAT_R16_FLOAT;
-	case Format::R16_UINT:						return DXGI_FORMAT_R16_UINT;
-	case Format::R16_UNORM:						return DXGI_FORMAT_R16_UNORM;
-	case Format::R16_SINT:						return DXGI_FORMAT_R16_SINT;
-	case Format::R16_SNORM:						return DXGI_FORMAT_R16_SNORM;
-	case Format::R8G8B8A8_UINT:					return DXGI_FORMAT_R8G8B8A8_UINT;
-	case Format::R8G8B8A8_UNORM:				return DXGI_FORMAT_R8G8B8A8_UNORM;
-	case Format::R8G8B8A8_SINT:					return DXGI_FORMAT_R8G8B8A8_SINT;
-	case Format::R8G8B8A8_SNORM:				return DXGI_FORMAT_R8G8B8A8_SNORM;
-	case Format::R8G8_UINT:						return DXGI_FORMAT_R8G8_UINT;
-	case Format::R8G8_UNORM:					return DXGI_FORMAT_R8G8_UNORM;
-	case Format::R8G8_SINT:						return DXGI_FORMAT_R8G8_SINT;
-	case Format::R8G8_SNORM:					return DXGI_FORMAT_R8G8_SNORM;
-	case Format::R8_UINT:						return DXGI_FORMAT_R8_UINT;
-	case Format::R8_UNORM:						return DXGI_FORMAT_R8_UNORM;
-	case Format::R8_SINT:						return DXGI_FORMAT_R8_SINT;
-	case Format::R8_SNORM:						return DXGI_FORMAT_R8_SNORM;
-	case Format::DEPTH_24_UNORM_STENCIL_8_UINT:	return DXGI_FORMAT_D24_UNORM_S8_UINT;
-	case Format::BC1:							return DXGI_FORMAT_BC1_UNORM;
-	case Format::BC3:							return DXGI_FORMAT_BC3_UNORM;
+	case RenderInterface::Format::UNKNOWN:							return DXGI_FORMAT_UNKNOWN;
+	case RenderInterface::Format::R32G32B32A32_FLOAT:				return DXGI_FORMAT_R32G32B32A32_FLOAT;
+	case RenderInterface::Format::R32G32B32A32_UINT:				return DXGI_FORMAT_R32G32B32A32_UINT;
+	case RenderInterface::Format::R32G32B32_FLOAT:					return DXGI_FORMAT_R32G32B32_FLOAT;
+	case RenderInterface::Format::R32G32B32_UINT:					return DXGI_FORMAT_R32G32B32_UINT;
+	case RenderInterface::Format::R32G32_FLOAT:						return DXGI_FORMAT_R32G32_FLOAT;
+	case RenderInterface::Format::R32G32_UINT:						return DXGI_FORMAT_R32G32_UINT;
+	case RenderInterface::Format::R32_FLOAT:						return DXGI_FORMAT_R32_FLOAT;
+	case RenderInterface::Format::R32_UINT:							return DXGI_FORMAT_R32_UINT;
+	case RenderInterface::Format::R16G16B16A16_FLOAT:				return DXGI_FORMAT_R16G16B16A16_FLOAT;
+	case RenderInterface::Format::R16G16B16A16_UINT:				return DXGI_FORMAT_R16G16B16A16_UINT;
+	case RenderInterface::Format::R16G16B16A16_UNORM:				return DXGI_FORMAT_R16G16B16A16_UNORM;
+	case RenderInterface::Format::R16G16B16A16_SINT:				return DXGI_FORMAT_R16G16B16A16_SINT;
+	case RenderInterface::Format::R16G16B16A16_SNORM:				return DXGI_FORMAT_R16G16B16A16_SNORM;
+	case RenderInterface::Format::R16G16_FLOAT:						return DXGI_FORMAT_R16G16_FLOAT;
+	case RenderInterface::Format::R16G16_UINT:						return DXGI_FORMAT_R16G16_UINT;
+	case RenderInterface::Format::R16G16_UNORM:						return DXGI_FORMAT_R16G16_UNORM;
+	case RenderInterface::Format::R16G16_SINT:						return DXGI_FORMAT_R16G16_SINT;
+	case RenderInterface::Format::R16G16_SNORM:						return DXGI_FORMAT_R16G16_SNORM;
+	case RenderInterface::Format::R16_FLOAT:						return DXGI_FORMAT_R16_FLOAT;
+	case RenderInterface::Format::R16_UINT:							return DXGI_FORMAT_R16_UINT;
+	case RenderInterface::Format::R16_UNORM:						return DXGI_FORMAT_R16_UNORM;
+	case RenderInterface::Format::R16_SINT:							return DXGI_FORMAT_R16_SINT;
+	case RenderInterface::Format::R16_SNORM:						return DXGI_FORMAT_R16_SNORM;
+	case RenderInterface::Format::R8G8B8A8_UINT:					return DXGI_FORMAT_R8G8B8A8_UINT;
+	case RenderInterface::Format::R8G8B8A8_UNORM:					return DXGI_FORMAT_R8G8B8A8_UNORM;
+	case RenderInterface::Format::R8G8B8A8_SINT:					return DXGI_FORMAT_R8G8B8A8_SINT;
+	case RenderInterface::Format::R8G8B8A8_SNORM:					return DXGI_FORMAT_R8G8B8A8_SNORM;
+	case RenderInterface::Format::R8G8_UINT:						return DXGI_FORMAT_R8G8_UINT;
+	case RenderInterface::Format::R8G8_UNORM:						return DXGI_FORMAT_R8G8_UNORM;
+	case RenderInterface::Format::R8G8_SINT:						return DXGI_FORMAT_R8G8_SINT;
+	case RenderInterface::Format::R8G8_SNORM:						return DXGI_FORMAT_R8G8_SNORM;
+	case RenderInterface::Format::R8_UINT:							return DXGI_FORMAT_R8_UINT;
+	case RenderInterface::Format::R8_UNORM:							return DXGI_FORMAT_R8_UNORM;
+	case RenderInterface::Format::R8_SINT:							return DXGI_FORMAT_R8_SINT;
+	case RenderInterface::Format::R8_SNORM:							return DXGI_FORMAT_R8_SNORM;
+	case RenderInterface::Format::DEPTH_24_UNORM_STENCIL_8_UINT:	return DXGI_FORMAT_D24_UNORM_S8_UINT;
+	case RenderInterface::Format::BC1:								return DXGI_FORMAT_BC1_UNORM;
+	case RenderInterface::Format::BC3:								return DXGI_FORMAT_BC3_UNORM;
 	}
 	return DXGI_FORMAT_UNKNOWN;
 }
 
-D3D11_COMPARISON_FUNC GetD3D11ComparsionFunc( const DepthStencilComparsion dsc ) {
+D3D11_COMPARISON_FUNC GetD3D11ComparsionFunc( const RenderInterface::DepthStencilComparsion dsc ) {
 	switch ( dsc ) {
-	case DepthStencilComparsion::NEVER:			return D3D11_COMPARISON_NEVER;
-	case DepthStencilComparsion::LESS:			return D3D11_COMPARISON_LESS;
-	case DepthStencilComparsion::EQUAL:			return D3D11_COMPARISON_EQUAL;
-	case DepthStencilComparsion::LESS_EQUAL:	return D3D11_COMPARISON_LESS_EQUAL;
-	case DepthStencilComparsion::GREATER:		return D3D11_COMPARISON_GREATER;
-	case DepthStencilComparsion::NOT_EQUAL:		return D3D11_COMPARISON_NOT_EQUAL;
-	case DepthStencilComparsion::GREATER_EQUAL:	return D3D11_COMPARISON_GREATER_EQUAL;
-	case DepthStencilComparsion::ALWAYS:		return D3D11_COMPARISON_ALWAYS;
+	case RenderInterface::DepthStencilComparsion::NEVER:			return D3D11_COMPARISON_NEVER;
+	case RenderInterface::DepthStencilComparsion::LESS:				return D3D11_COMPARISON_LESS;
+	case RenderInterface::DepthStencilComparsion::EQUAL:			return D3D11_COMPARISON_EQUAL;
+	case RenderInterface::DepthStencilComparsion::LESS_EQUAL:		return D3D11_COMPARISON_LESS_EQUAL;
+	case RenderInterface::DepthStencilComparsion::GREATER:			return D3D11_COMPARISON_GREATER;
+	case RenderInterface::DepthStencilComparsion::NOT_EQUAL:		return D3D11_COMPARISON_NOT_EQUAL;
+	case RenderInterface::DepthStencilComparsion::GREATER_EQUAL:	return D3D11_COMPARISON_GREATER_EQUAL;
+	case RenderInterface::DepthStencilComparsion::ALWAYS:			return D3D11_COMPARISON_ALWAYS;
 	}
 	return D3D11_COMPARISON_NEVER;
 }
 
-D3D11_STENCIL_OP GetD3D11StencilOp( const StencilOperation op ) {
+D3D11_STENCIL_OP GetD3D11StencilOp( const RenderInterface::StencilOperation op ) {
 	switch ( op ) {
-	case StencilOperation::KEEP:		return D3D11_STENCIL_OP_KEEP;
-	case StencilOperation::ZERO:		return D3D11_STENCIL_OP_ZERO;
-	case StencilOperation::REPLACE:		return D3D11_STENCIL_OP_REPLACE;
-	case StencilOperation::INCR_SAT:	return D3D11_STENCIL_OP_INCR_SAT;
-	case StencilOperation::DECR_SAT:	return D3D11_STENCIL_OP_DECR_SAT;
-	case StencilOperation::INVERT:		return D3D11_STENCIL_OP_INVERT;
-	case StencilOperation::INCR:		return D3D11_STENCIL_OP_INCR;
-	case StencilOperation::DECR:		return D3D11_STENCIL_OP_DECR;
+	case RenderInterface::StencilOperation::KEEP:		return D3D11_STENCIL_OP_KEEP;
+	case RenderInterface::StencilOperation::ZERO:		return D3D11_STENCIL_OP_ZERO;
+	case RenderInterface::StencilOperation::REPLACE:	return D3D11_STENCIL_OP_REPLACE;
+	case RenderInterface::StencilOperation::INCR_SAT:	return D3D11_STENCIL_OP_INCR_SAT;
+	case RenderInterface::StencilOperation::DECR_SAT:	return D3D11_STENCIL_OP_DECR_SAT;
+	case RenderInterface::StencilOperation::INVERT:		return D3D11_STENCIL_OP_INVERT;
+	case RenderInterface::StencilOperation::INCR:		return D3D11_STENCIL_OP_INCR;
+	case RenderInterface::StencilOperation::DECR:		return D3D11_STENCIL_OP_DECR;
 	}
 	return D3D11_STENCIL_OP_KEEP;
 }
 
-D3D11_TEXTURE_ADDRESS_MODE GetD3D11TextureAddressMode( const TextureAddressing addressing ) {
+D3D11_TEXTURE_ADDRESS_MODE GetD3D11TextureAddressMode( const RenderInterface::TextureAddressing addressing ) {
 	switch ( addressing ) {
-	case TextureAddressing::WRAP:		return D3D11_TEXTURE_ADDRESS_WRAP;
-	case TextureAddressing::MIRROR:		return D3D11_TEXTURE_ADDRESS_MIRROR;
-	case TextureAddressing::CLAMP:		return D3D11_TEXTURE_ADDRESS_CLAMP;
+	case RenderInterface::TextureAddressing::WRAP:		return D3D11_TEXTURE_ADDRESS_WRAP;
+	case RenderInterface::TextureAddressing::MIRROR:	return D3D11_TEXTURE_ADDRESS_MIRROR;
+	case RenderInterface::TextureAddressing::CLAMP:		return D3D11_TEXTURE_ADDRESS_CLAMP;
 	}
 	return D3D11_TEXTURE_ADDRESS_WRAP;
 }
 
-D3D11_FILTER GetD3D11Filter( const TextureFilter filter ) {
+D3D11_FILTER GetD3D11Filter( const RenderInterface::TextureFilter filter ) {
 	switch ( filter ) {
-	case TextureFilter::POINT:								return D3D11_FILTER_MIN_MAG_MIP_POINT;
-	case TextureFilter::POINT_MIP_LINEAR:					return D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
-	case TextureFilter::MIN_POINT_MAG_LINEAR_MIP_POINT:		return D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
-	case TextureFilter::MIN_POINT_MAG_MIP_LINEAR:			return D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR;
-	case TextureFilter::MIN_LINEAR_MAG_MIP_POINT:			return D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
-	case TextureFilter::MIN_LINEAR_MAG_POINT_MIP_LINEAR:	return D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
-	case TextureFilter::LINEAR_MIP_POINT:					return D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
-	case TextureFilter::LINEAR:								return D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	case TextureFilter::ANISOTROPIC:						return D3D11_FILTER_ANISOTROPIC;
+	case RenderInterface::TextureFilter::POINT:								return D3D11_FILTER_MIN_MAG_MIP_POINT;
+	case RenderInterface::TextureFilter::POINT_MIP_LINEAR:					return D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+	case RenderInterface::TextureFilter::MIN_POINT_MAG_LINEAR_MIP_POINT:	return D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
+	case RenderInterface::TextureFilter::MIN_POINT_MAG_MIP_LINEAR:			return D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR;
+	case RenderInterface::TextureFilter::MIN_LINEAR_MAG_MIP_POINT:			return D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
+	case RenderInterface::TextureFilter::MIN_LINEAR_MAG_POINT_MIP_LINEAR:	return D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+	case RenderInterface::TextureFilter::LINEAR_MIP_POINT:					return D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+	case RenderInterface::TextureFilter::LINEAR:							return D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	case RenderInterface::TextureFilter::ANISOTROPIC:						return D3D11_FILTER_ANISOTROPIC;
 	}
 	return D3D11_FILTER_MIN_MAG_MIP_POINT;
 }
 
-D3D11_USAGE GetD3D11Usage( const BufferUsage usage ) {
+D3D11_USAGE GetD3D11Usage( const RenderInterface::BufferUsage usage ) {
 	switch ( usage ) {
-	case BufferUsage::DRAW:			return D3D11_USAGE_DEFAULT;
-	case BufferUsage::STATIC:		return D3D11_USAGE_IMMUTABLE;
-	case BufferUsage::DYNAMIC:		return D3D11_USAGE_DYNAMIC;
-	case BufferUsage::COPY:			return D3D11_USAGE_STAGING;
+	case RenderInterface::BufferUsage::DRAW:		return D3D11_USAGE_DEFAULT;
+	case RenderInterface::BufferUsage::STATIC:		return D3D11_USAGE_IMMUTABLE;
+	case RenderInterface::BufferUsage::DYNAMIC:		return D3D11_USAGE_DYNAMIC;
+	case RenderInterface::BufferUsage::COPY:		return D3D11_USAGE_STAGING;
 	}
 	return D3D11_USAGE_STAGING;
 }
 
-D3D11_BLEND GetD3D11Blend( const Blend blend ) {
+D3D11_BLEND GetD3D11Blend( const RenderInterface::Blend blend ) {
 	switch ( blend ) {
-	case Blend::ZERO:				return D3D11_BLEND_ZERO;
-	case Blend::ONE:				return D3D11_BLEND_ONE;
-	case Blend::SRC_COLOR:			return D3D11_BLEND_SRC_COLOR;
-	case Blend::INV_SRC_COLOR:		return D3D11_BLEND_INV_SRC_COLOR;
-	case Blend::SRC_ALPHA:			return D3D11_BLEND_SRC_ALPHA;
-	case Blend::INV_SRC_ALPHA:		return D3D11_BLEND_INV_SRC_ALPHA;
-	case Blend::DEST_ALPHA:			return D3D11_BLEND_DEST_ALPHA;
-	case Blend::INV_DEST_ALPHA:		return D3D11_BLEND_INV_DEST_ALPHA;
-	case Blend::DEST_COLOR:			return D3D11_BLEND_DEST_COLOR;
-	case Blend::INV_DEST_COLOR:		return D3D11_BLEND_INV_DEST_COLOR;
-	case Blend::SRC_ALPHA_SAT:		return D3D11_BLEND_SRC_ALPHA_SAT;
-	case Blend::BLEND_FACTOR:		return D3D11_BLEND_BLEND_FACTOR;
-	case Blend::INV_BLEND_FACTOR:	return D3D11_BLEND_INV_BLEND_FACTOR;
-	case Blend::SRC1_COLOR:			return D3D11_BLEND_SRC1_COLOR;
-	case Blend::INV_SRC1_COLOR:		return D3D11_BLEND_INV_SRC1_COLOR;
-	case Blend::SRC1_ALPHA:			return D3D11_BLEND_SRC1_ALPHA;
-	case Blend::INV_SRC1_ALPHA:		return D3D11_BLEND_INV_SRC1_ALPHA;
+	case RenderInterface::Blend::ZERO:				return D3D11_BLEND_ZERO;
+	case RenderInterface::Blend::ONE:				return D3D11_BLEND_ONE;
+	case RenderInterface::Blend::SRC_COLOR:			return D3D11_BLEND_SRC_COLOR;
+	case RenderInterface::Blend::INV_SRC_COLOR:		return D3D11_BLEND_INV_SRC_COLOR;
+	case RenderInterface::Blend::SRC_ALPHA:			return D3D11_BLEND_SRC_ALPHA;
+	case RenderInterface::Blend::INV_SRC_ALPHA:		return D3D11_BLEND_INV_SRC_ALPHA;
+	case RenderInterface::Blend::DEST_ALPHA:		return D3D11_BLEND_DEST_ALPHA;
+	case RenderInterface::Blend::INV_DEST_ALPHA:	return D3D11_BLEND_INV_DEST_ALPHA;
+	case RenderInterface::Blend::DEST_COLOR:		return D3D11_BLEND_DEST_COLOR;
+	case RenderInterface::Blend::INV_DEST_COLOR:	return D3D11_BLEND_INV_DEST_COLOR;
+	case RenderInterface::Blend::SRC_ALPHA_SAT:		return D3D11_BLEND_SRC_ALPHA_SAT;
+	case RenderInterface::Blend::BLEND_FACTOR:		return D3D11_BLEND_BLEND_FACTOR;
+	case RenderInterface::Blend::INV_BLEND_FACTOR:	return D3D11_BLEND_INV_BLEND_FACTOR;
+	case RenderInterface::Blend::SRC1_COLOR:		return D3D11_BLEND_SRC1_COLOR;
+	case RenderInterface::Blend::INV_SRC1_COLOR:	return D3D11_BLEND_INV_SRC1_COLOR;
+	case RenderInterface::Blend::SRC1_ALPHA:		return D3D11_BLEND_SRC1_ALPHA;
+	case RenderInterface::Blend::INV_SRC1_ALPHA:	return D3D11_BLEND_INV_SRC1_ALPHA;
 	}
 	return D3D11_BLEND_ZERO;
 }
 
-D3D11_BLEND_OP GetD3D11BlendOp( const BlendOp op ) {
+D3D11_BLEND_OP GetD3D11BlendOp( const RenderInterface::BlendOp op ) {
 	switch ( op ) {
-	case BlendOp::ADD:				return D3D11_BLEND_OP_ADD;
-	case BlendOp::SUBTRACT:			return D3D11_BLEND_OP_SUBTRACT;
-	case BlendOp::REV_SUBTRACT:		return D3D11_BLEND_OP_REV_SUBTRACT;
-	case BlendOp::MIN:				return D3D11_BLEND_OP_MIN;
-	case BlendOp::MAX:				return D3D11_BLEND_OP_MAX;
+	case RenderInterface::BlendOp::ADD:				return D3D11_BLEND_OP_ADD;
+	case RenderInterface::BlendOp::SUBTRACT:		return D3D11_BLEND_OP_SUBTRACT;
+	case RenderInterface::BlendOp::REV_SUBTRACT:	return D3D11_BLEND_OP_REV_SUBTRACT;
+	case RenderInterface::BlendOp::MIN:				return D3D11_BLEND_OP_MIN;
+	case RenderInterface::BlendOp::MAX:				return D3D11_BLEND_OP_MAX;
 	}
 	return D3D11_BLEND_OP_ADD;
 }
 
-D3D11_PRIMITIVE_TOPOLOGY GetD3D11PrimitiveTopology( const PrimitiveTopology topology ) {
+D3D11_PRIMITIVE_TOPOLOGY GetD3D11PrimitiveTopology( const RenderInterface::PrimitiveTopology topology ) {
 	switch ( topology ) {
-	case PrimitiveTopology::DEFAULT:		return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	case PrimitiveTopology::POINTLIST:		return D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
-	case PrimitiveTopology::LINELIST:		return D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
-	case PrimitiveTopology::LINESTRIP:		return D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
-	case PrimitiveTopology::TRIANGLELIST:	return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	case PrimitiveTopology::TRIANGLESTRIP:	return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+	case RenderInterface::PrimitiveTopology::DEFAULT:		return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	case RenderInterface::PrimitiveTopology::POINTLIST:		return D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
+	case RenderInterface::PrimitiveTopology::LINELIST:		return D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
+	case RenderInterface::PrimitiveTopology::LINESTRIP:		return D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
+	case RenderInterface::PrimitiveTopology::TRIANGLELIST:	return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	case RenderInterface::PrimitiveTopology::TRIANGLESTRIP:	return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
 	}
 	return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 }
 
-UINT GetD3D11CPUAccess( const BufferAccess access ) {
+UINT GetD3D11CpuAccess( const RenderInterface::BufferAccess access ) {
 	UINT flags = 0;
-	if ( static_cast< unsigned int >( access ) & static_cast< unsigned int >( BufferAccess::READ ) ) {
+	if ( static_cast< unsigned int >( access ) & static_cast< unsigned int >( RenderInterface::BufferAccess::READ ) ) {
 		flags |= D3D11_CPU_ACCESS_READ;
 	}
-	if ( static_cast< unsigned int >( access ) & static_cast< unsigned int >( BufferAccess::WRITE ) ) {
+	if ( static_cast< unsigned int >( access ) & static_cast< unsigned int >( RenderInterface::BufferAccess::WRITE ) ) {
 		flags |= D3D11_CPU_ACCESS_WRITE;
 	}
 	return flags;
 }
 
-// DX11Device
+// Device
 
-DX11Device::DX11Device() {}
+Directx11RenderInterface::Device::Device() {}
 
-DX11Device::~DX11Device() {
+Directx11RenderInterface::Device::~Device() {
 	context = nullptr;
 	device = nullptr;
 }
 
-bool DX11Device::Create( IDXGIAdapter1* const adapter, const D3D_FEATURE_LEVEL featureLevel ) noexcept {
+bool Directx11RenderInterface::Device::Create( const ComPtr< IDXGIAdapter1 >& adapter, const D3D_FEATURE_LEVEL featureLevel ) noexcept {
 	if ( adapter == nullptr ) {
 		return false;
 	}
@@ -211,7 +212,7 @@ bool DX11Device::Create( IDXGIAdapter1* const adapter, const D3D_FEATURE_LEVEL f
 	ComPtr< ID3D11Device > device;
 	ComPtr< ID3D11DeviceContext > context;
 	hresult = D3D11CreateDevice(
-		adapter,
+		adapter.Raw(),
 		D3D_DRIVER_TYPE_HARDWARE,
 		NULL,
 		flags,
@@ -226,13 +227,13 @@ bool DX11Device::Create( IDXGIAdapter1* const adapter, const D3D_FEATURE_LEVEL f
 		return false;
 	}
 	// ulozit objekty
-	this->device = std::move( device );
-	this->context = std::move( context );
+	this->device = device;
+	this->context = context;
 	return true;
 }
 
-PSwapChain DX11Device::CreateSwapChain( Window* const window ) noexcept {
-	std::shared_ptr< DX11SwapChain > swapChain( new( std::nothrow ) DX11SwapChain() );
+RenderInterface::PSwapChain Directx11RenderInterface::Device::CreateSwapChain( WindowsWindow* const window ) noexcept {
+	std::shared_ptr< Directx11RenderInterface::SwapChain > swapChain( new( std::nothrow ) Directx11RenderInterface::SwapChain() );
 	if ( swapChain == nullptr ) {
 		return nullptr;
 	}
@@ -242,56 +243,50 @@ PSwapChain DX11Device::CreateSwapChain( Window* const window ) noexcept {
 	return swapChain;
 }
 
-PBuffer DX11Device::CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) noexcept {
-	// pokud ma parametr samplesQuality hodnotu MAX_MULTISAMPLE_QUALITY, prevest na platnou hodnotu
-	TextureBufferParams localParams = params;
-	if ( params.samplesQuality == MAX_MULTISAMPLE_QUALITY ) {
-		localParams.samplesQuality = GetMaxMultisampleQuality( params.samplesCount );
+RenderInterface::PBuffer Directx11RenderInterface::Device::CreateTextureBuffer( const RenderInterface::TextureBufferParams& params ) noexcept {
+	/*
+	Pokud ma parametr samplesQuality hodnotu MAX_MULTISAMPLE_QUALITY,
+	prevest na platnou hodnotu max quality.
+	*/
+	RenderInterface::TextureBufferParams validatedParams = params;
+	if ( params.samplesQuality == RenderInterface::MAX_MULTISAMPLE_QUALITY ) {
+		validatedParams.samplesQuality = GetMaxMultisampleQuality( params.samplesCount );
 	}
-	std::shared_ptr< DX11TextureBuffer > buffer( new( std::nothrow ) DX11TextureBuffer() );
+	std::shared_ptr< Directx11RenderInterface::TextureBuffer > buffer( new( std::nothrow ) Directx11RenderInterface::TextureBuffer() );
 	if ( buffer == nullptr ) {
 		return nullptr;
 	}
-	if ( !buffer->Create( device, localParams, initialData ) ) {
+	if ( !buffer->Create( device, validatedParams ) ) {
 		return nullptr;
 	}
 	return buffer;
 }
 
-// pomocna funkce pro vytvareni vertex, index a constant bufferu
-PBuffer CreateGenericBuffer(
-	const ComPtr< ID3D11Device >& device,
-	const BufferType	type,
-	const int			byteWidth,
-	const BufferUsage	usage,
-	const BufferAccess	access,
-	const void* const	initialData
-) noexcept {
-
-	std::shared_ptr< DX11GenericBuffer > buffer( new( std::nothrow ) DX11GenericBuffer() );
+RenderInterface::PBuffer CreateBuffer( const ComPtr< ID3D11Device >& device, const RenderInterface::BufferType type, const RenderInterface::BufferParams& params ) noexcept {
+	std::shared_ptr< Directx11RenderInterface::Buffer > buffer( new( std::nothrow ) Directx11RenderInterface::Buffer() );
 	if ( buffer == nullptr ) {
 		return nullptr;
 	}
-	if ( !buffer->Create( device, type, byteWidth, usage, access, initialData ) ) {
+	if ( !buffer->Create( device, type, params ) ) {
 		return nullptr;
 	}
 	return buffer;
 }
 
-PBuffer DX11Device::CreateVertexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) noexcept {
-	return CreateGenericBuffer( device, BufferType::VERTEX_BUFFER, byteWidth, usage, access, initialData );
+RenderInterface::PBuffer Directx11RenderInterface::Device::CreateVertexBuffer( const RenderInterface::BufferParams& params ) noexcept {
+	return CreateBuffer( device, RenderInterface::BufferType::VERTEX_BUFFER, params );
 }
 
-PBuffer DX11Device::CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) noexcept {
-	return CreateGenericBuffer( device, BufferType::INDEX_BUFFER, byteWidth, usage, access, initialData );
+RenderInterface::PBuffer Directx11RenderInterface::Device::CreateIndexBuffer( const RenderInterface::BufferParams& params ) noexcept {
+	return CreateBuffer( device, RenderInterface::BufferType::INDEX_BUFFER, params );
 }
 
-PBuffer DX11Device::CreateConstantBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData ) noexcept {
-	return CreateGenericBuffer( device, BufferType::CONSTANT_BUFFER, byteWidth, usage, access, initialData );
+RenderInterface::PBuffer Directx11RenderInterface::Device::CreateConstantBuffer( const RenderInterface::BufferParams& params ) noexcept {
+	return CreateBuffer( device, RenderInterface::BufferType::CONSTANT_BUFFER, params );
 }
 
-PRenderTargetView DX11Device::CreateRenderTargetView( const PBuffer& textureBuffer ) noexcept {
-	std::shared_ptr< DX11RenderTargetView > view( new( std::nothrow ) DX11RenderTargetView() );
+RenderInterface::PRenderTargetView Directx11RenderInterface::Device::CreateRenderTargetView( const RenderInterface::PBuffer& textureBuffer ) noexcept {
+	std::shared_ptr< RenderTargetView > view( new( std::nothrow ) RenderTargetView() );
 	if ( view == nullptr ) {
 		return nullptr;
 	}
@@ -301,8 +296,8 @@ PRenderTargetView DX11Device::CreateRenderTargetView( const PBuffer& textureBuff
 	return view;
 }
 
-PTextureView DX11Device::CreateTextureView( const PBuffer& textureBuffer, const PSampler& sampler ) noexcept {
-	std::shared_ptr< DX11TextureView > view( new( std::nothrow ) DX11TextureView() );
+RenderInterface::PTextureView Directx11RenderInterface::Device::CreateTextureView( const RenderInterface::PBuffer& textureBuffer, const RenderInterface::PSampler& sampler ) noexcept {
+	std::shared_ptr< TextureView > view( new( std::nothrow ) TextureView() );
 	if ( view == nullptr ) {
 		return nullptr;
 	}
@@ -312,8 +307,8 @@ PTextureView DX11Device::CreateTextureView( const PBuffer& textureBuffer, const 
 	return view;
 }
 
-PDepthStencilView DX11Device::CreateDepthStencilView( const PBuffer& textureBuffer, const bool readonly ) noexcept {
-	std::shared_ptr< DX11DepthStencilView > view( new( std::nothrow ) DX11DepthStencilView() );
+RenderInterface::PDepthStencilView Directx11RenderInterface::Device::CreateDepthStencilView( const RenderInterface::PBuffer& textureBuffer, const bool readonly ) noexcept {
+	std::shared_ptr< DepthStencilView > view( new( std::nothrow ) DepthStencilView() );
 	if ( view == nullptr ) {
 		return nullptr;
 	}
@@ -323,8 +318,8 @@ PDepthStencilView DX11Device::CreateDepthStencilView( const PBuffer& textureBuff
 	return view;
 }
 
-PConstantBufferView DX11Device::CreateConstantBufferView( const PBuffer& constantBuffer, const ConstantBufferViewParams& params ) noexcept {
-	std::shared_ptr< DX11ConstantBufferView > view( new( std::nothrow ) DX11ConstantBufferView() );
+RenderInterface::PConstantBufferView Directx11RenderInterface::Device::CreateConstantBufferView( const RenderInterface::PBuffer& constantBuffer, const RenderInterface::ConstantBufferViewParams& params ) noexcept {
+	std::shared_ptr< ConstantBufferView > view( new( std::nothrow ) ConstantBufferView() );
 	if ( view == nullptr ) {
 		return nullptr;
 	}
@@ -334,8 +329,8 @@ PConstantBufferView DX11Device::CreateConstantBufferView( const PBuffer& constan
 	return view;
 }
 
-PVertexStream DX11Device::CreateVertexStream( const VertexStreamParams& params ) noexcept {
-	std::shared_ptr< DX11VertexStream > stream( new( std::nothrow ) DX11VertexStream() );
+RenderInterface::PVertexStream Directx11RenderInterface::Device::CreateVertexStream( const RenderInterface::VertexStreamParams& params ) noexcept {
+	std::shared_ptr< VertexStream > stream( new( std::nothrow ) VertexStream() );
 	if ( stream == nullptr ) {
 		return nullptr;
 	}
@@ -345,8 +340,8 @@ PVertexStream DX11Device::CreateVertexStream( const VertexStreamParams& params )
 	return stream;
 }
 
-PCommandInterface DX11Device::CreateCommandInterface() noexcept {
-	std::shared_ptr< DX11CommandInterface > commandInterface( new( std::nothrow ) DX11CommandInterface() );
+RenderInterface::PCommandInterface Directx11RenderInterface::Device::CreateCommandInterface() noexcept {
+	std::shared_ptr< CommandInterface > commandInterface( new( std::nothrow ) CommandInterface() );
 	if ( commandInterface == nullptr ) {
 		return nullptr;
 	}
@@ -356,8 +351,8 @@ PCommandInterface DX11Device::CreateCommandInterface() noexcept {
 	return commandInterface;
 }
 
-PShader DX11Device::CreateShader( const ShaderParams& params ) noexcept {
-	std::shared_ptr< DX11Shader > shader( new( std::nothrow ) DX11Shader() );
+RenderInterface::PShader Directx11RenderInterface::Device::CreateShader( const RenderInterface::ShaderParams& params ) noexcept {
+	std::shared_ptr< Shader > shader( new( std::nothrow ) Shader() );
 	if ( shader == nullptr ) {
 		return nullptr;
 	}
@@ -367,8 +362,8 @@ PShader DX11Device::CreateShader( const ShaderParams& params ) noexcept {
 	return shader;
 }
 
-PRenderProgram DX11Device::CreateRenderProgram( const PShader& vs, const PShader& ps, const PShader& gs ) noexcept {
-	std::shared_ptr< DX11RenderProgram > program( new( std::nothrow ) DX11RenderProgram() );
+RenderInterface::PRenderProgram Directx11RenderInterface::Device::CreateRenderProgram( const RenderInterface::PShader& vs, const RenderInterface::PShader& ps, const RenderInterface::PShader& gs ) noexcept {
+	std::shared_ptr< RenderProgram > program( new( std::nothrow ) RenderProgram() );
 	if ( program == nullptr ) {
 		return nullptr;
 	}
@@ -378,8 +373,8 @@ PRenderProgram DX11Device::CreateRenderProgram( const PShader& vs, const PShader
 	return program;
 }
 
-PBlendState DX11Device::CreateBlendState( const BlendStateParams& params ) noexcept {
-	std::shared_ptr< DX11BlendState > state( new( std::nothrow ) DX11BlendState() );
+RenderInterface::PBlendState Directx11RenderInterface::Device::CreateBlendState( const RenderInterface::BlendStateParams& params ) noexcept {
+	std::shared_ptr< Directx11RenderInterface::BlendState > state( new( std::nothrow ) Directx11RenderInterface::BlendState() );
 	if ( state == nullptr ) {
 		return nullptr;
 	}
@@ -389,8 +384,8 @@ PBlendState DX11Device::CreateBlendState( const BlendStateParams& params ) noexc
 	return state;
 }
 
-PRasterizerState DX11Device::CreateRasterizerState( const RasterizerStateParams& params ) noexcept {
-	std::shared_ptr< DX11RasterizerState > state( new( std::nothrow ) DX11RasterizerState() );
+RenderInterface::PRasterizerState Directx11RenderInterface::Device::CreateRasterizerState( const RenderInterface::RasterizerStateParams& params ) noexcept {
+	std::shared_ptr< Directx11RenderInterface::RasterizerState > state( new( std::nothrow ) Directx11RenderInterface::RasterizerState() );
 	if ( state == nullptr ) {
 		return nullptr;
 	}
@@ -400,8 +395,8 @@ PRasterizerState DX11Device::CreateRasterizerState( const RasterizerStateParams&
 	return state;
 }
 
-PDepthStencilState DX11Device::CreateDepthStencilState( const DepthStencilStateParams& params ) noexcept {
-	std::shared_ptr< DX11DepthStencilState > state( new( std::nothrow ) DX11DepthStencilState() );
+RenderInterface::PDepthStencilState Directx11RenderInterface::Device::CreateDepthStencilState( const RenderInterface::DepthStencilStateParams& params ) noexcept {
+	std::shared_ptr< Directx11RenderInterface::DepthStencilState > state( new( std::nothrow ) Directx11RenderInterface::DepthStencilState() );
 	if ( state == nullptr ) {
 		return nullptr;
 	}
@@ -411,8 +406,8 @@ PDepthStencilState DX11Device::CreateDepthStencilState( const DepthStencilStateP
 	return state;
 }
 
-PSampler DX11Device::CreateSampler( const SamplerParams& params ) noexcept {
-	std::shared_ptr< DX11Sampler > sampler( new( std::nothrow ) DX11Sampler() );
+RenderInterface::PSampler Directx11RenderInterface::Device::CreateSampler( const RenderInterface::SamplerParams& params ) noexcept {
+	std::shared_ptr< Directx11RenderInterface::Sampler > sampler( new( std::nothrow ) Directx11RenderInterface::Sampler() );
 	if ( sampler == nullptr ) {
 		return nullptr;
 	}
@@ -422,8 +417,8 @@ PSampler DX11Device::CreateSampler( const SamplerParams& params ) noexcept {
 	return sampler;
 }
 
-PVertexLayout DX11Device::CreateVertexLayout( const VertexAttribute* const attributes, const int attributesCount, const PRenderProgram& program ) noexcept {
-	std::shared_ptr< DX11VertexLayout > layout( new( std::nothrow ) DX11VertexLayout() );
+RenderInterface::PVertexLayout Directx11RenderInterface::Device::CreateVertexLayout( const RenderInterface::VertexAttribute* const attributes, const int attributesCount, const RenderInterface::PRenderProgram& program ) noexcept {
+	std::shared_ptr< Directx11RenderInterface::VertexLayout > layout( new( std::nothrow ) Directx11RenderInterface::VertexLayout() );
 	if ( layout == nullptr ) {
 		return nullptr;
 	}
@@ -433,29 +428,29 @@ PVertexLayout DX11Device::CreateVertexLayout( const VertexAttribute* const attri
 	return layout;
 }
 
-int DX11Device::GetMaxMultisampleQuality( const int samplesCount) const noexcept {
+int Directx11RenderInterface::Device::GetMaxMultisampleQuality( const int samplesCount) const noexcept {
 	int levels = 0;
 	device->CheckMultisampleQualityLevels( BACK_BUFFER_FORMAT, samplesCount, reinterpret_cast< unsigned int* >( &levels ) );
 	return levels;
 }
 
-ID3D11DeviceContext* DX11Device::GetD3D11DeviceContext() noexcept {
+ID3D11DeviceContext* Directx11RenderInterface::Device::GetD3D11DeviceContext() noexcept {
 	return context.Raw();
 }
 
 // DX11SwapChain
 
-DX11SwapChain::DX11SwapChain() {
+Directx11RenderInterface::SwapChain::SwapChain() {
 	window = nullptr;
 	width = 0;
 	height = 0;
 }
 
-DX11SwapChain::~DX11SwapChain() {
+Directx11RenderInterface::SwapChain::~SwapChain() {
 	swapChain = nullptr;
 }
 
-bool DX11SwapChain::Create( const ComPtr< ID3D11Device >& device, Window* const window ) noexcept {
+bool Directx11RenderInterface::SwapChain::Create( const ComPtr< ID3D11Device >& device, Window* const window ) noexcept {
 	const HWND hwnd = reinterpret_cast< HWND >( window->GetHandle() );
 	HRESULT hresult = 0;
 
@@ -486,16 +481,19 @@ bool DX11SwapChain::Create( const ComPtr< ID3D11Device >& device, Window* const 
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	// get back buffer
+
+	// create render target view
+	
 	ComPtr< ID3D11Texture2D > backBuffer;
 	hresult = swapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), ( LPVOID* )&backBuffer );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	// create render target view
-	ComPtr< ID3D11RenderTargetView > rtv;
-	hresult = device->CreateRenderTargetView( backBuffer.Raw(), NULL, &rtv );
-	if ( FAILED( hresult ) ) {
+	auto rtv = std::shared_ptr< Directx11RenderInterface::RenderTargetView >( new( std::nothrow ) Directx11RenderInterface::RenderTargetView );
+	if ( rtv == nullptr ) {
+		return false;
+	}
+	if ( !rtv->Create( device, backBuffer.Raw() ) ) {
 		return false;
 	}
 
@@ -505,34 +503,41 @@ bool DX11SwapChain::Create( const ComPtr< ID3D11Device >& device, Window* const 
 	// ulozit vysledek
 	this->window = window;
 	this->swapChain = swapChain;
+	this->rtv = rtv;
 	this->width = window->GetClientWidth();
 	this->height = window->GetClientHeight();
-
-	// vytvorit RenderTargetView objekt
-	std::unique_ptr< DX11RenderTargetView > view( new( std::nothrow ) DX11RenderTargetView() ); //--------------------------------------------------------------------------------------------------------
-	view->Create( rtv );
-	this->view = std::move( view );
 
 	return true;
 }
 
-void DX11SwapChain::Present() noexcept {
-	swapChain->Present( 0, 0 );
+RenderInterface::PRenderTargetView Directx11RenderInterface::SwapChain::AcquireRenderTargetView() noexcept {
+	return rtv;
 }
 
-void DX11SwapChain::SetFullscreen( Display* const display ) noexcept {
+void Directx11RenderInterface::SwapChain::Present( const RenderInterface::PRenderTargetView& rtv, const RenderInterface::SwapChainPresentMode presentMode ) noexcept {
+	if ( presentMode == RenderInterface::SwapChainPresentMode::IMMEDIATE ) {
+		swapChain->Present( 0, 0 );
+		return;
+	}
+	if ( presentMode == RenderInterface::SwapChainPresentMode::VSYNC ) {
+		swapChain->Present( 1, 0 );
+		return;
+	}
+}
+
+void Directx11RenderInterface::SwapChain::SetFullscreen( Display* const display ) noexcept {
 	// ...
 }
 
-int DX11SwapChain::GetWidth() const noexcept {
+int Directx11RenderInterface::SwapChain::GetWidth() const noexcept {
 	return width;
 }
 
-int DX11SwapChain::GetHeight() const noexcept {
+int Directx11RenderInterface::SwapChain::GetHeight() const noexcept {
 	return height;
 }
 
-bool DX11SwapChain::Valid() const noexcept {
+bool Directx11RenderInterface::SwapChain::Valid() const noexcept {
 	if ( window == nullptr ) {
 		return false;
 	}
@@ -616,54 +621,10 @@ void DX11BackBuffer::Resize() noexcept {
 }
 */
 
-// DX11Buffer
-
-DX11Buffer::DX11Buffer() {
-	ZeroMemory( &bufferInfo, sizeof( bufferInfo ) );
-}
-
-DX11Buffer::~DX11Buffer() {
-	resource = nullptr;
-}
-
-void DX11Buffer::SetBuffer( ID3D11Resource* const resource, const BufferInfo& bufferInfo ) noexcept {
-	this->resource = resource;
-	this->resource->AddRef();
-	this->bufferInfo = bufferInfo;
-}
-
-void DX11Buffer::GetInfo( BufferInfo& result ) const noexcept {
-	result = bufferInfo;
-}
-
-BufferType DX11Buffer::GetType() const noexcept {
-	return bufferInfo.type;
-}
-
-int DX11Buffer::GetByteWidth() const noexcept {
-	return bufferInfo.byteWidth;
-}
-
-BufferUsage DX11Buffer::GetUsage() const noexcept {
-	return bufferInfo.usage;
-}
-
-BufferAccess DX11Buffer::GetAccess() const noexcept {
-	return bufferInfo.access;
-}
-
-ID3D11Resource* DX11Buffer::GetD3D11Resource() noexcept {
-	return resource.Raw();
-}
-
-int DX11Buffer::GetSubresourcesCount() const noexcept {
-	return 0;
-}
-
 // DX11TextureBuffer
 
-DX11TextureBuffer::DX11TextureBuffer() {
-	format = Format::UNKNOWN;
+Directx11RenderInterface::TextureBuffer::TextureBuffer() {
+	format = RenderInterface::Format::UNKNOWN;
 	width = 0;
 	height = 0;
 	depth = 0;
@@ -673,26 +634,29 @@ DX11TextureBuffer::DX11TextureBuffer() {
 	samplesQuality = 0;
 }
 
-bool DX11TextureBuffer::Create( const ComPtr< ID3D11Device >& device, const TextureBufferParams& params, const void* const initialData[] ) noexcept {
+bool Directx11RenderInterface::TextureBuffer::Create( const ComPtr< ID3D11Device >& device, const RenderInterface::TextureBufferParams& params ) noexcept {
 	const D3D11_USAGE usage = GetD3D11Usage( params.usage );
-	const UINT CPUAccessFlags = GetD3D11CPUAccess( params.access );
+	const UINT CPUAccessFlags = GetD3D11CpuAccess( params.access );
 
 	UINT bindFlags = D3D11_BIND_SHADER_RESOURCE;
+
 	// set render target bind flag
-	if ( params.flags & TextureBufferFlags::TEXTURE_BUFFER_FLAG_RENDER_TARGET ) {
+	if ( params.flags & RenderInterface::TextureBufferFlags::TEXTURE_BUFFER_FLAG_RENDER_TARGET ) {
 		bindFlags |= D3D11_BIND_RENDER_TARGET;
 	}
 	// set depth stencil bind flag
-	if ( params.format == Format::DEPTH_24_UNORM_STENCIL_8_UINT ) {
+	if ( params.format == RenderInterface::Format::DEPTH_24_UNORM_STENCIL_8_UINT ) {
 		bindFlags |= D3D11_BIND_DEPTH_STENCIL;
 	}
 	// D3D11 subresource initial data temporary
 	std::unique_ptr< D3D11_SUBRESOURCE_DATA[] > subresources( nullptr );
 	
 	// initialize subresources temporary
-	if ( initialData != nullptr ) {
-		subresources.reset( new D3D11_SUBRESOURCE_DATA[ params.arraySize * params.mipLevels ] );
-		const FormatInfo formatInfo = GetFormatInfo( params.format );
+	if ( params.data != nullptr ) {
+		const int subresourcesCount = params.arraySize * params.mipLevels;
+		subresources.reset( new( std::nothrow ) D3D11_SUBRESOURCE_DATA[ subresourcesCount ] );
+
+		const auto formatInfo = GetFormatInfo( params.format );
 		int subresourceIndex = 0;
 
 		// for each texture in texture array
@@ -704,7 +668,7 @@ bool DX11TextureBuffer::Create( const ComPtr< ID3D11Device >& device, const Text
 			for ( int mipIndex = 0; mipIndex < params.mipLevels; mipIndex++ ) {
 				// set subresource
 				const int rowPitch = ( formatInfo.blockByteWidth / formatInfo.blockSize ) * mipWidth;
-				subresources[ subresourceIndex ].pSysMem = initialData[ subresourceIndex ];
+				subresources[ subresourceIndex ].pSysMem = params.data[ subresourceIndex ];
 				subresources[ subresourceIndex ].SysMemPitch = rowPitch;
 
 				// pouze pro 3D textury, mipHeight neni nutne delit blockSize, protoze 3D textury nepodporuji blokovou kompresi
@@ -724,8 +688,8 @@ bool DX11TextureBuffer::Create( const ComPtr< ID3D11Device >& device, const Text
 	}
 
 	// 1D texture
-	if ( params.type == BufferType::TEXTURE_1D ||
-		 params.type == BufferType::TEXTURE_1D_ARRAY
+	if ( params.type == RenderInterface::BufferType::TEXTURE_1D ||
+		 params.type == RenderInterface::BufferType::TEXTURE_1D_ARRAY
 	) {
 		D3D11_TEXTURE1D_DESC textureDesc;
 		textureDesc.Width 				= params.width;
@@ -742,15 +706,15 @@ bool DX11TextureBuffer::Create( const ComPtr< ID3D11Device >& device, const Text
 		if ( FAILED( hresult ) ) {
 			return false;
 		}
-		SetTextureBuffer( texture.Ref(), params );
+		SetBuffer( texture, params );
 		return true;
 	}
 
 	// 2D texture
-	if ( params.type == BufferType::TEXTURE_2D ||
-		 params.type == BufferType::TEXTURE_2D_ARRAY  ||
-		 params.type == BufferType::TEXTURE_2D_MS ||
-		 params.type == BufferType::TEXTURE_2D_MS_ARRAY
+	if ( params.type == RenderInterface::BufferType::TEXTURE_2D ||
+		 params.type == RenderInterface::BufferType::TEXTURE_2D_ARRAY  ||
+		 params.type == RenderInterface::BufferType::TEXTURE_2D_MS ||
+		 params.type == RenderInterface::BufferType::TEXTURE_2D_MS_ARRAY
 	) {
 		D3D11_TEXTURE2D_DESC textureDesc;
 		textureDesc.Width 				= params.width;
@@ -770,12 +734,12 @@ bool DX11TextureBuffer::Create( const ComPtr< ID3D11Device >& device, const Text
 		if ( FAILED( hresult ) ) {
 			return false;
 		}
-		SetTextureBuffer( texture.Ref(), params );
+		SetBuffer( texture, params );
 		return true;
 	}
 
 	// 3D texture
-	if ( params.type == BufferType::TEXTURE_3D ) {
+	if ( params.type == RenderInterface::BufferType::TEXTURE_3D ) {
 		D3D11_TEXTURE3D_DESC textureDesc;
 		textureDesc.Width 				= params.width;
 		textureDesc.Height				= params.height;
@@ -792,7 +756,7 @@ bool DX11TextureBuffer::Create( const ComPtr< ID3D11Device >& device, const Text
 		if ( FAILED( hresult ) ) {
 			return false;
 		}
-		SetTextureBuffer( texture.Ref(), params );
+		SetBuffer( texture, params );
 		return true;
 	}
 
@@ -800,7 +764,7 @@ bool DX11TextureBuffer::Create( const ComPtr< ID3D11Device >& device, const Text
 	return false;
 }
 
-void DX11TextureBuffer::SetTextureBuffer( ID3D11Resource* const resource, const TextureBufferParams& params ) noexcept {
+void Directx11RenderInterface::TextureBuffer::SetBuffer( ComPtr< ID3D11Resource > resource, const RenderInterface::TextureBufferParams& params ) noexcept {
 	// ulozit atributy bufferu (validace rozmeru textury, hodnota nesmi byt < 1)
 	format = params.format;
 	width = Math::Max( params.width, 1 );
@@ -813,7 +777,7 @@ void DX11TextureBuffer::SetTextureBuffer( ID3D11Resource* const resource, const 
 
 	// vypocitat velikost bufferu (rozhrani ID3DTextureXD neposkytuje informaci o velikosti alokovane pameti pro textury)
 	
-	const FormatInfo formatInfo = GetFormatInfo( format );
+	const auto formatInfo = GetFormatInfo( format );
 	int mipWidth = width;
 	int mipHeight = height;
 	int mipDepth = depth;
@@ -835,28 +799,27 @@ void DX11TextureBuffer::SetTextureBuffer( ID3D11Resource* const resource, const 
 		}
 	}
 	// ulozit buffer
-	BufferInfo bufferInfo;
-	bufferInfo.type = params.type;
-	bufferInfo.byteWidth = mipSliceSize * arraySize;
-	bufferInfo.usage = params.usage;
-	bufferInfo.access = params.access;
-	SetBuffer( resource, bufferInfo );
+	info.type = params.type;
+	info.size = mipSliceSize * arraySize;
+	info.usage = params.usage;
+	info.access = params.access;
+	buffer = resource;
 }
 
-bool DX11TextureBuffer::Map( ID3D11DeviceContext* const context, const int subresource, const D3D11_MAP mapType, MappedBuffer& result ) noexcept {
-	D3D11_MAPPED_SUBRESOURCE ms;
-	HRESULT hresult = context->Map( GetD3D11Resource(), static_cast< UINT >( subresource ), mapType, 0, &ms );
+bool Directx11RenderInterface::TextureBuffer::Map( const ComPtr< ID3D11DeviceContext >& context, const int subresource, const D3D11_MAP mapType, RenderInterface::MappedBuffer& result ) noexcept {
+	D3D11_MAPPED_SUBRESOURCE mappedSubresource;
+	HRESULT hresult = context->Map( buffer.Raw(), static_cast< UINT >( subresource ), mapType, 0, &mappedSubresource );
 	if ( FAILED( hresult ) ) {
-		ZeroMemory( &result, sizeof( MappedBuffer ) );
+		ZeroMemory( &result, sizeof( RenderInterface::MappedBuffer ) );
 		return false;
 	}
-	TextureDimmensions dimmensions;
+	RenderInterface::TextureDimmensions dimmensions;
 	GetMipDimmensions( width, height, depth, subresource % mipLevels, dimmensions );
-	FormatInfo formatInfo = GetFormatInfo( format );
+	auto formatInfo = GetFormatInfo( format );
 
-	result.data = ms.pData;
-	result.rowPitch = static_cast< int >( ms.RowPitch );
-	result.depthPitch = static_cast< int >( ms.DepthPitch );
+	result.data = mappedSubresource.pData;
+	result.rowPitch = static_cast< int >( mappedSubresource.RowPitch );
+	result.depthPitch = static_cast< int >( mappedSubresource.DepthPitch );
 	result.subresource = subresource;
 	result.rowByteWidth = ( dimmensions.width / formatInfo.blockSize ) * formatInfo.blockByteWidth;
 	result.rowsCount = ( dimmensions.width / formatInfo.blockSize ) * ( dimmensions.height / formatInfo.blockSize ) * dimmensions.depth;
@@ -864,72 +827,90 @@ bool DX11TextureBuffer::Map( ID3D11DeviceContext* const context, const int subre
 	return true;
 }
 
-Format DX11TextureBuffer::GetFormat() const noexcept {
+RenderInterface::Format Directx11RenderInterface::TextureBuffer::GetFormat() const noexcept {
 	return format;
 }
 
-int DX11TextureBuffer::GetWidth() const noexcept {
+int Directx11RenderInterface::TextureBuffer::GetWidth() const noexcept {
 	return width;
 }
 
-int DX11TextureBuffer::GetHeight() const noexcept {
+int Directx11RenderInterface::TextureBuffer::GetHeight() const noexcept {
 	return height;
 }
 
-int DX11TextureBuffer::GetDepth() const noexcept {
+int Directx11RenderInterface::TextureBuffer::GetDepth() const noexcept {
 	return depth;
 }
 
-int DX11TextureBuffer::GetMipLevels() const noexcept {
+int Directx11RenderInterface::TextureBuffer::GetMipLevels() const noexcept {
 	return mipLevels;
 }
 
-int DX11TextureBuffer::GetArraySize() const noexcept {
+int Directx11RenderInterface::TextureBuffer::GetArraySize() const noexcept {
 	return arraySize;
 }
 
-int DX11TextureBuffer::GetSamplesCount() const noexcept {
+int Directx11RenderInterface::TextureBuffer::GetSamplesCount() const noexcept {
 	return samplesCount;
 }
 
-int DX11TextureBuffer::GetSamplesQuality() const noexcept {
+int Directx11RenderInterface::TextureBuffer::GetSamplesQuality() const noexcept {
 	return samplesQuality;
 }
 
-int DX11TextureBuffer::GetSubresourcesCount() const noexcept {
+RenderInterface::BufferType Directx11RenderInterface::TextureBuffer::GetType() const noexcept {
+	return info.type;
+}
+
+int Directx11RenderInterface::TextureBuffer::GetSize() const noexcept {
+	return info.size;
+}
+
+RenderInterface::BufferUsage Directx11RenderInterface::TextureBuffer::GetUsage() const noexcept {
+	return info.usage;
+}
+
+RenderInterface::BufferAccess Directx11RenderInterface::TextureBuffer::GetAccess() const noexcept {
+	return info.access;
+}
+
+int Directx11RenderInterface::TextureBuffer::GetSubresourcesCount() const noexcept {
 	return mipLevels * arraySize;
 }
 
-// DX11GenericBuffer
+ID3D11Resource* Directx11RenderInterface::TextureBuffer::GetD3D11Resource() noexcept {
+	return buffer.Raw();
+}
 
-bool DX11GenericBuffer::Create(
-	const ComPtr< ID3D11Device >& device,
-	const BufferType type,
-	const int byteWidth,
-	const BufferUsage usage,
-	const BufferAccess access,
-	const void* const initialData
-) noexcept {
+// DX11Buffer
 
+Directx11RenderInterface::Buffer::Buffer() {}
+
+Directx11RenderInterface::Buffer::~Buffer() {
+	buffer = nullptr;
+}
+
+bool Directx11RenderInterface::Buffer::Create( const ComPtr< ID3D11Device >& device, const RenderInterface::BufferType type, const RenderInterface::BufferParams& params ) noexcept {
 	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.ByteWidth			= static_cast< UINT >( byteWidth );
-	bufferDesc.Usage				= GetD3D11Usage( usage );
+	bufferDesc.ByteWidth			= static_cast< UINT >( params.size );
+	bufferDesc.Usage				= GetD3D11Usage( params.usage );
 	bufferDesc.BindFlags			= 0;
-	bufferDesc.CPUAccessFlags		= GetD3D11CPUAccess( access );
+	bufferDesc.CPUAccessFlags		= GetD3D11CpuAccess( params.access );
 	bufferDesc.MiscFlags			= 0;
 	bufferDesc.StructureByteStride	= 0;
 
 	// bind flags
 	switch ( type ) {
-	case BufferType::VERTEX_BUFFER:		bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;	break;
-	case BufferType::INDEX_BUFFER:		bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;		break;
-	case BufferType::CONSTANT_BUFFER:	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;	break;
+	case RenderInterface::BufferType::VERTEX_BUFFER:	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;	break;
+	case RenderInterface::BufferType::INDEX_BUFFER:		bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;		break;
+	case RenderInterface::BufferType::CONSTANT_BUFFER:	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;	break;
 	}
 	// initial subresource data 
 	D3D11_SUBRESOURCE_DATA* pData = NULL;
 	D3D11_SUBRESOURCE_DATA data;
-	if ( initialData != nullptr ) {
-		data.pSysMem = initialData;
+	if ( params.data != nullptr ) {
+		data.pSysMem = params.data;
 		data.SysMemPitch = 0;
 		data.SysMemSlicePitch = 0;
 		pData = &data;
@@ -940,56 +921,72 @@ bool DX11GenericBuffer::Create(
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	// store info about buffer
-	BufferInfo bufferInfo;
-	bufferInfo.type = type;
-	bufferInfo.byteWidth = byteWidth;
-	bufferInfo.usage = usage;
-	bufferInfo.access = access;
-	SetBuffer( buffer.Ref(), bufferInfo );
+	// store buffer
+	info.type = type;
+	info.size = params.size;
+	info.usage = params.usage;
+	info.access = params.access;
+	this->buffer = buffer;
 	return true;
 }
 
-bool DX11GenericBuffer::Map( ID3D11DeviceContext* const context, const int subresource, const D3D11_MAP mapType, MappedBuffer& result ) noexcept {
-	D3D11_MAPPED_SUBRESOURCE ms;
-	HRESULT hresult = context->Map( GetD3D11Resource(), 0, mapType, 0, &ms );
+bool Directx11RenderInterface::Buffer::Map( const ComPtr< ID3D11DeviceContext >& context, const int subresource, const D3D11_MAP mapType, RenderInterface::MappedBuffer& result ) noexcept {
+	D3D11_MAPPED_SUBRESOURCE mappedSubresource;
+	HRESULT hresult = context->Map( buffer.Raw(), 0, mapType, 0, &mappedSubresource );
 	if ( FAILED( hresult ) ) {
-		ZeroMemory( &result, sizeof( MappedBuffer ) );
+		ZeroMemory( &result, sizeof( RenderInterface::MappedBuffer ) );
 		return false;
 	}
-	result.data = ms.pData;
-	result.rowPitch = static_cast< int >( ms.RowPitch );
-	result.depthPitch = static_cast< int >( ms.DepthPitch );
+	result.data = mappedSubresource.pData;
+	result.rowPitch = static_cast< int >( mappedSubresource.RowPitch );
+	result.depthPitch = static_cast< int >( mappedSubresource.DepthPitch );
 	result.subresource = 0;
-	result.rowByteWidth = GetByteWidth();
+	result.rowByteWidth = GetSize();
 	result.rowsCount = 1;
 	result.depthsCount = 1;
 	return true;
 }
 
-ID3D11Buffer* DX11GenericBuffer::GetD3D11Buffer() noexcept {
-	return static_cast< ID3D11Buffer* >( GetD3D11Resource() );
+ID3D11Buffer* Directx11RenderInterface::Buffer::GetD3D11Buffer() noexcept {
+	return buffer.Raw();
+}
+
+RenderInterface::BufferType Directx11RenderInterface::Buffer::GetType() const noexcept {
+	return info.type;
+}
+
+int Directx11RenderInterface::Buffer::GetSize() const noexcept {
+	return info.size;
+}
+
+RenderInterface::BufferUsage Directx11RenderInterface::Buffer::GetUsage() const noexcept {
+	return info.usage;
+}
+
+RenderInterface::BufferAccess Directx11RenderInterface::Buffer::GetAccess() const noexcept {
+	return info.access;
+}
+
+int Directx11RenderInterface::Buffer::GetSubresourcesCount() const noexcept {
+	return 0;
 }
 
 // DX11RenderTargetView
 
-DX11RenderTargetView::DX11RenderTargetView() {}
+Directx11RenderInterface::RenderTargetView::RenderTargetView() {}
 
-DX11RenderTargetView::~DX11RenderTargetView() {
+Directx11RenderInterface::RenderTargetView::~RenderTargetView() {
 	view = nullptr;
 }
 
-void DX11RenderTargetView::Create( ComPtr< ID3D11RenderTargetView >& view ) noexcept {
-	this->view = view;
-}
-
-bool DX11RenderTargetView::Create( const ComPtr< ID3D11Device >& device, const PBuffer& textureBuffer ) noexcept {
+bool Directx11RenderInterface::RenderTargetView::Create( const ComPtr< ID3D11Device >& device, const RenderInterface::PBuffer& textureBuffer ) noexcept {
 	if ( device == nullptr || textureBuffer == nullptr ) {
 		return false;
 	}
-	auto* const resource = down_cast< DX11TextureBuffer>( textureBuffer )->GetD3D11Resource();
+	auto buffer = down_cast< Directx11RenderInterface::TextureBuffer>( textureBuffer );
+
 	ComPtr< ID3D11RenderTargetView > view;
-	HRESULT hresult = device->CreateRenderTargetView ( resource, NULL, &view );
+	HRESULT hresult = device->CreateRenderTargetView ( buffer->GetD3D11Resource(), NULL, &view );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
@@ -997,23 +994,36 @@ bool DX11RenderTargetView::Create( const ComPtr< ID3D11Device >& device, const P
 	return true;
 }
 
-ID3D11RenderTargetView* DX11RenderTargetView::GetD3D11RenderTargetView() noexcept {
+bool Directx11RenderInterface::RenderTargetView::Create( const ComPtr< ID3D11Device >& device, ID3D11Texture2D* const backBuffer ) noexcept {
+	if ( device == nullptr || backBuffer == nullptr ) {
+		return false;
+	}
+	ComPtr< ID3D11RenderTargetView > d3d11View;
+	HRESULT hresult = device->CreateRenderTargetView( backBuffer, NULL, &d3d11View );
+	if ( FAILED( hresult ) ) {
+		return false;
+	}
+	this->view = view;
+	return true;
+}
+
+ID3D11RenderTargetView* Directx11RenderInterface::RenderTargetView::GetD3D11RenderTargetView() noexcept {
 	return view.Raw();
 }
 
 // DX11TextureView
 
-DX11TextureView::DX11TextureView() {}
+Directx11RenderInterface::TextureView::TextureView() {}
 
-DX11TextureView::~DX11TextureView() {
+Directx11RenderInterface::TextureView::~TextureView() {
 	view = nullptr;
 }
 
-bool DX11TextureView::Create( const ComPtr< ID3D11Device >& device, const PBuffer& textureBuffer ) noexcept {
+bool Directx11RenderInterface::TextureView::Create( const ComPtr< ID3D11Device >& device, const RenderInterface::PBuffer& textureBuffer ) noexcept {
 	if ( device == nullptr || textureBuffer == nullptr ) {
 		return false;
 	}
-	auto* const resource = down_cast< DX11TextureBuffer >( textureBuffer )->GetD3D11Resource();
+	auto* const resource = down_cast< Directx11RenderInterface::TextureBuffer >( textureBuffer )->GetD3D11Resource();
 	ComPtr< ID3D11ShaderResourceView > view;
 	HRESULT hresult = device->CreateShaderResourceView( resource, NULL, &view );
 	if ( FAILED( hresult ) ) {
@@ -1023,36 +1033,37 @@ bool DX11TextureView::Create( const ComPtr< ID3D11Device >& device, const PBuffe
 	return true;
 }
 
-ID3D11ShaderResourceView* DX11TextureView::GetD3D11ShaderResourceView() noexcept {
+ID3D11ShaderResourceView* Directx11RenderInterface::TextureView::GetD3D11ShaderResourceView() noexcept {
 	return view.Raw();
 }
 
 // DX11DepthStencilView
 
-DX11DepthStencilView::DX11DepthStencilView() {}
+Directx11RenderInterface::DepthStencilView::DepthStencilView() {}
 
-DX11DepthStencilView::~DX11DepthStencilView() {
+Directx11RenderInterface::DepthStencilView::~DepthStencilView() {
 	view = nullptr;
 }
 
-bool DX11DepthStencilView::Create( const ComPtr< ID3D11Device >& device, const PBuffer& textureBuffer, const bool readonly ) noexcept {
+bool Directx11RenderInterface::DepthStencilView::Create( const ComPtr< ID3D11Device >& device, const RenderInterface::PBuffer& textureBuffer, const bool readonly ) noexcept {
 	if ( device == nullptr || textureBuffer == nullptr ) {
 		return false;
 	}
-	const BufferType bufferType = textureBuffer->GetType();
+	Directx11RenderInterface::Buffer* buffer = down_cast< Directx11RenderInterface::Buffer >( textureBuffer.get() );
+	const auto bufferType = buffer->GetType();
 
 	// check buffer type
-	if ( bufferType != BufferType::TEXTURE_2D &&
-		 bufferType != BufferType::TEXTURE_2D_MS
+	if ( bufferType != RenderInterface::BufferType::TEXTURE_2D &&
+		 bufferType != RenderInterface::BufferType::TEXTURE_2D_MS
 	) {
 		return false;
 	}
 	// format must be DEPTH_24_UNORM_STENCIL_8_UINT
-	const Format format = down_cast< DX11TextureBuffer >( textureBuffer )->GetFormat();
-	if ( format != Format::DEPTH_24_UNORM_STENCIL_8_UINT ) {
+	const auto format = down_cast< Directx11RenderInterface::TextureBuffer >( textureBuffer )->GetFormat();
+	if ( format != RenderInterface::Format::DEPTH_24_UNORM_STENCIL_8_UINT ) {
 		return false;
 	}
-	ID3D11Resource* const texture = static_cast< DX11TextureBuffer* >( textureBuffer.get() )->GetD3D11Resource();
+	ID3D11Resource* const texture = static_cast< Directx11RenderInterface::TextureBuffer* >( textureBuffer.get() )->GetD3D11Resource();
 
 	D3D11_DEPTH_STENCIL_VIEW_DESC viewDesc;
 	ZeroMemory( &viewDesc, sizeof( viewDesc ) );
@@ -1064,12 +1075,12 @@ bool DX11DepthStencilView::Create( const ComPtr< ID3D11Device >& device, const P
 		viewDesc.Flags |= D3D11_DSV_READ_ONLY_STENCIL;
 	}
 	// texture 2D view dimension
-	if ( bufferType == BufferType::TEXTURE_2D ) {
+	if ( bufferType == RenderInterface::BufferType::TEXTURE_2D ) {
 		viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 		viewDesc.Texture2D.MipSlice = 0;
 
 	// multisampled texture 2D view dimension
-	} else if ( bufferType == BufferType::TEXTURE_2D_MS ) {
+	} else if ( bufferType == RenderInterface::BufferType::TEXTURE_2D_MS ) {
 		viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
 	} 
 	// create view
@@ -1082,15 +1093,15 @@ bool DX11DepthStencilView::Create( const ComPtr< ID3D11Device >& device, const P
 	return true;
 }
 
-ID3D11DepthStencilView* DX11DepthStencilView::GetD3D11DepthStencilView() noexcept {
+ID3D11DepthStencilView* Directx11RenderInterface::DepthStencilView::GetD3D11DepthStencilView() noexcept {
 	return view.Raw();
 }
 
 // DX11ConstantBufferView
 
-const int UNUSED_CBUFFER_SLOT = MAX_CBUFFER_SLOTS;
+const int UNUSED_CBUFFER_SLOT = RenderInterface::MAX_CBUFFER_SLOTS;
 
-DX11ConstantBufferView::DX11ConstantBufferView() {
+Directx11RenderInterface::ConstantBufferView::ConstantBufferView() {
 	constantsCount = 0;
 	constantsSize = 0;
 	vsSlot = 0;
@@ -1098,19 +1109,19 @@ DX11ConstantBufferView::DX11ConstantBufferView() {
 	gsSlot = 0;
 }
 
-DX11ConstantBufferView::~DX11ConstantBufferView() {
+Directx11RenderInterface::ConstantBufferView::~ConstantBufferView() {
 	buffer = nullptr;
 }
 
 /*
-Create() nekontroluje signaturu konstant!
+Nekontroluje signaturu konstant!
 */
-bool DX11ConstantBufferView::Create( const PBuffer& constantBuffer, const ConstantBufferViewParams &params ) noexcept {
+bool Directx11RenderInterface::ConstantBufferView::Create( const RenderInterface::PBuffer& constantBuffer, const RenderInterface::ConstantBufferViewParams &params ) noexcept {
 	if ( constantBuffer == nullptr ) {
 		return false;
 	}
 	HRESULT hresult = 0;
-	auto* const program = down_cast< DX11RenderProgram >( params.program );
+	auto* const program = down_cast< Directx11RenderInterface::RenderProgram >( params.program );
 
 	const int VS = 0;
 	const int PS = 1;
@@ -1193,7 +1204,7 @@ bool DX11ConstantBufferView::Create( const PBuffer& constantBuffer, const Consta
 	bool aligned = true;
 
 	for ( int i = 0; i < params.constantsCount; i++ ) {
-		const ShaderConstant& constant = params.constants[ i ];
+		const RenderInterface::ShaderConstant& constant = params.constants[ i ];
 
 		// reflect variable
 		ID3D11ShaderReflectionVariable* variableReflector = nullptr;
@@ -1237,7 +1248,7 @@ bool DX11ConstantBufferView::Create( const PBuffer& constantBuffer, const Consta
 		this->map = std::move( map );
 	}
 	// ulozit vysledky
-	this->buffer = down_cast< DX11GenericBuffer >( constantBuffer )->GetD3D11Buffer();
+	this->buffer = down_cast< Directx11RenderInterface::Buffer >( constantBuffer )->GetD3D11Buffer();
 	this->buffer->AddRef();
 	this->constantsCount = params.constantsCount;
 	this->constantsSize = offset;
@@ -1248,7 +1259,7 @@ bool DX11ConstantBufferView::Create( const PBuffer& constantBuffer, const Consta
 	return true;
 }
 
-void DX11ConstantBufferView::UpdateConstants( const void* const src, void* const dest ) const noexcept {
+void Directx11RenderInterface::ConstantBufferView::UpdateConstants( const void* const src, void* const dest ) const noexcept {
 	// zarovnani systemove pameti odpovida zarovnani constant bufferu
 	if ( !map ) {
 		memcpy( dest, src, constantsSize );
@@ -1265,39 +1276,39 @@ void DX11ConstantBufferView::UpdateConstants( const void* const src, void* const
 	}
 }
 
-ID3D11Buffer* DX11ConstantBufferView::GetD3D11Buffer() noexcept {
+ID3D11Buffer* Directx11RenderInterface::ConstantBufferView::GetD3D11Buffer() noexcept {
 	return buffer.Raw();
 }
 
-int DX11ConstantBufferView::GetVSSlot() const noexcept {
+int Directx11RenderInterface::ConstantBufferView::GetVSSlot() const noexcept {
 	return vsSlot;
 }
 
-int DX11ConstantBufferView::GetPSSlot() const noexcept {
+int Directx11RenderInterface::ConstantBufferView::GetPSSlot() const noexcept {
 	return psSlot;
 }
 
-int DX11ConstantBufferView::GetGSSlot() const noexcept {
+int Directx11RenderInterface::ConstantBufferView::GetGSSlot() const noexcept {
 	return gsSlot;
 }
 
 // DXShader
 
-DX11Shader::DX11Shader() {
-	type = ShaderType::UNDEFINED;
-	version = ShaderVersion::UNDEFINED;
+Directx11RenderInterface::Shader::Shader() {
+	type = RenderInterface::ShaderType::UNDEFINED;
+	version = RenderInterface::ShaderVersion::UNDEFINED;
 }
 
-DX11Shader::~DX11Shader() {
+Directx11RenderInterface::Shader::~Shader() {
 	shader = nullptr;
 	code = nullptr;
 }
 
-bool DX11Shader::Compile( const ComPtr< ID3D11Device >& device, const ShaderParams& params ) noexcept {
+bool Directx11RenderInterface::Shader::Compile( const ComPtr< ID3D11Device >& device, const RenderInterface::ShaderParams& params ) noexcept {
 	if ( device == nullptr ) {
 		return false;
 	}
-	if ( params.version != ShaderVersion::HLSL_50_GLSL_430 ) {
+	if ( params.version != RenderInterface::ShaderVersion::HLSL_50_GLSL_430 ) {
 		return false;
 	}
 	// zjistit velikost pole defines
@@ -1318,23 +1329,23 @@ bool DX11Shader::Compile( const ComPtr< ID3D11Device >& device, const ShaderPara
 	// shader target (type and version)
 	const char* target = nullptr;
 	switch ( params.type ) {
-	case ShaderType::VERTEX_SHADER:		target = "vs_5_0"; break;
-	case ShaderType::PIXEL_SHADER:		target = "ps_5_0"; break;
-	case ShaderType::GEOMETRY_SHADER:	target = "gs_5_0"; break;
+	case RenderInterface::ShaderType::VERTEX_SHADER:	target = "vs_5_0"; break;
+	case RenderInterface::ShaderType::PIXEL_SHADER:		target = "ps_5_0"; break;
+	case RenderInterface::ShaderType::GEOMETRY_SHADER:	target = "gs_5_0"; break;
 	}
 	// flags
 	UINT flags = 0;
-	if ( params.flags & SHADER_COMPILE_FLAG_WARNINGS_AS_ERRRORS ) {
+	if ( params.flags & RenderInterface::SHADER_COMPILE_FLAG_WARNINGS_AS_ERRRORS ) {
 		flags |= D3DCOMPILE_WARNINGS_ARE_ERRORS;
 	}
-	if ( params.flags & SHADER_COMPILE_FLAG_DEBUG ) {
-		flags |= SHADER_COMPILE_FLAG_DEBUG;
+	if ( params.flags & RenderInterface::SHADER_COMPILE_FLAG_DEBUG ) {
+		flags |= RenderInterface::SHADER_COMPILE_FLAG_DEBUG;
 	}
 	// optimization flags
 	switch ( params.optimization ) {
-	case ShaderOptimization::DISABLED:	flags |= D3DCOMPILE_SKIP_OPTIMIZATION;   break;
-	case ShaderOptimization::LOW:		flags |= D3DCOMPILE_OPTIMIZATION_LEVEL0; break;
-	case ShaderOptimization::HIGH:		flags |= D3DCOMPILE_OPTIMIZATION_LEVEL3; break;
+	case RenderInterface::ShaderOptimization::DISABLED:	flags |= D3DCOMPILE_SKIP_OPTIMIZATION;   break;
+	case RenderInterface::ShaderOptimization::LOW:		flags |= D3DCOMPILE_OPTIMIZATION_LEVEL0; break;
+	case RenderInterface::ShaderOptimization::HIGH:		flags |= D3DCOMPILE_OPTIMIZATION_LEVEL3; break;
 	}
 	// compile
 	ComPtr< ID3DBlob > code;
@@ -1360,19 +1371,19 @@ bool DX11Shader::Compile( const ComPtr< ID3D11Device >& device, const ShaderPara
 	ComPtr< ID3D11DeviceChild > shader;
 	
 	// VS
-	if ( params.type == ShaderType::VERTEX_SHADER ) {
+	if ( params.type == RenderInterface::ShaderType::VERTEX_SHADER ) {
 		ComPtr< ID3D11VertexShader > vs;
 		device->CreateVertexShader( code->GetBufferPointer(), code->GetBufferSize(), NULL, &vs );
 		shader = std::move( vs );
 
 	// PS
-	} else if ( params.type == ShaderType::PIXEL_SHADER ) {
+	} else if ( params.type == RenderInterface::ShaderType::PIXEL_SHADER ) {
 		ComPtr< ID3D11PixelShader > ps;
 		device->CreatePixelShader( code->GetBufferPointer(), code->GetBufferSize(), NULL, &ps );
 		shader = std::move( ps );
 
 	// GS
-	} else if ( params.type == ShaderType::GEOMETRY_SHADER ) {
+	} else if ( params.type == RenderInterface::ShaderType::GEOMETRY_SHADER ) {
 		ComPtr< ID3D11GeometryShader > gs;
 		device->CreateGeometryShader( code->GetBufferPointer(), code->GetBufferSize(), NULL, &gs );
 		shader = std::move( gs );
@@ -1389,34 +1400,34 @@ bool DX11Shader::Compile( const ComPtr< ID3D11Device >& device, const ShaderPara
 	return true;
 }
 
-ShaderType DX11Shader::GetType() const noexcept {
+RenderInterface::ShaderType Directx11RenderInterface::Shader::GetType() const noexcept {
 	return type;
 }
 
-ShaderVersion DX11Shader::GetVersion() const noexcept {
+RenderInterface::ShaderVersion Directx11RenderInterface::Shader::GetVersion() const noexcept {
 	return version;
 }
 
-ID3DBlob* DX11Shader::GetBlob() noexcept {
+ID3DBlob* Directx11RenderInterface::Shader::GetBlob() noexcept {
 	return code.Raw();
 }
 
-ID3D11VertexShader* DX11Shader::GetD3D11VertexShader() noexcept {
-	if ( type != ShaderType::VERTEX_SHADER ) {
+ID3D11VertexShader* Directx11RenderInterface::Shader::GetD3D11VertexShader() noexcept {
+	if ( type != RenderInterface::ShaderType::VERTEX_SHADER ) {
 		return nullptr;
 	}
 	return static_cast< ID3D11VertexShader* >( shader.Raw() );
 }
 
-ID3D11PixelShader* DX11Shader::GetD3D11PixelShader() noexcept {
-	if ( type != ShaderType::PIXEL_SHADER ) {
+ID3D11PixelShader* Directx11RenderInterface::Shader::GetD3D11PixelShader() noexcept {
+	if ( type != RenderInterface::ShaderType::PIXEL_SHADER ) {
 		return nullptr;
 	}
 	return static_cast< ID3D11PixelShader* >( shader.Raw() );
 }
 
-ID3D11GeometryShader* DX11Shader::GetD3D11GeometryShader() noexcept {
-	if ( type != ShaderType::GEOMETRY_SHADER ) {
+ID3D11GeometryShader* Directx11RenderInterface::Shader::GetD3D11GeometryShader() noexcept {
+	if ( type != RenderInterface::ShaderType::GEOMETRY_SHADER ) {
 		return nullptr;
 	}
 	return static_cast< ID3D11GeometryShader* >( shader.Raw() );
@@ -1424,9 +1435,9 @@ ID3D11GeometryShader* DX11Shader::GetD3D11GeometryShader() noexcept {
 
 // DX11RenderProgram
 
-DX11RenderProgram::DX11RenderProgram() {}
+Directx11RenderInterface::RenderProgram::RenderProgram() {}
 
-DX11RenderProgram::~DX11RenderProgram() {
+Directx11RenderInterface::RenderProgram::~RenderProgram() {
 	vs = nullptr;
 	ps = nullptr;
 	gs = nullptr;
@@ -1435,78 +1446,72 @@ DX11RenderProgram::~DX11RenderProgram() {
 	gsByteCode = nullptr;
 }
 
-bool DX11RenderProgram::Create( const PShader& vs, const PShader& ps, const PShader& gs ) noexcept {
+bool Directx11RenderInterface::RenderProgram::Create( const RenderInterface::PShader& vs, const RenderInterface::PShader& ps, const RenderInterface::PShader& gs ) noexcept {
 	// vertex shader a pixel shader musi byt vzdy definovan
 	if ( vs == nullptr || ps == nullptr ) {
 		return false;
 	}
 	// kontrola typu shaderu
-	if ( vs->GetType() != ShaderType::VERTEX_SHADER ) {
+	if ( vs->GetType() != RenderInterface::ShaderType::VERTEX_SHADER ) {
 		return false;
 	}
-	if ( ps->GetType() != ShaderType::PIXEL_SHADER ) {
+	if ( ps->GetType() != RenderInterface::ShaderType::PIXEL_SHADER ) {
 		return false;
 	}
 	if ( gs != nullptr ) {
-		if ( gs->GetType() != ShaderType::GEOMETRY_SHADER ) {
+		if ( gs->GetType() != RenderInterface::ShaderType::GEOMETRY_SHADER ) {
 			return false;
 		}
 	}
 	// ulozit vertex shader
-	this->vs = down_cast< DX11Shader >( vs )->GetD3D11VertexShader();
-	this->vs->AddRef();
-	this->vsByteCode = down_cast< DX11Shader >( vs )->GetBlob();
-	this->vsByteCode->AddRef();
+	this->vs = down_cast< Directx11RenderInterface::Shader >( vs )->GetD3D11VertexShader();
+	this->vsByteCode = down_cast< Directx11RenderInterface::Shader >( vs )->GetBlob();
 
 	// ulozit pixel shader
-	this->ps = down_cast< DX11Shader >( ps )->GetD3D11PixelShader();
-	this->ps->AddRef();
-	this->psByteCode = down_cast< DX11Shader >( ps )->GetBlob();
-	this->psByteCode->AddRef();
+	this->ps = down_cast< Directx11RenderInterface::Shader >( ps )->GetD3D11PixelShader();
+	this->psByteCode = down_cast< Directx11RenderInterface::Shader >( ps )->GetBlob();
 
 	// ulozit geometry shader
 	if ( gs != nullptr ) {
-		this->gs = down_cast< DX11Shader >( gs )->GetD3D11GeometryShader();
-		this->gs->AddRef();
-		this->gsByteCode = down_cast< DX11Shader >( gs )->GetBlob();
-		this->gsByteCode->AddRef();
+		this->gs = down_cast< Directx11RenderInterface::Shader >( gs )->GetD3D11GeometryShader();
+		this->gsByteCode = down_cast< Directx11RenderInterface::Shader >( gs )->GetBlob();
 	}
 	return true;
 }
 
-ID3D11VertexShader* DX11RenderProgram::GetD3D11VertexShader() noexcept {
+ID3D11VertexShader* Directx11RenderInterface::RenderProgram::GetD3D11VertexShader() noexcept {
 	return vs.Raw();
 }
 
-ID3D11PixelShader* DX11RenderProgram::GetD3D11PixelShader() noexcept {
+ID3D11PixelShader* Directx11RenderInterface::RenderProgram::GetD3D11PixelShader() noexcept {
 	return ps.Raw();
 }
 
-ID3D11GeometryShader* DX11RenderProgram::GetD3D11GeometryShader() noexcept {
+ID3D11GeometryShader* Directx11RenderInterface::RenderProgram::GetD3D11GeometryShader() noexcept {
 	return gs.Raw();
 }
 
-ID3DBlob* DX11RenderProgram::GetVertexShaderByteCode() noexcept {
+ID3DBlob* Directx11RenderInterface::RenderProgram::GetVertexShaderByteCode() noexcept {
 	return vsByteCode.Raw();
 }
 
-ID3DBlob* DX11RenderProgram::GetPixelShaderByteCode() noexcept {
+ID3DBlob* Directx11RenderInterface::RenderProgram::GetPixelShaderByteCode() noexcept {
 	return psByteCode.Raw();
 }
 
-ID3DBlob* DX11RenderProgram::GetGeometryShaderByteCode() noexcept {
+ID3DBlob* Directx11RenderInterface::RenderProgram::GetGeometryShaderByteCode() noexcept {
 	return gsByteCode.Raw();
 }
 
 // DX11Sampler
 
-DX11Sampler::DX11Sampler() {}
+Directx11RenderInterface::Sampler::Sampler() {}
 
-DX11Sampler::~DX11Sampler() {
+Directx11RenderInterface::Sampler::~Sampler() {
 	sampler = nullptr;
 }
 
-bool DX11Sampler::Create( const ComPtr< ID3D11Device >& device, const SamplerParams& params ) noexcept {
+bool Directx11RenderInterface::Sampler::Create( const ComPtr< ID3D11Device >& device, const RenderInterface::SamplerParams& params ) noexcept {
 	if ( device == nullptr ) {
 		return false;
 	}
@@ -1520,7 +1525,7 @@ bool DX11Sampler::Create( const ComPtr< ID3D11Device >& device, const SamplerPar
 	samplerDesc.MaxAnisotropy	= params.maxAnisotropy;
 	samplerDesc.ComparisonFunc	= D3D11_COMPARISON_NEVER;
 	samplerDesc.MinLOD			= params.minLOD;
-	samplerDesc.MaxLOD			= ( params.maxLOD == MAX_TEXTURE_LOD ? D3D11_FLOAT32_MAX : params.maxLOD );
+	samplerDesc.MaxLOD			= ( params.maxLOD == RenderInterface::MAX_TEXTURE_LOD ? D3D11_FLOAT32_MAX : params.maxLOD );
 
 	ComPtr< ID3D11SamplerState > sampler;
 	HRESULT hresult = device->CreateSamplerState( &samplerDesc, &sampler );
@@ -1531,19 +1536,19 @@ bool DX11Sampler::Create( const ComPtr< ID3D11Device >& device, const SamplerPar
 	return true;
 }
 
-ID3D11SamplerState* DX11Sampler::GetD3D11SamplerState() noexcept {
+ID3D11SamplerState* Directx11RenderInterface::Sampler::GetD3D11SamplerState() noexcept {
 	return sampler.Raw();
 }
 
 // DX11BlendState
 
-DX11BlendState::DX11BlendState() {}
+Directx11RenderInterface::BlendState::BlendState() {}
 
-DX11BlendState::~DX11BlendState() {
+Directx11RenderInterface::BlendState::~BlendState() {
 	state = nullptr;
 }
 
-bool DX11BlendState::Create( const ComPtr< ID3D11Device >& device, const BlendStateParams& params ) noexcept {
+bool Directx11RenderInterface::BlendState::Create( const ComPtr< ID3D11Device >& device, const RenderInterface::BlendStateParams& params ) noexcept {
 	if ( device == nullptr ) {
 		return false;
 	}
@@ -1552,8 +1557,8 @@ bool DX11BlendState::Create( const ComPtr< ID3D11Device >& device, const BlendSt
 	desc.AlphaToCoverageEnable = ( params.alphaToCoverage ? TRUE : FALSE );
 	desc.IndependentBlendEnable = ( params.uniformBlending ? FALSE : TRUE );
 
-	for ( int i = 0; i < MAX_RENDER_TARGETS; i++ ) {
-		const RenderTargetBlend& rtParam = params.renderTargets[ i ];
+	for ( int i = 0; i < RenderInterface::MAX_RENDER_TARGETS; i++ ) {
+		const RenderInterface::RenderTargetBlend& rtParam = params.renderTargets[ i ];
 		D3D11_RENDER_TARGET_BLEND_DESC& rtDesc = desc.RenderTarget[ i ];
 		rtDesc.BlendEnable			 = ( rtParam.enable ? TRUE : FALSE );
 		rtDesc.SrcBlend				 = GetD3D11Blend( rtParam.srcRGB );
@@ -1573,28 +1578,28 @@ bool DX11BlendState::Create( const ComPtr< ID3D11Device >& device, const BlendSt
 	return true;
 }
 
-ID3D11BlendState* DX11BlendState::GetD3D11BlendState() noexcept {
+ID3D11BlendState* Directx11RenderInterface::BlendState::GetD3D11BlendState() noexcept {
 	return state.Raw();
 }
 
 // DX11RasterizerState
 
-DX11RasterizerState::DX11RasterizerState() {}
+Directx11RenderInterface::RasterizerState::RasterizerState() {}
 
-DX11RasterizerState::~DX11RasterizerState() {
+Directx11RenderInterface::RasterizerState::~RasterizerState() {
 	state = nullptr;
 }
 
-bool DX11RasterizerState::Create( const ComPtr< ID3D11Device >& device, const RasterizerStateParams& params ) noexcept {
+bool Directx11RenderInterface::RasterizerState::Create( const ComPtr< ID3D11Device >& device, const RenderInterface::RasterizerStateParams& params ) noexcept {
 	if ( device == nullptr ) {
 		return false;
 	}
 	D3D11_RASTERIZER_DESC desc;
 	// culling
 	switch ( params.cullMode ) {
-	case CullMode::DISABLED:	desc.CullMode = D3D11_CULL_NONE;  break;
-	case CullMode::FRONT_FACE:	desc.CullMode = D3D11_CULL_FRONT; break;
-	case CullMode::BACK_FACE:	desc.CullMode = D3D11_CULL_BACK;  break;
+	case RenderInterface::CullMode::DISABLED:	desc.CullMode = D3D11_CULL_NONE;  break;
+	case RenderInterface::CullMode::FRONT_FACE:	desc.CullMode = D3D11_CULL_FRONT; break;
+	case RenderInterface::CullMode::BACK_FACE:	desc.CullMode = D3D11_CULL_BACK;  break;
 	}
 	desc.FillMode				= ( params.wireframe ? D3D11_FILL_WIREFRAME : D3D11_FILL_SOLID );
 	desc.FrontCounterClockwise	= ( params.frontCounterClockwise ? TRUE : FALSE );
@@ -1615,19 +1620,19 @@ bool DX11RasterizerState::Create( const ComPtr< ID3D11Device >& device, const Ra
 	return true;
 }
 
-ID3D11RasterizerState* DX11RasterizerState::GetD3D11RasterizerState() noexcept {
+ID3D11RasterizerState* Directx11RenderInterface::RasterizerState::GetD3D11RasterizerState() noexcept {
 	return state.Raw();
 }
 
 // DX11DepthStencilState
 
-DX11DepthStencilState::DX11DepthStencilState() {}
+Directx11RenderInterface::DepthStencilState::DepthStencilState() {}
 
-DX11DepthStencilState::~DX11DepthStencilState() {
+Directx11RenderInterface::DepthStencilState::~DepthStencilState() {
 	state = nullptr;
 }
 
-bool DX11DepthStencilState::Create( const ComPtr< ID3D11Device >& device, const DepthStencilStateParams& params ) noexcept {
+bool Directx11RenderInterface::DepthStencilState::Create( const ComPtr< ID3D11Device >& device, const RenderInterface::DepthStencilStateParams& params ) noexcept {
 	if ( device == nullptr ) {
 		return false;
 	}
@@ -1645,30 +1650,30 @@ bool DX11DepthStencilState::Create( const ComPtr< ID3D11Device >& device, const 
 	stateDesc.BackFace						= stateDesc.FrontFace;
 
 	// depth usage
-	if ( params.depthUsage == DepthStencilUsage::STANDARD ) {
+	if ( params.depthUsage == RenderInterface::DepthStencilUsage::STANDARD ) {
 		stateDesc.DepthEnable = TRUE;
 		stateDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 
-	} else if ( params.depthUsage == DepthStencilUsage::DISABLED ) {
+	} else if ( params.depthUsage == RenderInterface::DepthStencilUsage::DISABLED ) {
 		stateDesc.DepthEnable = FALSE;
 		stateDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 
-	} else if ( params.depthUsage == DepthStencilUsage::READONLY ) {
+	} else if ( params.depthUsage == RenderInterface::DepthStencilUsage::READONLY ) {
 		stateDesc.DepthEnable = TRUE;
 		stateDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	}
 	// stencil usage
-	if ( params.stencilUsage == DepthStencilUsage::STANDARD ) {
+	if ( params.stencilUsage == RenderInterface::DepthStencilUsage::STANDARD ) {
 		stateDesc.StencilEnable = TRUE;
 		stateDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
 		stateDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
 
-	} else if ( params.stencilUsage == DepthStencilUsage::DISABLED ) {
+	} else if ( params.stencilUsage == RenderInterface::DepthStencilUsage::DISABLED ) {
 		stateDesc.StencilEnable = FALSE;
 		stateDesc.StencilReadMask = 0;
 		stateDesc.StencilWriteMask = 0;
 
-	} else if ( params.stencilUsage == DepthStencilUsage::READONLY ) {
+	} else if ( params.stencilUsage == RenderInterface::DepthStencilUsage::READONLY ) {
 		stateDesc.StencilEnable = TRUE;
 		stateDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
 		stateDesc.StencilWriteMask = 0;
@@ -1683,36 +1688,36 @@ bool DX11DepthStencilState::Create( const ComPtr< ID3D11Device >& device, const 
 	return true;
 }
 
-ID3D11DepthStencilState* DX11DepthStencilState::GetD3D11DepthStencilState() noexcept {
+ID3D11DepthStencilState* Directx11RenderInterface::DepthStencilState::GetD3D11DepthStencilState() noexcept {
 	return state.Raw();
 }
 
 // DX11VertexLayout
 
-DX11VertexLayout::DX11VertexLayout() {}
+Directx11RenderInterface::VertexLayout::VertexLayout() {}
 
-DX11VertexLayout::~DX11VertexLayout() {
+Directx11RenderInterface::VertexLayout::~VertexLayout() {
 	inputLayout = nullptr;
 }
 
-bool DX11VertexLayout::Create(
+bool Directx11RenderInterface::VertexLayout::Create(
 	const ComPtr< ID3D11Device >& device,
-	const VertexAttribute* const attributes,
+	const RenderInterface::VertexAttribute* const attributes,
 	const int attributesCount,
-	const PRenderProgram& program
+	const RenderInterface::PRenderProgram& program
 ) noexcept {
 
 	if ( device == nullptr || attributes == nullptr || program == nullptr ) {
 		return false;
 	}
-	ID3DBlob* const shaderCode = down_cast< DX11RenderProgram >( program )->GetVertexShaderByteCode();
+	ID3DBlob* const shaderCode = down_cast< Directx11RenderInterface::RenderProgram >( program )->GetVertexShaderByteCode();
 	std::vector< D3D11_INPUT_ELEMENT_DESC > elements;
 	elements.reserve( attributesCount );
 
 	// initialize elements
 	for ( int attributeIndex = 0; attributeIndex < attributesCount; attributeIndex++ ) {
-		const VertexAttribute& attribute = attributes[ attributeIndex ];
-		const FormatInfo formatInfo = GetFormatInfo( attribute.format );
+		const RenderInterface::VertexAttribute& attribute = attributes[ attributeIndex ];
+		const auto formatInfo = GetFormatInfo( attribute.format );
 
 		D3D11_INPUT_ELEMENT_DESC desc;
 		desc.SemanticName			= attribute.semantic;
@@ -1749,79 +1754,83 @@ bool DX11VertexLayout::Create(
 	return true;
 }
 
-ID3D11InputLayout* DX11VertexLayout::GetD3D11InputLayout() noexcept {
-	return inputLayout.Raw();
+ComPtr< ID3D11InputLayout > Directx11RenderInterface::VertexLayout::GetD3D11InputLayout() noexcept {
+	return inputLayout;
 }
 
 // DX11VertexStream
 
-DX11VertexStream::DX11VertexStream() {
-	ZeroMemory( vertexBuffers, sizeof( vertexBuffers ) );
+Directx11RenderInterface::VertexStream::VertexStream() {
+	ZeroMemory( vertexBuffersBindArray, sizeof( vertexBuffersBindArray ) );
 	indexBuffer = nullptr;
 	indexBufferFormat = DXGI_FORMAT_UNKNOWN;
 	inputLayout = nullptr;
 }
 
-DX11VertexStream::~DX11VertexStream() {
+Directx11RenderInterface::VertexStream::~VertexStream() {
+	/*
 	for ( int i = 0; i < MAX_VERTEX_INPUT_SLOTS; i++ ) {
-		ReleaseCom( &vertexBuffers[ i ] );
+		if ( vertexBuffers[ i ] != nullptr ) {
+			vertexBuffers[ i ]->Release();
+		}
 	}
-	ReleaseCom( &indexBuffer );
-	ReleaseCom( &inputLayout );
+	indexBuffer = nullptr;
+	inputLayout = nullptr;
+	*/
 }
 
-bool DX11VertexStream::Create( const VertexStreamParams& params ) noexcept {
+bool Directx11RenderInterface::VertexStream::Create( const RenderInterface::VertexStreamParams& params ) noexcept {
 	// save index buffer
 	if ( params.indexBuffer != nullptr ) {
-		if ( params.indexBuffer->GetType() != BufferType::INDEX_BUFFER ) {
+		if ( params.indexBuffer->GetType() != RenderInterface::BufferType::INDEX_BUFFER ) {
 			return false;
 		}
-		if ( params.indexBufferFormat != Format::R16_UINT &&
-			params.indexBufferFormat != Format::R32_UINT
+		if ( params.indexBufferFormat != RenderInterface::Format::R16_UINT &&
+			 params.indexBufferFormat != RenderInterface::Format::R32_UINT
 		) {
 			return false;
 		}
-		indexBuffer = down_cast< DX11GenericBuffer >( params.indexBuffer )->GetD3D11Buffer();
+		indexBuffer = down_cast< Directx11RenderInterface::Buffer >( params.indexBuffer )->GetD3D11Buffer();
 		indexBufferFormat = GetDXGIFormat( params.indexBufferFormat );
 	}
 	// save vertex buffers
-	for ( int i = 0; i < MAX_VERTEX_INPUT_SLOTS; i++ ) {
-		Buffer* const buffer = params.vertexBuffers[ i ];
-		if ( buffer == nullptr ) {
+	for ( int i = 0; i < RenderInterface::MAX_VERTEX_INPUT_SLOTS; i++ ) {
+		auto& vertexBuffer = params.vertexBuffers[ i ];
+		if ( vertexBuffer == nullptr ) {
 			continue;
 		}
-		if ( buffer->GetType() != BufferType::VERTEX_BUFFER ) {
-			return false;
+		if ( vertexBuffer->GetType() != RenderInterface::BufferType::VERTEX_BUFFER ) {
+			continue;
 		}
-		ID3D11Resource* const resource = down_cast< DX11Buffer >( buffer )->GetD3D11Resource();
-		vertexBuffers[ i ] = down_cast< ID3D11Buffer >( resource );
-		vertexBuffers[ i ]->AddRef();
+		auto buffer = down_cast< Directx11RenderInterface::Buffer >( vertexBuffer )->GetD3D11Buffer();
+		vertexBuffers[ i ] = buffer; // AddRef()
+		vertexBuffersBindArray[ i ] = buffer;
 	}
 	// save input layout
-	inputLayout = down_cast< DX11VertexLayout >( params.vertexLayout )->GetD3D11InputLayout();
+	inputLayout = down_cast< Directx11RenderInterface::VertexLayout >( params.vertexLayout )->GetD3D11InputLayout();
 
 	return true;
 }
 
-ID3D11Buffer** DX11VertexStream::GetVertexBuffers() noexcept {
-	return vertexBuffers;
+ID3D11Buffer** Directx11RenderInterface::VertexStream::GetVertexBuffers() noexcept {
+	return vertexBuffersBindArray;
 }
 
-ID3D11Buffer* DX11VertexStream::GetIndexBuffer() noexcept {
-	return indexBuffer;
+ID3D11Buffer* Directx11RenderInterface::VertexStream::GetIndexBuffer() noexcept {
+	return indexBuffer.Raw();
 }
 
-ID3D11InputLayout* DX11VertexStream::GetD3D11InputLayout() noexcept {
-	return inputLayout;
+ID3D11InputLayout* Directx11RenderInterface::VertexStream::GetD3D11InputLayout() noexcept {
+	return inputLayout.Raw();
 }
 
-DXGI_FORMAT DX11VertexStream::GetIndexDxgiFormat() const noexcept {
+DXGI_FORMAT Directx11RenderInterface::VertexStream::GetIndexFormat() const noexcept {
 	return indexBufferFormat;
 }
 
 // DX11CommandInterface
 
-DX11CommandInterface::DX11CommandInterface() {
+Directx11RenderInterface::CommandInterface::CommandInterface() {
 	context = nullptr;
 	currentInputLayout = nullptr;
 	currentVertexShader = nullptr;
@@ -1832,16 +1841,16 @@ DX11CommandInterface::DX11CommandInterface() {
 	currentRasterizerState = nullptr;
 }
 
-DX11CommandInterface::~DX11CommandInterface() {
-	ReleaseCom( &context );
+Directx11RenderInterface::CommandInterface::~CommandInterface() {
+	context = nullptr;
 }
 
-bool DX11CommandInterface::Create() noexcept {
+bool Directx11RenderInterface::CommandInterface::Create() noexcept {
 	return true;
 }
 
-void DX11CommandInterface::Begin( const PDevice& device ) noexcept {
-	context = down_cast< DX11Device >( device )->GetD3D11DeviceContext();
+void Directx11RenderInterface::CommandInterface::Begin( const RenderInterface::PDevice& device ) noexcept {
+	context = down_cast< Directx11RenderInterface::Device >( device )->GetD3D11DeviceContext();
 	context->ClearState();
 	currentInputLayout = nullptr;
 	currentVertexShader = nullptr;
@@ -1852,100 +1861,100 @@ void DX11CommandInterface::Begin( const PDevice& device ) noexcept {
 	currentRasterizerState = nullptr;
 }
 
-void DX11CommandInterface::Begin( const PCommandList& commandList ) noexcept {
+void Directx11RenderInterface::CommandInterface::Begin( const RenderInterface::PCommandList& commandList ) noexcept {
 	// UNIMPLEMENTED
 }
 
-void DX11CommandInterface::End() noexcept {
+void Directx11RenderInterface::CommandInterface::End() noexcept {
 	context = nullptr;
 
 	// UNIMPLEMENTED command list!
 }
 
-void DX11CommandInterface::Flush() noexcept {
+void Directx11RenderInterface::CommandInterface::Flush() noexcept {
 	context->Flush();
 }
 
-void DX11CommandInterface::SetRenderTargets( const PRenderTargetView* const renderTargets, const int count, const PDepthStencilView& depthStencilView ) noexcept {
-	if ( count > MAX_RENDER_TARGETS ) {
+void Directx11RenderInterface::CommandInterface::SetRenderTargets( const RenderInterface::PRenderTargetView* const renderTargets, const int count, const RenderInterface::PDepthStencilView& depthStencilView ) noexcept {
+	if ( count > RenderInterface::MAX_RENDER_TARGETS ) {
 		return;
 	}
-	ID3D11RenderTargetView* renderTargetViews[ MAX_RENDER_TARGETS ] = { NULL };
+	ID3D11RenderTargetView* renderTargetViews[ RenderInterface::MAX_RENDER_TARGETS ] = { NULL };
 	for ( int i = 0; i < count; i++ ) {
-		renderTargetViews[ i ] = down_cast< DX11RenderTargetView >( renderTargets[ i ] )->GetD3D11RenderTargetView();
+		renderTargetViews[ i ] = down_cast< Directx11RenderInterface::RenderTargetView >( renderTargets[ i ] )->GetD3D11RenderTargetView();
 	}
 	ID3D11DepthStencilView* d3d11DepthStencilView = NULL;
 	if ( depthStencilView != nullptr ) {
-		d3d11DepthStencilView = down_cast< DX11DepthStencilView >( depthStencilView )->GetD3D11DepthStencilView();
+		d3d11DepthStencilView = down_cast< Directx11RenderInterface::DepthStencilView >( depthStencilView )->GetD3D11DepthStencilView();
 	}
-	context->OMSetRenderTargets( MAX_RENDER_TARGETS, renderTargetViews, d3d11DepthStencilView );
+	context->OMSetRenderTargets( RenderInterface::MAX_RENDER_TARGETS, renderTargetViews, d3d11DepthStencilView );
 }
 
-void DX11CommandInterface::ClearRenderTarget( const PRenderTargetView& renderTargetView, const Color& color ) noexcept {
+void Directx11RenderInterface::CommandInterface::ClearRenderTarget( const RenderInterface::PRenderTargetView& renderTargetView, const Color& color ) noexcept {
 	context->ClearRenderTargetView(
-		down_cast< DX11RenderTargetView >( renderTargetView )->GetD3D11RenderTargetView(),
+		down_cast< Directx11RenderInterface::RenderTargetView >( renderTargetView )->GetD3D11RenderTargetView(),
 		reinterpret_cast< const FLOAT* >( &color )
 	);
 }
 
-void DX11CommandInterface::ClearDepthStencil( const PDepthStencilView& depthStencilView, const float depth, const uint8_t stencil ) noexcept {
+void Directx11RenderInterface::CommandInterface::ClearDepthStencil( const RenderInterface::PDepthStencilView& depthStencilView, const float depth, const uint8_t stencil ) noexcept {
 	context->ClearDepthStencilView(
-		down_cast< DX11DepthStencilView >( depthStencilView )->GetD3D11DepthStencilView(),
+		down_cast< Directx11RenderInterface::DepthStencilView >( depthStencilView )->GetD3D11DepthStencilView(),
 		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
 		static_cast< FLOAT >( depth ),
 		static_cast< UINT8 >( stencil )
 	);
 }
 
-void DX11CommandInterface::ClearDepth( const PDepthStencilView& depthStencilView, const float depth ) noexcept {
+void Directx11RenderInterface::CommandInterface::ClearDepth( const RenderInterface::PDepthStencilView& depthStencilView, const float depth ) noexcept {
 	context->ClearDepthStencilView(
-		down_cast< DX11DepthStencilView >( depthStencilView )->GetD3D11DepthStencilView(),
+		down_cast< Directx11RenderInterface::DepthStencilView >( depthStencilView )->GetD3D11DepthStencilView(),
 		D3D11_CLEAR_DEPTH,
 		static_cast< FLOAT >( depth ),
 		0
 	);
 }
 
-void DX11CommandInterface::ClearStencil( const PDepthStencilView& depthStencilView, const uint8_t stencil ) noexcept {
+void Directx11RenderInterface::CommandInterface::ClearStencil( const RenderInterface::PDepthStencilView& depthStencilView, const uint8_t stencil ) noexcept {
 	context->ClearDepthStencilView(
-		down_cast< DX11DepthStencilView >( depthStencilView )->GetD3D11DepthStencilView(),
+		down_cast< Directx11RenderInterface::DepthStencilView >( depthStencilView )->GetD3D11DepthStencilView(),
 		D3D11_CLEAR_STENCIL,
 		0,
 		static_cast< UINT8 >( stencil )
 	);
 }
 
-void DX11CommandInterface::ClearState() noexcept {
+void Directx11RenderInterface::CommandInterface::ClearState() noexcept {
 	context->ClearState();
 }
 
-bool DX11CommandInterface::Map( const PBuffer& buffer, const int subresource, const MapPolicy policy, MappedBuffer& result ) noexcept {
+bool Directx11RenderInterface::CommandInterface::Map( const RenderInterface::PBuffer& buffer, const int subresource, const RenderInterface::MapPolicy policy, RenderInterface::MappedBuffer& result ) noexcept {
 	D3D11_MAP type = D3D11_MAP::D3D11_MAP_READ;
 	switch ( policy ) {
-	case MapPolicy::READ_ONLY:		type = D3D11_MAP_READ;			break;
-	case MapPolicy::WRITE_ONLY:		type = D3D11_MAP_WRITE;			break;
-	case MapPolicy::READ_WRITE:		type = D3D11_MAP_READ_WRITE;	break;
-	case MapPolicy::WRITE_DISCARD:	type = D3D11_MAP_WRITE_DISCARD; break;
+	case RenderInterface::MapPolicy::READ_ONLY:		type = D3D11_MAP_READ;			break;
+	case RenderInterface::MapPolicy::WRITE_ONLY:	type = D3D11_MAP_WRITE;			break;
+	case RenderInterface::MapPolicy::READ_WRITE:	type = D3D11_MAP_READ_WRITE;	break;
+	case RenderInterface::MapPolicy::WRITE_DISCARD:	type = D3D11_MAP_WRITE_DISCARD; break;
 	}
-	return down_cast< DX11Buffer >( buffer )->Map( context, subresource, type, result );
+	return down_cast< Directx11RenderInterface::Buffer >( buffer )->Map( context, subresource, type, result );
 }
 
-void DX11CommandInterface::Unmap( const PBuffer& buffer, MappedBuffer& mappedBuffer ) noexcept {
+void Directx11RenderInterface::CommandInterface::Unmap( const RenderInterface::PBuffer& buffer, RenderInterface::MappedBuffer& mappedBuffer ) noexcept {
 	mappedBuffer.data = nullptr;
 	context->Unmap(
-		down_cast< DX11Buffer >( buffer )->GetD3D11Resource(),
+		down_cast< Directx11RenderInterface::Buffer >( buffer )->GetD3D11Buffer(),
 		static_cast< UINT >( mappedBuffer.subresource )
 	);
 }
 
-bool DX11CommandInterface::UpdateSubresource( const PBuffer& buffer, const int subresource, const void* const data ) noexcept {
+bool Directx11RenderInterface::CommandInterface::UpdateSubresource( const RenderInterface::PBuffer& buffer, const int subresource, const void* const data ) noexcept {
 	// map
-	MapPolicy policy =
-		buffer->GetUsage() == BufferUsage::DYNAMIC ?
-		MapPolicy::WRITE_DISCARD :
-		MapPolicy::WRITE_ONLY;
+	RenderInterface::MapPolicy policy =
+		buffer->GetUsage() == RenderInterface::BufferUsage::DYNAMIC ?
+		RenderInterface::MapPolicy::WRITE_DISCARD :
+		RenderInterface::MapPolicy::WRITE_ONLY;
 
-	MappedBuffer mappedBuffer;
+	RenderInterface::MappedBuffer mappedBuffer;
 	if ( !Map( buffer, subresource, policy, mappedBuffer ) ) {
 		return false;
 	}
@@ -1969,9 +1978,11 @@ bool DX11CommandInterface::UpdateSubresource( const PBuffer& buffer, const int s
 	return true;
 }
 
-bool DX11CommandInterface::UpdateBuffer( const PBuffer& buffer, const void* const data, const int bytes, const int offset, const bool discatd ) noexcept {
-	MapPolicy policy = discatd ? MapPolicy::WRITE_DISCARD : MapPolicy::WRITE_ONLY;
-	MappedBuffer mappedBuffer;
+bool Directx11RenderInterface::CommandInterface::UpdateBuffer( const RenderInterface::PBuffer& buffer, const void* const data, const int bytes, const int offset, const bool discatd ) noexcept {
+	RenderInterface::MapPolicy policy = discatd ?
+		RenderInterface::MapPolicy::WRITE_DISCARD :
+		RenderInterface::MapPolicy::WRITE_ONLY;
+	RenderInterface::MappedBuffer mappedBuffer;
 	if ( !Map( buffer, 0, policy, mappedBuffer ) ) {
 		return false;
 	}
@@ -1984,97 +1995,97 @@ bool DX11CommandInterface::UpdateBuffer( const PBuffer& buffer, const void* cons
 	return true;
 }
 
-bool DX11CommandInterface::UpdateConstantBuffer( const PConstantBufferView& view, const void* const data ) noexcept {
-	ID3D11Buffer* const buffer = down_cast< DX11ConstantBufferView >( view )->GetD3D11Buffer();
+bool Directx11RenderInterface::CommandInterface::UpdateConstantBuffer( const RenderInterface::PConstantBufferView& view, const void* const data ) noexcept {
+	ID3D11Buffer* const buffer = down_cast< Directx11RenderInterface::ConstantBufferView >( view )->GetD3D11Buffer();
 	D3D11_MAPPED_SUBRESOURCE mappedSubresource;
 	HRESULT hresult = context->Map( buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubresource );
 	if ( FAILED( hresult ) ) {
 		return false;
 	}
-	down_cast< DX11ConstantBufferView >( view )->UpdateConstants( data, mappedSubresource.pData );
+	down_cast< Directx11RenderInterface::ConstantBufferView >( view )->UpdateConstants( data, mappedSubresource.pData );
 	context->Unmap( buffer, 0 );
 	return true;
 }
 
-void DX11CommandInterface::CopyBuffer( const PBuffer& src, const PBuffer& dest ) noexcept {
+void Directx11RenderInterface::CommandInterface::CopyBuffer( const RenderInterface::PBuffer& src, const RenderInterface::PBuffer& dest ) noexcept {
 	context->CopyResource(
-		down_cast< DX11Buffer >( dest )->GetD3D11Resource(),
-		down_cast< DX11Buffer >( src )->GetD3D11Resource()
+		down_cast< Directx11RenderInterface::Buffer >( dest )->GetD3D11Buffer(),
+		down_cast< Directx11RenderInterface::Buffer >( src )->GetD3D11Buffer()
 	);
 }
 
-void DX11CommandInterface::SetConstantBuffers( const PConstantBufferView* const views, const int count ) noexcept {
+void Directx11RenderInterface::CommandInterface::SetConstantBuffers( const RenderInterface::PConstantBufferView* const views, const int count ) noexcept {
 	// deaktivovat vsechny sloty
 	if ( views == nullptr ) {
-		ID3D11Buffer* buffers[ MAX_CBUFFER_SLOTS ] = { nullptr };
-		context->VSSetConstantBuffers( 0, MAX_CBUFFER_SLOTS, buffers );
-		context->PSSetConstantBuffers( 0, MAX_CBUFFER_SLOTS, buffers );
-		context->GSSetConstantBuffers( 0, MAX_CBUFFER_SLOTS, buffers );
+		ID3D11Buffer* buffers[ RenderInterface::MAX_CBUFFER_SLOTS ] = { nullptr };
+		context->VSSetConstantBuffers( 0, RenderInterface::MAX_CBUFFER_SLOTS, buffers );
+		context->PSSetConstantBuffers( 0, RenderInterface::MAX_CBUFFER_SLOTS, buffers );
+		context->GSSetConstantBuffers( 0, RenderInterface::MAX_CBUFFER_SLOTS, buffers );
 		return;
 	}
 	// + 1 pro UNUSED_CBUFFER_SLOT
-	ID3D11Buffer* vsBuffers[ MAX_CBUFFER_SLOTS + 1 ] = { nullptr };
-	ID3D11Buffer* psBuffers[ MAX_CBUFFER_SLOTS + 1 ] = { nullptr };
-	ID3D11Buffer* gsBuffers[ MAX_CBUFFER_SLOTS + 1 ] = { nullptr };
+	ID3D11Buffer* vsBuffers[ RenderInterface::MAX_CBUFFER_SLOTS + 1 ] = { nullptr };
+	ID3D11Buffer* psBuffers[ RenderInterface::MAX_CBUFFER_SLOTS + 1 ] = { nullptr };
+	ID3D11Buffer* gsBuffers[ RenderInterface::MAX_CBUFFER_SLOTS + 1 ] = { nullptr };
 
 	for ( int i = 0; i < count; i++ ) {
-		DX11ConstantBufferView* view = down_cast< DX11ConstantBufferView >( views[ i ].get() );
+		auto view = down_cast< Directx11RenderInterface::ConstantBufferView >( views[ i ].get() );
 		vsBuffers[ view->GetVSSlot() ] = view->GetD3D11Buffer();
 		psBuffers[ view->GetPSSlot() ] = view->GetD3D11Buffer();
 		gsBuffers[ view->GetGSSlot() ] = view->GetD3D11Buffer();
 	}
-	context->VSSetConstantBuffers( 0, MAX_CBUFFER_SLOTS, vsBuffers );
-	context->PSSetConstantBuffers( 0, MAX_CBUFFER_SLOTS, psBuffers );
-	context->GSSetConstantBuffers( 0, MAX_CBUFFER_SLOTS, gsBuffers );
+	context->VSSetConstantBuffers( 0, RenderInterface::MAX_CBUFFER_SLOTS, vsBuffers );
+	context->PSSetConstantBuffers( 0, RenderInterface::MAX_CBUFFER_SLOTS, psBuffers );
+	context->GSSetConstantBuffers( 0, RenderInterface::MAX_CBUFFER_SLOTS, gsBuffers );
 }
 
-void DX11CommandInterface::SetVertexStream( const PVertexStream& stream ) noexcept {
-	ID3D11InputLayout* const inputLayout = down_cast< DX11VertexStream >( stream )->GetD3D11InputLayout();
-	if ( inputLayout != currentInputLayout ) {
+void Directx11RenderInterface::CommandInterface::SetVertexStream( const RenderInterface::PVertexStream& stream ) noexcept {
+	ID3D11InputLayout* const inputLayout = down_cast< Directx11RenderInterface::VertexStream >( stream )->GetD3D11InputLayout();
+	if ( currentInputLayout != inputLayout ) {
 		context->IASetInputLayout( inputLayout );
 		currentInputLayout = inputLayout;
 	}
 	context->IASetVertexBuffers(
 		0,
-		MAX_VERTEX_INPUT_SLOTS,
-		down_cast< DX11VertexStream >( stream )->GetVertexBuffers(),
+		RenderInterface::MAX_VERTEX_INPUT_SLOTS,
+		down_cast< Directx11RenderInterface::VertexStream >( stream )->GetVertexBuffers(),
 		NULL,
 		NULL
 	);
 	context->IASetIndexBuffer(
-		down_cast< DX11VertexStream >( stream )->GetIndexBuffer(),
-		down_cast< DX11VertexStream >( stream )->GetIndexDxgiFormat(),
+		down_cast< Directx11RenderInterface::VertexStream >( stream )->GetIndexBuffer(),
+		down_cast< Directx11RenderInterface::VertexStream >( stream )->GetIndexFormat(),
 		0
 	);
 }
 
-void DX11CommandInterface::SetRenderProgram( const PRenderProgram& program ) noexcept {
-	ID3D11VertexShader* const vertexShader = down_cast< DX11RenderProgram >( program )->GetD3D11VertexShader();
+void Directx11RenderInterface::CommandInterface::SetRenderProgram( const RenderInterface::PRenderProgram& program ) noexcept {
+	ID3D11VertexShader* const vertexShader = down_cast< Directx11RenderInterface::RenderProgram >( program )->GetD3D11VertexShader();
 	if ( currentVertexShader != vertexShader ) {
 		context->VSSetShader( vertexShader, NULL, 0 );
 		currentVertexShader = vertexShader;
 	}
-	ID3D11PixelShader* const pixelShader = down_cast< DX11RenderProgram >( program )->GetD3D11PixelShader();
+	ID3D11PixelShader* const pixelShader = down_cast< Directx11RenderInterface::RenderProgram >( program )->GetD3D11PixelShader();
 	if ( currentPixelShader != pixelShader ) {
 		context->PSSetShader( pixelShader, NULL, 0 );
 		currentPixelShader = pixelShader;
 	}
-	ID3D11GeometryShader* const geometryShader = down_cast< DX11RenderProgram >( program )->GetD3D11GeometryShader();
+	ID3D11GeometryShader* const geometryShader = down_cast< Directx11RenderInterface::RenderProgram >( program )->GetD3D11GeometryShader();
 	if ( currentGeometryShader != geometryShader ) {
 		context->GSSetShader( geometryShader, NULL, 0 );
 		currentGeometryShader = geometryShader;
 	}
 }
 
-void DX11CommandInterface::Draw( const int verticesCount, const int startVertex ) noexcept {
+void Directx11RenderInterface::CommandInterface::Draw( const int verticesCount, const int startVertex ) noexcept {
 	context->Draw( static_cast< UINT >( verticesCount ), static_cast< UINT >( startVertex ) );
 }
 
-void DX11CommandInterface::DrawIndexed( const int indicesCount, const int startIndex ) noexcept {
+void Directx11RenderInterface::CommandInterface::DrawIndexed( const int indicesCount, const int startIndex ) noexcept {
 	context->DrawIndexed( static_cast< UINT >( indicesCount ), static_cast< UINT >( startIndex ), 0 );
 }
 
-void DX11CommandInterface::DrawInstanced( const int verticesCount, const int startVertex, const int instancesCount, const int startInstance ) noexcept {
+void Directx11RenderInterface::CommandInterface::DrawInstanced( const int verticesCount, const int startVertex, const int instancesCount, const int startInstance ) noexcept {
 	context->DrawInstanced(
 		static_cast< UINT >( verticesCount ),
 		static_cast< UINT >( instancesCount ),
@@ -2083,7 +2094,7 @@ void DX11CommandInterface::DrawInstanced( const int verticesCount, const int sta
 	);
 }
 
-void DX11CommandInterface::DrawIndexedInstanced( const int indicesCount, const int startIndex, const int instancesCount, const int startInstance ) noexcept {
+void Directx11RenderInterface::CommandInterface::DrawIndexedInstanced( const int indicesCount, const int startIndex, const int instancesCount, const int startInstance ) noexcept {
 	context->DrawIndexedInstanced(
 		static_cast< UINT >( indicesCount ),
 		static_cast< UINT >( instancesCount ),
@@ -2093,11 +2104,11 @@ void DX11CommandInterface::DrawIndexedInstanced( const int indicesCount, const i
 	);
 }
 
-void DX11CommandInterface::SetPrimitiveTopology( const PrimitiveTopology topology ) noexcept {
+void Directx11RenderInterface::CommandInterface::SetPrimitiveTopology( const RenderInterface::PrimitiveTopology topology ) noexcept {
 	context->IASetPrimitiveTopology( GetD3D11PrimitiveTopology( topology ) );
 }
 
-void DX11CommandInterface::SetBlendState( const PBlendState& state ) noexcept {
+void Directx11RenderInterface::CommandInterface::SetBlendState( const RenderInterface::PBlendState& state ) noexcept {
 	if ( state == nullptr ) {
 		if ( currentBlendState != nullptr ) {
 			context->OMSetBlendState( NULL, NULL, 0 );
@@ -2105,14 +2116,14 @@ void DX11CommandInterface::SetBlendState( const PBlendState& state ) noexcept {
 		}
 		return;
 	}
-	ID3D11BlendState* const blendState = down_cast< DX11BlendState >( state )->GetD3D11BlendState();
+	ID3D11BlendState* const blendState = down_cast< Directx11RenderInterface::BlendState >( state )->GetD3D11BlendState();
 	if ( currentBlendState != blendState ) {
 		context->OMSetBlendState( blendState, NULL, 0xffffffff );
 		currentBlendState = blendState;
 	}
 }
 
-void DX11CommandInterface::SetDepthStencilState( const PDepthStencilState& state, const uint32_t stencilRef ) noexcept {
+void Directx11RenderInterface::CommandInterface::SetDepthStencilState( const RenderInterface::PDepthStencilState& state, const uint32_t stencilRef ) noexcept {
 	if ( state == nullptr ) {
 		if ( currentDepthStencilState != nullptr ) {
 			context->OMSetDepthStencilState( NULL, 0 );
@@ -2120,14 +2131,14 @@ void DX11CommandInterface::SetDepthStencilState( const PDepthStencilState& state
 		}
 		return;
 	}
-	ID3D11DepthStencilState* const depthStencilState = down_cast< DX11DepthStencilState >( state )->GetD3D11DepthStencilState();
+	ID3D11DepthStencilState* const depthStencilState = down_cast< Directx11RenderInterface::DepthStencilState >( state )->GetD3D11DepthStencilState();
 	if ( currentDepthStencilState != depthStencilState ) {
 		context->OMSetDepthStencilState( depthStencilState, static_cast< UINT >( stencilRef ) );
 		currentDepthStencilState = depthStencilState;
 	}
 }
 
-void DX11CommandInterface::SetRasterizerState( const PRasterizerState& state ) noexcept {
+void Directx11RenderInterface::CommandInterface::SetRasterizerState( const RenderInterface::PRasterizerState& state ) noexcept {
 	if ( state == nullptr ) {
 		if ( currentRasterizerState != nullptr ) {
 			context->RSSetState( NULL );
@@ -2135,83 +2146,83 @@ void DX11CommandInterface::SetRasterizerState( const PRasterizerState& state ) n
 		}
 		return;
 	}
-	ID3D11RasterizerState* const rasterizerState = down_cast< DX11RasterizerState >( state )->GetD3D11RasterizerState();
+	ID3D11RasterizerState* const rasterizerState = down_cast< Directx11RenderInterface::RasterizerState >( state )->GetD3D11RasterizerState();
 	if ( currentRasterizerState != rasterizerState ) {
 		context->RSSetState( rasterizerState );
 		currentRasterizerState = rasterizerState;
 	}
 }
 
-void DX11CommandInterface::SetVSTextures( const int startSlot, const int count, const PTextureView* const views ) noexcept {
-	if ( count + startSlot > MAX_TEXTURES ) {
+void Directx11RenderInterface::CommandInterface::SetVSTextures( const int startSlot, const int count, const RenderInterface::PTextureView* const views ) noexcept {
+	if ( count + startSlot > RenderInterface::MAX_TEXTURES ) {
 		return;
 	}
-	ID3D11ShaderResourceView* srvs[ MAX_TEXTURES ];
+	ID3D11ShaderResourceView* srvs[ RenderInterface::MAX_TEXTURES ];
 	for ( int i = 0; i < count; i++ ) {
-		srvs[ i ] = down_cast< DX11TextureView >( views[ i ] )->GetD3D11ShaderResourceView();
+		srvs[ i ] = down_cast< Directx11RenderInterface::TextureView >( views[ i ] )->GetD3D11ShaderResourceView();
 	}
 	context->VSSetShaderResources( static_cast< UINT >( startSlot ), static_cast< UINT >( count ), srvs );
 }
 
-void DX11CommandInterface::SetPSTextures( const int startSlot, const int count, const PTextureView* const views ) noexcept {
-	if ( count + startSlot > MAX_TEXTURES ) {
+void Directx11RenderInterface::CommandInterface::SetPSTextures( const int startSlot, const int count, const RenderInterface::PTextureView* const views ) noexcept {
+	if ( count + startSlot > RenderInterface::MAX_TEXTURES ) {
 		return;
 	}
-	ID3D11ShaderResourceView* srvs[ MAX_TEXTURES ];
+	ID3D11ShaderResourceView* srvs[ RenderInterface::MAX_TEXTURES ];
 	for ( int i = 0; i < count; i++ ) {
-		srvs[ i ] = down_cast< DX11TextureView >( views[ i ] )->GetD3D11ShaderResourceView();
+		srvs[ i ] = down_cast< Directx11RenderInterface::TextureView >( views[ i ] )->GetD3D11ShaderResourceView();
 	}
 	context->PSSetShaderResources( static_cast< UINT >( startSlot ), static_cast< UINT >( count ), srvs );
 }
 
-void DX11CommandInterface::SetGSTextures( const int startSlot, const int count, const PTextureView* const views ) noexcept {
-	if ( count + startSlot > MAX_TEXTURES ) {
+void Directx11RenderInterface::CommandInterface::SetGSTextures( const int startSlot, const int count, const RenderInterface::PTextureView* const views ) noexcept {
+	if ( count + startSlot > RenderInterface::MAX_TEXTURES ) {
 		return;
 	}
-	ID3D11ShaderResourceView* srvs[ MAX_TEXTURES ];
+	ID3D11ShaderResourceView* srvs[ RenderInterface::MAX_TEXTURES ];
 	for ( int i = 0; i < count; i++ ) {
-		srvs[ i ] = down_cast< DX11TextureView >( views[ i ] )->GetD3D11ShaderResourceView();
+		srvs[ i ] = down_cast< Directx11RenderInterface::TextureView >( views[ i ] )->GetD3D11ShaderResourceView();
 	}
 	context->GSSetShaderResources( static_cast< UINT >( startSlot ), static_cast< UINT >( count ), srvs );
 }
 
-void FillSamplerStateArray( Sampler* const samplers[ MAX_SAMPLERS ], ID3D11SamplerState* result[ MAX_SAMPLERS ] ) noexcept {
+void FillSamplerStateArray( RenderInterface::Sampler* const samplers[ RenderInterface::MAX_SAMPLERS ], ID3D11SamplerState* result[ RenderInterface::MAX_SAMPLERS ] ) noexcept {
 	if ( samplers == nullptr ) {
-		ZeroMemory( result, MAX_SAMPLERS * sizeof( void* ) );
+		ZeroMemory( result, RenderInterface::MAX_SAMPLERS * sizeof( void* ) );
 		return;
 	}
-	for ( int i = 0; i < MAX_SAMPLERS; i++ ) {
+	for ( int i = 0; i < RenderInterface::MAX_SAMPLERS; i++ ) {
 		if ( samplers[ i ] == nullptr ) {
 			result[ i ] = NULL;
 			continue;
 		}
-		result[ i ] = down_cast< DX11Sampler >( samplers[ i ] )->GetD3D11SamplerState();
+		result[ i ] = down_cast< Directx11RenderInterface::Sampler >( samplers[ i ] )->GetD3D11SamplerState();
 	}
 }
 
-void DX11CommandInterface::SetVSSamplers( Sampler* const samplers[ MAX_SAMPLERS ] ) noexcept {
-	ID3D11SamplerState* samplerStates[ MAX_SAMPLERS ];
+void Directx11RenderInterface::CommandInterface::SetVSSamplers( RenderInterface::Sampler* const samplers[ RenderInterface::MAX_SAMPLERS ] ) noexcept {
+	ID3D11SamplerState* samplerStates[ RenderInterface::MAX_SAMPLERS ];
 	FillSamplerStateArray( samplers, samplerStates );
-	context->VSSetSamplers( 0, static_cast< UINT >( MAX_SAMPLERS ), samplerStates );
+	context->VSSetSamplers( 0, static_cast< UINT >( RenderInterface::MAX_SAMPLERS ), samplerStates );
 }
 
-void DX11CommandInterface::SetPSSamplers( Sampler* const samplers[ MAX_SAMPLERS ] ) noexcept {
-	ID3D11SamplerState* samplerStates[ MAX_SAMPLERS ];
+void Directx11RenderInterface::CommandInterface::SetPSSamplers( RenderInterface::Sampler* const samplers[ RenderInterface::MAX_SAMPLERS ] ) noexcept {
+	ID3D11SamplerState* samplerStates[ RenderInterface::MAX_SAMPLERS ];
 	FillSamplerStateArray( samplers, samplerStates );
-	context->PSSetSamplers( 0, static_cast< UINT >( MAX_SAMPLERS ), samplerStates );
+	context->PSSetSamplers( 0, static_cast< UINT >( RenderInterface::MAX_SAMPLERS ), samplerStates );
 }
 
-void DX11CommandInterface::SetGSSamplers( Sampler* const samplers[ MAX_SAMPLERS ] ) noexcept {
-	ID3D11SamplerState* samplerStates[ MAX_SAMPLERS ];
+void Directx11RenderInterface::CommandInterface::SetGSSamplers( RenderInterface::Sampler* const samplers[ RenderInterface::MAX_SAMPLERS ] ) noexcept {
+	ID3D11SamplerState* samplerStates[ RenderInterface::MAX_SAMPLERS ];
 	FillSamplerStateArray( samplers, samplerStates );
-	context->GSSetSamplers( 0, static_cast< UINT >( MAX_SAMPLERS ), samplerStates );
+	context->GSSetSamplers( 0, static_cast< UINT >( RenderInterface::MAX_SAMPLERS ), samplerStates );
 }
 
-void DX11CommandInterface::SetViewports( const Viewport* const viewports[], const int count ) noexcept {
-	if ( count > MAX_VIEWPORTS ) {
+void Directx11RenderInterface::CommandInterface::SetViewports( const RenderInterface::Viewport* const viewports[], const int count ) noexcept {
+	if ( count > RenderInterface::MAX_VIEWPORTS ) {
 		return;
 	}
-	D3D11_VIEWPORT d3d11Viewports[ MAX_VIEWPORTS ];
+	D3D11_VIEWPORT d3d11Viewports[ RenderInterface::MAX_VIEWPORTS ];
 	for ( int i = 0; i < count; i++ ) {
 		d3d11Viewports[ i ].TopLeftX	= viewports[ i ]->x;
 		d3d11Viewports[ i ].TopLeftY	= viewports[ i ]->y;
@@ -2223,9 +2234,9 @@ void DX11CommandInterface::SetViewports( const Viewport* const viewports[], cons
 	context->RSSetViewports( static_cast< UINT >( count ), d3d11Viewports );
 }
 
-void DX11CommandInterface::SetScissorRects( const ScissorRect* rects, const int count ) noexcept {
-	D3D11_RECT scissorRects[ MAX_VIEWPORTS ];
-	const int rectsCount = Math::Min( count, MAX_VIEWPORTS );
+void Directx11RenderInterface::CommandInterface::SetScissorRects( const RenderInterface::ScissorRect* rects, const int count ) noexcept {
+	D3D11_RECT scissorRects[ RenderInterface::MAX_VIEWPORTS ];
+	const int rectsCount = Math::Min( count, RenderInterface::MAX_VIEWPORTS );
 	for ( int i = 0; i < rectsCount; i++ ) {
 		scissorRects[ i ].left = static_cast< LONG >( rects[ i ].x );
 		scissorRects[ i ].top = static_cast< LONG >( rects[ i ].y );

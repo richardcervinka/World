@@ -3,7 +3,7 @@
 
 #include <Windows.h>
 #include <cwchar>
-#include "..\File.h"
+#include "Platform/File.h"
 #include "WindowsFile.h"
 
 // class File
@@ -61,7 +61,7 @@ bool File::CreateFile( const String& fullname, const FileMode mode, const FileAc
 		return false;
 	}
 	// ulozit vysledek
-	handle = reinterpret_cast< unsigned long >( hfile );
+	handle = static_cast< void* >( hfile );
 	this->fullname = fullname;
 	this->mode = mode;
 	return true;
@@ -85,7 +85,7 @@ bool File::CreateNew( const String& fullname ) {
 
 void File::Close() {
 	if ( handle != 0 ) {
-		CloseHandle( reinterpret_cast< HANDLE >( handle ) );
+		CloseHandle( static_cast< HANDLE >( handle ) );
 		handle = 0;
 		fullname.Clear();
 	}
@@ -116,7 +116,7 @@ unsigned long File::Size() const {
 		return 0;
 	}
 	LARGE_INTEGER size;
-	GetFileSizeEx( reinterpret_cast< HANDLE >( handle ), &size );
+	GetFileSizeEx( static_cast< HANDLE >( handle ), &size );
 	return static_cast< unsigned long >( size.QuadPart );
 }
 
@@ -128,7 +128,7 @@ unsigned long File::Read( void* const buffer, const unsigned long bytes ) {
 		return 0;
 	}
 	DWORD reads = 0;
-	ReadFile( reinterpret_cast< HANDLE >( handle ), buffer, static_cast< DWORD >( bytes ), &reads, NULL );
+	ReadFile( static_cast< HANDLE >( handle ), buffer, static_cast< DWORD >( bytes ), &reads, NULL );
 	return static_cast< unsigned long >( reads );
 }
 
@@ -140,7 +140,7 @@ unsigned long File::Write( const void* const buffer, const unsigned long bytes )
 		return 0;
 	}
 	DWORD writes = 0;
-	WriteFile( reinterpret_cast< HANDLE >( handle ), buffer, static_cast< DWORD >( bytes ), &writes, NULL );
+	WriteFile( static_cast< HANDLE >( handle ), buffer, static_cast< DWORD >( bytes ), &writes, NULL );
 	return static_cast< unsigned long >( writes );
 }
 
@@ -148,8 +148,8 @@ void File::Clear() {
 	if ( handle == 0 ) {
 		return;
 	}
-	SetFilePointer( reinterpret_cast< HANDLE >( handle ), 0, NULL, FILE_BEGIN );
-	SetEndOfFile( reinterpret_cast< HANDLE >( handle ) );
+	SetFilePointer( static_cast< HANDLE >( handle ), 0, NULL, FILE_BEGIN );
+	SetEndOfFile( static_cast< HANDLE >( handle ) );
 }
 
 unsigned long File::GetPointer() const {
@@ -159,7 +159,7 @@ unsigned long File::GetPointer() const {
 	LARGE_INTEGER offset;
 	offset.QuadPart = 0;
 	LARGE_INTEGER pointer;
-	SetFilePointerEx( reinterpret_cast< HANDLE >( handle ), offset, &pointer, FILE_CURRENT );
+	SetFilePointerEx( static_cast< HANDLE >( handle ), offset, &pointer, FILE_CURRENT );
 	return static_cast< unsigned long >( pointer.QuadPart );
 }
 
@@ -171,11 +171,11 @@ unsigned long File::SetPointer( const unsigned long position ) {
 	if ( position == IFile::END_OF_FILE ) {
 		LARGE_INTEGER offset;
 		offset.QuadPart = 0;
-		SetFilePointerEx( reinterpret_cast< HANDLE >( handle ), offset, &pointer, FILE_END );
+		SetFilePointerEx( static_cast< HANDLE >( handle ), offset, &pointer, FILE_END );
 	} else {
 		LARGE_INTEGER offset;
 		offset.QuadPart = static_cast< LONGLONG >( position );
-		SetFilePointerEx( reinterpret_cast< HANDLE >( handle ), offset, &pointer, FILE_BEGIN );
+		SetFilePointerEx( static_cast< HANDLE >( handle ), offset, &pointer, FILE_BEGIN );
 	}
 	return static_cast< unsigned long >( pointer.QuadPart );
 }
@@ -187,13 +187,13 @@ unsigned long File::MovePointer( const int distance ) {
 	LARGE_INTEGER offset;
 	offset.QuadPart = static_cast< LONGLONG >( distance );
 	LARGE_INTEGER pointer;
-	SetFilePointerEx( reinterpret_cast< HANDLE >( handle ), offset, &pointer, FILE_CURRENT );
+	SetFilePointerEx( static_cast< HANDLE >( handle ), offset, &pointer, FILE_CURRENT );
 	return static_cast< unsigned long >( pointer.QuadPart );
 }
 
 void File::Flush() {
 	if ( handle != 0 ) {
-		FlushFileBuffers( reinterpret_cast< HANDLE >( handle ) );
+		FlushFileBuffers( static_cast< HANDLE >( handle ) );
 	}
 }
 

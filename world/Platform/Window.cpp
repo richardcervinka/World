@@ -1,5 +1,5 @@
 #include "Window.h"
-#include "..\Core\Renderer.h"
+#include "Core/Renderer.h"
 
 Window::Window() {
 	onSizeHandler = nullptr;

@@ -1,9 +1,8 @@
 #include <memory>
 #include "WindowsWindow.h"
 #include "WindowsApplication.h"
-#include "..\..\Core\RenderInterface.h"
-#include "..\..\Core\Renderer.h"
-#include "..\..\Core\Windows\WindowsGraphicsInfrastructure.h"
+#include "Core/Renderer.h"
+#include "Core/Windows/WindowsGraphicsInfrastructure.h"
 
 //----------------------------------------------------------------------------------------------------------------------------------
 // Testovaci aplikace
@@ -27,8 +26,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	return 0;
 }
 
-//----------------------------------------------------------------------------------------------------------------------------------
-// DevApp class implementation
+// DevApp
 
 DevApp::DevApp() {
 	renderer = nullptr;
@@ -54,45 +52,24 @@ bool DevApp::Create( const HINSTANCE hInstance, LPSTR lpCmdLine ) {
 	if ( adapter == nullptr ) {
 		return false;
 	}
-
+	
 	// primary adapter's output (display)
 	auto display = adapter->CreateDisplay( 0 );
 	if ( display == nullptr ) {
 		return false;
 	}
 
-	// create Device
-	auto device = adapter->CreateDX11Device();
+	// create platform Device
+	auto device = adapter->CreateDirectx11Device();
 	if ( device == nullptr ) {
 		return false;
 	}
 
-	// swap chain associated with window
+	// swap chain associated with app window
 	auto swapChain = device->CreateSwapChain( &window );
 	if ( swapChain == nullptr ) {
 		return false;
 	}
-
-	// create Renderer
-	// ...
-
-	/*
-	// renderer
-	RendererAttributes rendererAttribs;
-	renderer = new Renderer();
-	renderer->Initialize( std::move( device ), rendererAttribs );
-
-	// associate renderer with window, this allows drawing into the window
-	window->SetRenderer( renderer );
-	*/
-
-	/*
-	RenderInterface::Display* display = device->CreateDisplay( 0 );
-	RenderInterface::DisplayMode displayMode;
-	display->GetBestMode( displayMode );
-	display->SetMode( displayMode, window );
-	//display->SetMode( )
-	*/
 
 	return true;
 }

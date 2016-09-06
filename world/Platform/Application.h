@@ -1,6 +1,6 @@
 #pragma once
 
-#include "..\Framework\String.h"
+#include "Framework/String.h"
 
 /*
 Klient by nemel vytvaret vice nez jeden objekt Application!

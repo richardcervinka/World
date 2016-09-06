@@ -1,7 +1,7 @@
-#include "..\Framework\Core.h"
-#include "..\Platform\Window.h"
-#include "..\Platform\File.h"
-#include "..\Engine\Paths.h"
+#include "Framework/Core.h"
+#include "Platform/Window.h"
+#include "Platform/File.h"
+#include "Engine/Paths.h"
 #include "Renderer.h"
 
 // G-Buffers

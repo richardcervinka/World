@@ -1,8 +1,7 @@
 #pragma once
 
-//#include "..\Core\RenderInterface.h"
-#include "..\Framework\String.h"
-#include "..\Framework\Color.h"
+#include "Framework/String.h"
+#include "Framework/Color.h"
 
 /*
 Obecne aplikacni okno.

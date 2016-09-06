@@ -2,8 +2,8 @@
 
 #include <memory>
 #include "Graphicsinfrastructure.h"
-#include "..\Framework\Math.h"
-#include "..\Framework\Color.h"
+#include "Framework/Math.h"
+#include "Framework/Color.h"
 
 // forward declarations
 class Window;
@@ -72,6 +72,7 @@ namespace RenderInterface {
 	// Maximalni pocet viewportu
 	const int MAX_VIEWPORTS = 8;
 
+	// GPU pixel format
 	enum class Format {
 		UNKNOWN = 0,
 
@@ -184,7 +185,17 @@ namespace RenderInterface {
 		BufferType type;
 		BufferUsage usage;
 		BufferAccess access;
-		int byteWidth;
+		int size;
+	};
+
+	/*
+	Parametry funkce CreateVertexBuffer(), CreateIndexBuffer() a CreateConstantBuffer()
+	*/
+	struct BufferParams {
+		BufferUsage usage;		// zpusob pouziti bufferu
+		BufferAccess access;	// CPU / GPU access
+		int size;				// velikost v bajtech
+		void* const data;		// initial data, muze byt nullptr
 	};
 
 	/*
@@ -216,6 +227,7 @@ namespace RenderInterface {
 		int samplesCount;
 		int samplesQuality;
 		TextureBufferFlags flags;
+		const void** data;
 	};
 
 	/*
@@ -252,7 +264,7 @@ namespace RenderInterface {
 		TextureAddressing wAddressing;
 		int maxAnisotropy;
 		float minLOD; // >= 0
-		float maxLOD; // <0; MAX_TEXTURE_LOD>
+		float maxLOD; // < 0; MAX_TEXTURE_LOD >
 	};
 
 	enum class DepthStencilComparsion {
@@ -324,8 +336,8 @@ namespace RenderInterface {
 	*/
 	struct ConstantBufferViewParams {
 		const char* name;					// nazev konstant bufferu
-		RenderProgram* program;
-		ShaderConstant* const constants;	// popis konstant
+		const PRenderProgram program;		// shader se shodnym constant bufferem
+		const ShaderConstant* constants;	// popis konstant
 		int constantsCount;					// pocet konstant
 	};
 
@@ -356,7 +368,7 @@ namespace RenderInterface {
 	};
 
 	struct ShaderParams {
-		const char* string;		// null terminated ASCII string
+		const char* string;		// null terminated ASCII string, kod shaderu.
 		const char** defines;	// null terminated array, seznam identifikatoru vlozenych zacatek kodu (#define)
 		ShaderType type;
 		ShaderVersion version;
@@ -368,21 +380,21 @@ namespace RenderInterface {
 	Popisuje atribut vertexu ve vertex shaderu
 	*/
 	struct VertexAttribute {
-		const char* attribute;		// nazev atributu (HLSL parametr nepouziva,musi byt ale platny)
+		const char* attribute;	// nazev atributu (HLSL parametr nepouziva,musi byt ale platny)
 		const char* semantic;
 		int semanticIndex;
 		Format format;
-		int offset;					// vzdalenost atributu (v bajtech) od zacatku bufferu
-		int elementsCount;			// pocet elementu (4 pro matice apod.)
-		int slot;					// id vstupniho slotu (bufferu)
-		int instanceCount;			// pocet instanci se stejnym atributem (0 pro per vertex attribute; >0 pro per instance attribute)
+		int offset;				// vzdalenost atributu (v bajtech) od zacatku bufferu
+		int elementsCount;		// pocet elementu (4 pro matice apod.)
+		int slot;				// id vstupniho slotu (bufferu)
+		int instanceCount;		// pocet instanci se stejnym atributem (0 pro per vertex attribute; >0 pro per instance attribute)
 	};
 
 	struct VertexStreamParams {
-		Buffer* vertexBuffers[ MAX_VERTEX_INPUT_SLOTS ];
-		Buffer* indexBuffer;
+		const PVertexLayout vertexLayout;
+		const PBuffer vertexBuffers[ MAX_VERTEX_INPUT_SLOTS ];
+		const PBuffer indexBuffer;
 		Format indexBufferFormat;
-		VertexLayout* vertexLayout;
 	};
 
 	enum class PrimitiveTopology {
@@ -520,8 +532,9 @@ namespace RenderInterface {
 	void GetMipDimmensions( const int width, const int height, const int depth, const int mipLevel, TextureDimmensions& result ) noexcept;
 
 	/*
-	DeviceObject: Zakladni trida pro vsechny objekty vytvarene tridou Device.
-	Uvolnovani a vytvareni device objektu je nutne synchronizovat v jednom vlakne.
+	- Zakladni trida pro vsechny objekty vytvarene tridou Device.
+	- Uvolnovani a vytvareni device objektu je nutne synchronizovat v jednom vlakne.
+	- Zadny device objekt nesmi interne ukladat referenci (ukazatel) na jiny device objekt.
 	*/
 	class DeviceObject {
 	public:
@@ -542,13 +555,13 @@ namespace RenderInterface {
 	class Device : public DeviceObject {
 	public:
 		// swap chain
-		virtual PSwapChain CreateSwapChain( Window* const window ) noexcept = 0;
+		//virtual PSwapChain CreateSwapChain( Window* const window ) noexcept = 0;
 
 		// buffers
-		virtual PBuffer CreateTextureBuffer( const TextureBufferParams& params, const void* const initialData[] ) noexcept = 0;
-		virtual PBuffer CreateVertexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) noexcept = 0;
-		virtual PBuffer CreateIndexBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData  ) noexcept = 0;
-		virtual PBuffer CreateConstantBuffer( const int byteWidth, const BufferUsage usage, const BufferAccess access, const void* const initialData ) noexcept = 0;
+		virtual PBuffer CreateTextureBuffer( const TextureBufferParams& params ) noexcept = 0;
+		virtual PBuffer CreateVertexBuffer( const BufferParams& params ) noexcept = 0;
+		virtual PBuffer CreateIndexBuffer( const BufferParams& params ) noexcept = 0;
+		virtual PBuffer CreateConstantBuffer( const BufferParams& params ) noexcept = 0;
 
 		// views
 		virtual PRenderTargetView CreateRenderTargetView( const PBuffer& textureBuffer ) noexcept = 0;
@@ -694,20 +707,13 @@ namespace RenderInterface {
 	*/
 	class CommandList : public DeviceObject {};
 
+	/*
+	Vytvoreni objectu SwapChain zavisi na cilove platforme a pouzitem 3D api.
+	Proto neni soucasti rozhrani Device funkce CreateSwapChain(). Ta se nachazi v
+	konkretni implementaci rozhrani Device (DirectX11Renderinterface::Device).
+	*/
 	class SwapChain : public DeviceObject {
 	public:
-		/*
-		RenderTargetView back bufferu, do ktereho je mozne vykreslovat (nabindovat do pipeline).
-		Platnost ukazatele konci volanim funkce present, pote nesmi byt ukazatel pouzivan.
-		Pokud neni dostupny zadny RenderTargetView, vraci nullptr;
-		*/
-		//virtual RenderTargetView* AcquireRenderTargetView() noexcept = 0;
-
-		/*
-		Zobrazi obsah backbufferu (aktualni RenderTargetView).
-		*/
-		virtual void Present() noexcept = 0;
-
 		/*
 		Prepne do fullscreen rezimu (zmeni styl okna).
 		Pokud je parametr diplay nullptr, prepne do windowed rezimu.
@@ -726,19 +732,32 @@ namespace RenderInterface {
 		Pokud vraci false, je nutne provest recreate!
 		*/
 		virtual bool Valid() const noexcept = 0;
+
+		/*
+		Vrati ukazatel na dostupny RTV (back buffer). Pokud zadny neni, vraci nullptr.
+		Funkce Present() zobrazi obsah tohoto bufferu, cimz se stane ukazatel neplatny a nesmi byt dale pouzivan.
+		*/
+		virtual PRenderTargetView AcquireRenderTargetView() noexcept = 0;
+
+		/*
+		Zobrazi obsah backbufferu.
+		*/
+		virtual void Present( const PRenderTargetView& rtv, const SwapChainPresentMode presentMode ) noexcept = 0;
 	};
 
 	/*
-	Buffer je blok pameti rezervovany v pameti graficke karty.
-	Veskera data jsou do graficke karty posilana pomoci bufferu.
+	Generic GPU memory.
 	*/
 	class Buffer : public DeviceObject {
 	public:
+		// BufferInfo accessors
 		virtual void GetInfo( BufferInfo& result ) const noexcept = 0;
 		virtual BufferType GetType() const noexcept = 0;
-		virtual int GetByteWidth() const noexcept = 0;
+		virtual int GetSize() const noexcept = 0;
 		virtual BufferUsage GetUsage() const noexcept = 0;
 		virtual BufferAccess GetAccess() const noexcept = 0;
+
+		// mips count, array size...
 		virtual int GetSubresourcesCount() const noexcept = 0;
 	};
 

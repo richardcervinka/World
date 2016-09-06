@@ -1,19 +1,16 @@
 #include <d3d11.h>
 #include <dxgi1_2.h>
-#include "..\..\Platform\Windows\WindowsWindow.h"
-//#include "..\DX11\DX11RenderInterface.h"
+#include "Platform/Windows/WindowsWindow.h"
 #include "WindowsGraphicsInfrastructure.h"
 
 // WindowsAdapter
 
-WindowsAdapter::WindowsAdapter( IDXGIAdapter1* const adapter ) {
+WindowsAdapter::WindowsAdapter( const ComPtr< IDXGIAdapter1 >& adapter ) {
 	this->adapter = adapter;
 }
 
 WindowsAdapter::~WindowsAdapter() {
-	if ( adapter != nullptr ) {
-		adapter->Release();
-	}
+	adapter = nullptr;
 }
 
 int WindowsAdapter::GetOutputsCount() noexcept {
@@ -43,9 +40,9 @@ bool WindowsAdapter::CheckCapabilities( const WindowsAdapterCapabilities& capabi
 		D3D_FEATURE_LEVEL createdFeatureLevel;
 		
 		// create temporary device
-		ID3D11Device* device = nullptr;
+		ComPtr< ID3D11Device > device;
 		HRESULT hresult = D3D11CreateDevice(
-			adapter,
+			adapter.Raw(),
 			D3D_DRIVER_TYPE_HARDWARE,
 			NULL,
 			0,
@@ -56,28 +53,22 @@ bool WindowsAdapter::CheckCapabilities( const WindowsAdapterCapabilities& capabi
 			&createdFeatureLevel,
 			NULL
 		);
-		if ( FAILED( hresult ) ) {
-			return false;
-		}
-		// release temporary device
-		device->Release();
-		return true;
+		return !FAILED( hresult );
 	}
 	return false;
 }
 
 std::shared_ptr< Display > WindowsAdapter::CreateDisplay( const int outputId ) noexcept {
-	IDXGIOutput* output = nullptr;
+	ComPtr< IDXGIOutput > output;
 	HRESULT hresult = adapter->EnumOutputs( static_cast< UINT >( outputId ), &output );
 	if ( FAILED( hresult ) ) {
 		return nullptr;
 	}
-	auto* display = new( std::nothrow ) WindowsDisplay( output );
-	return std::shared_ptr< Display >( display );
+	return std::shared_ptr< Display >( new( std::nothrow ) WindowsDisplay( output ) );
 }
 
-RenderInterface::PDevice WindowsAdapter::CreateDX11Device() noexcept {
-	std::shared_ptr< DX11Device > device( new( std::nothrow ) DX11Device() );
+std::shared_ptr< Directx11RenderInterface::Device > WindowsAdapter::CreateDirectx11Device() noexcept {
+	std::shared_ptr< Directx11RenderInterface::Device > device( new( std::nothrow ) Directx11RenderInterface::Device() );
 	if ( device == nullptr ) {
 		return nullptr;
 	}
@@ -89,15 +80,13 @@ RenderInterface::PDevice WindowsAdapter::CreateDX11Device() noexcept {
 
 // WindowsDisplay
 
-WindowsDisplay::WindowsDisplay( IDXGIOutput* const output ) {
+WindowsDisplay::WindowsDisplay( const ComPtr< IDXGIOutput >& output ) {
 	this->output = output;
 	EnumModes();
 }
 
 WindowsDisplay::~WindowsDisplay() {
-	if ( output != nullptr ) {
-		output->Release();
-	}
+	output = nullptr;
 }
 
 void WindowsDisplay::EnumModes() noexcept {
@@ -108,11 +97,11 @@ void WindowsDisplay::EnumModes() noexcept {
 
 	// zjistit pocet display modes
 	UINT count = 0;
-	output->GetDisplayModeList( BACK_BUFFER_FORMAT, 0, &count, NULL );
+	output->GetDisplayModeList( Directx11RenderInterface::BACK_BUFFER_FORMAT, 0, &count, NULL );
 
 	// enumerate modes
 	std::vector< DXGI_MODE_DESC > dxgiModes( static_cast< size_t >( count ) );
-	output->GetDisplayModeList( BACK_BUFFER_FORMAT, 0, &count, dxgiModes.data() );
+	output->GetDisplayModeList( Directx11RenderInterface::BACK_BUFFER_FORMAT, 0, &count, dxgiModes.data() );
 
 	// ulozit rezimy ve formatu DisplayMode
 	modes.reserve( count );
