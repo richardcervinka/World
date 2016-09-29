@@ -115,7 +115,7 @@ void String::FromUCS( const char* const str ) {
 	if ( str == nullptr ) {
 		return;
 	}
-	int size = strlen( str );
+	int size = static_cast< int >( strlen( str ) );
 	Alloc( size + 1 );
 	
 	for ( int i = 0; i < size; i++ ) {

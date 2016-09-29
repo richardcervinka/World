@@ -16,6 +16,7 @@ RenderInterface::Buffer* Buffer_::GetBuffer() {
 
 // IndexBuffer
 
+/*
 void IndexBuffer::Create( std::shared_ptr< RenderInterface::Buffer > buffer ) {
 	this->buffer = buffer;
 }
@@ -23,6 +24,7 @@ void IndexBuffer::Create( std::shared_ptr< RenderInterface::Buffer > buffer ) {
 int IndexBuffer::Capacity() const {
 	return buffer->GetByteWidth() / sizeof( uint16_t );
 }
+*/
 
 // RenderDeviceResources
 

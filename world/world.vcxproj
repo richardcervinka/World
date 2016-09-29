@@ -196,8 +196,6 @@
     <ClInclude Include="framework\String.h" />
     <ClInclude Include="framework\Types.h" />
     <ClInclude Include="framework\Vector.h" />
-    <ClInclude Include="libs\fbxsdk\fbxsdk.h" />
-    <ClInclude Include="libs\libpng\png.h" />
     <ClInclude Include="platform\Application.h" />
     <ClInclude Include="platform\File.h" />
     <ClInclude Include="platform\Platform.h" />
@@ -209,14 +207,10 @@
     <ClInclude Include="Platform\windows\WindowsWindow.h" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="libs\ATI_Compress_MT.lib" />
     <Library Include="libs\d3d11.lib" />
     <Library Include="libs\d3dcompiler.lib" />
     <Library Include="libs\dxgi.lib" />
     <Library Include="libs\dxguid.lib" />
-    <Library Include="libs\libfbxsdk.lib" />
-    <Library Include="libs\libpng.lib" />
-    <Library Include="libs\zdll.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -15,16 +15,17 @@ WindowsAdapter::~WindowsAdapter() {
 
 int WindowsAdapter::GetOutputsCount() noexcept {
 	UINT counter = 0;
-	IDXGIOutput* output = nullptr;
+	ComPtr< IDXGIOutput > output;
 	while ( adapter->EnumOutputs( counter, &output ) != DXGI_ERROR_NOT_FOUND ) {
-		output->Release();
 		counter += 1;
 	}
 	return static_cast< int >( counter );
 }
 
 bool WindowsAdapter::CheckCapabilities( const WindowsAdapterCapabilities& capabilities ) noexcept {
-
+	if ( adapter == nullptr ) {
+		return false;
+	}
 	// adapter description
 	DXGI_ADAPTER_DESC adapterDesc;
 	adapter->GetDesc( &adapterDesc );
@@ -33,17 +34,18 @@ bool WindowsAdapter::CheckCapabilities( const WindowsAdapterCapabilities& capabi
 	if ( static_cast< unsigned int >( adapterDesc.DedicatedVideoMemory ) < capabilities.requiredVideoMemory ) {
 		return false;
 	}
-	// zkusit vytvorit ID3D11Device objekt
-	if ( WindowsRenderApi::DIRECTX_11_0 == capabilities.api ) {
 
+	// test podpory pozadovaneho 3d api
+
+	if ( WindowsRenderApi::DIRECTX_11_0 == capabilities.api ) {
 		D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
 		D3D_FEATURE_LEVEL createdFeatureLevel;
-		
+
 		// create temporary device
 		ComPtr< ID3D11Device > device;
 		HRESULT hresult = D3D11CreateDevice(
 			adapter.Raw(),
-			D3D_DRIVER_TYPE_HARDWARE,
+			D3D_DRIVER_TYPE_UNKNOWN,
 			NULL,
 			0,
 			&featureLevel,
@@ -250,31 +252,29 @@ std::unique_ptr< WindowsSwapChain > WindowsGraphicsInfrastructure::CreateSwapCha
 
 
 
-std::unique_ptr< WindowsAdapter > CreateAdapter( IDXGIFactory1* const factory, const int id ) noexcept {
+std::unique_ptr< WindowsAdapter > CreateAdapter( const ComPtr< IDXGIFactory1 >& factory, const int id ) noexcept {
 	if ( factory == nullptr ) {
 		return nullptr;
 	}
-	IDXGIAdapter1* adapter = nullptr;
+	ComPtr< IDXGIAdapter1 > adapter;
 	HRESULT hresult = factory->EnumAdapters1( id, &adapter );
 	if ( FAILED( hresult ) ) {
 		return nullptr;
 	}
-	return std::make_unique< WindowsAdapter >( adapter ); 
+	return std::unique_ptr< WindowsAdapter >( new( std::nothrow ) WindowsAdapter( adapter ) );
 }
 
 std::unique_ptr< WindowsAdapter > CreateWindowsAdapter( const int id ) noexcept {
-	IDXGIFactory1* factory = nullptr;
+	ComPtr< IDXGIFactory1 > factory;
 	auto hresult = CreateDXGIFactory1( __uuidof( IDXGIFactory1 ), reinterpret_cast< void** >( &factory ) );
 	if ( FAILED( hresult ) ) {
 		return nullptr;
 	}
-	auto adapter = CreateAdapter( factory, id );
-	factory->Release();
-	return adapter;
+	return CreateAdapter( factory, id );
 }
 
 std::unique_ptr< WindowsAdapter > CreateWindowsAdapter( const WindowsAdapterCapabilities& capabilities ) noexcept {
-	IDXGIFactory1* factory = nullptr;
+	ComPtr< IDXGIFactory1 > factory;
 	auto hresult = CreateDXGIFactory1( __uuidof( IDXGIFactory1 ), reinterpret_cast< void** >( &factory ) );
 	if ( FAILED( hresult ) ) {
 		return nullptr;
@@ -284,13 +284,11 @@ std::unique_ptr< WindowsAdapter > CreateWindowsAdapter( const WindowsAdapterCapa
 	while ( adapter != nullptr ) {
 		// check capabilities
 		if ( adapter->CheckCapabilities( capabilities ) ) {
-			factory->Release();
 			return adapter;
 		}
 		// next adapter
 		id += 1;
 		adapter = CreateAdapter( factory, id );
 	}
-	factory->Release();
 	return nullptr;
 }

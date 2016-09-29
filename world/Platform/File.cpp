@@ -120,6 +120,7 @@ void IFile::WriteFloat4( const Float4& value ) {
 
 // namespace FileSystem
 
+/*
 bool FileSystem::CreateDir( const String& path ) {
 	return FileSystem::CreateDir( path );
 }
@@ -143,6 +144,7 @@ bool FileSystem::EnumFiles( const String& path, std::vector< String >& result ) 
 bool FileSystem::EnumDirs( const String& path, std::vector< String >& result ) {
 	return FileSystem::EnumDirs( path, result );
 }
+*/
 
 // Helpers
 

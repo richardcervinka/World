@@ -112,8 +112,9 @@ public:
 	virtual void WriteFloat4( const Float4& value );
 };
 
-// Operace se soubory a adresari
-//
+/*
+Prace se soubory a adresari
+*/
 namespace FileSystem {
 	
 	// Vytvori novy adresar

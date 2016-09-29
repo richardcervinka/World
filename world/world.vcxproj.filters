@@ -25,12 +25,6 @@
     <Filter Include="Source Files\Platform\Windows">
       <UniqueIdentifier>{fe63310e-dda7-42fa-a24f-3edaeb26a0fa}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Libs\fbxsdk">
-      <UniqueIdentifier>{c4c0d643-b256-415f-b927-01876c9f6390}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Libs\libpng">
-      <UniqueIdentifier>{9e5d4958-8d32-4389-8694-be3629197d02}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Core">
       <UniqueIdentifier>{2be1f3a2-4031-4008-bc41-43f63d2820ba}</UniqueIdentifier>
     </Filter>
@@ -152,12 +146,6 @@
     <ClInclude Include="Platform\windows\WindowsWindow.h">
       <Filter>Source Files\Platform\Windows</Filter>
     </ClInclude>
-    <ClInclude Include="libs\fbxsdk\fbxsdk.h">
-      <Filter>Source Files\Libs\fbxsdk</Filter>
-    </ClInclude>
-    <ClInclude Include="libs\libpng\png.h">
-      <Filter>Source Files\Libs\libpng</Filter>
-    </ClInclude>
     <ClInclude Include="Platform\Windows\WindowsSystem.h">
       <Filter>Source Files\Platform\Windows</Filter>
     </ClInclude>
@@ -187,9 +175,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="libs\ATI_Compress_MT.lib">
-      <Filter>Source Files\Libs</Filter>
-    </Library>
     <Library Include="libs\d3d11.lib">
       <Filter>Source Files\Libs</Filter>
     </Library>
@@ -200,15 +185,6 @@
       <Filter>Source Files\Libs</Filter>
     </Library>
     <Library Include="libs\dxguid.lib">
-      <Filter>Source Files\Libs</Filter>
-    </Library>
-    <Library Include="libs\libfbxsdk.lib">
-      <Filter>Source Files\Libs</Filter>
-    </Library>
-    <Library Include="libs\libpng.lib">
-      <Filter>Source Files\Libs</Filter>
-    </Library>
-    <Library Include="libs\zdll.lib">
       <Filter>Source Files\Libs</Filter>
     </Library>
   </ItemGroup>

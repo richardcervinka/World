@@ -36,8 +36,8 @@ private:
 	String fullname;
 };
 
+/*
 namespace FileSystem {
-
 	bool CreateDir( const String& path );
 	bool RemoveDir( const String& path );
 	bool RemoveDirContent( const String& path );
@@ -45,3 +45,4 @@ namespace FileSystem {
 	bool EnumFiles( const String& path, std::vector< String >& result );
 	bool EnumDirs( const String& path, std::vector< String >& result );
 }
+*/

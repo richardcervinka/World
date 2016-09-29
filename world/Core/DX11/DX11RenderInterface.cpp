@@ -205,7 +205,7 @@ bool Directx11RenderInterface::Device::Create( const ComPtr< IDXGIAdapter1 >& ad
 #ifdef _DEBUG
 	UINT flags = D3D11_CREATE_DEVICE_DEBUG;
 #else
-	UINT flags = 0
+	UINT flags = 0;
 #endif
 
 	// create device
@@ -213,7 +213,7 @@ bool Directx11RenderInterface::Device::Create( const ComPtr< IDXGIAdapter1 >& ad
 	ComPtr< ID3D11DeviceContext > context;
 	hresult = D3D11CreateDevice(
 		adapter.Raw(),
-		D3D_DRIVER_TYPE_HARDWARE,
+		D3D_DRIVER_TYPE_UNKNOWN,
 		NULL,
 		flags,
 		&featureLevel,
@@ -706,7 +706,7 @@ bool Directx11RenderInterface::TextureBuffer::Create( const ComPtr< ID3D11Device
 		if ( FAILED( hresult ) ) {
 			return false;
 		}
-		SetBuffer( texture, params );
+		SetBuffer( ComPtr<ID3D11Resource>( texture.Raw() ), params );
 		return true;
 	}
 
@@ -734,7 +734,7 @@ bool Directx11RenderInterface::TextureBuffer::Create( const ComPtr< ID3D11Device
 		if ( FAILED( hresult ) ) {
 			return false;
 		}
-		SetBuffer( texture, params );
+		SetBuffer( ComPtr<ID3D11Resource>( texture.Raw() ), params );
 		return true;
 	}
 
@@ -756,7 +756,7 @@ bool Directx11RenderInterface::TextureBuffer::Create( const ComPtr< ID3D11Device
 		if ( FAILED( hresult ) ) {
 			return false;
 		}
-		SetBuffer( texture, params );
+		SetBuffer( ComPtr<ID3D11Resource>( texture.Raw() ), params );
 		return true;
 	}
 
@@ -883,6 +883,10 @@ ID3D11Resource* Directx11RenderInterface::TextureBuffer::GetD3D11Resource() noex
 	return buffer.Raw();
 }
 
+void Directx11RenderInterface::TextureBuffer::GetInfo( RenderInterface::BufferInfo& result ) const noexcept {
+	result = info;
+}
+
 // DX11Buffer
 
 Directx11RenderInterface::Buffer::Buffer() {}
@@ -969,6 +973,10 @@ RenderInterface::BufferAccess Directx11RenderInterface::Buffer::GetAccess() cons
 
 int Directx11RenderInterface::Buffer::GetSubresourcesCount() const noexcept {
 	return 0;
+}
+
+void Directx11RenderInterface::Buffer::GetInfo( RenderInterface::BufferInfo& result ) const noexcept {
+	result = info;
 }
 
 // DX11RenderTargetView
@@ -1374,19 +1382,19 @@ bool Directx11RenderInterface::Shader::Compile( const ComPtr< ID3D11Device >& de
 	if ( params.type == RenderInterface::ShaderType::VERTEX_SHADER ) {
 		ComPtr< ID3D11VertexShader > vs;
 		device->CreateVertexShader( code->GetBufferPointer(), code->GetBufferSize(), NULL, &vs );
-		shader = std::move( vs );
+		shader = vs.Raw();
 
 	// PS
 	} else if ( params.type == RenderInterface::ShaderType::PIXEL_SHADER ) {
 		ComPtr< ID3D11PixelShader > ps;
 		device->CreatePixelShader( code->GetBufferPointer(), code->GetBufferSize(), NULL, &ps );
-		shader = std::move( ps );
+		shader = ps.Raw();
 
 	// GS
 	} else if ( params.type == RenderInterface::ShaderType::GEOMETRY_SHADER ) {
 		ComPtr< ID3D11GeometryShader > gs;
 		device->CreateGeometryShader( code->GetBufferPointer(), code->GetBufferSize(), NULL, &gs );
-		shader = std::move( gs );
+		shader = gs.Raw();
 	}
 	if ( shader == nullptr ) {
 		return false;

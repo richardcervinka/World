@@ -119,7 +119,7 @@ public:
 	//void* Map( Buffer& buffer, const int subresource, const MapPolicy policy, MappedBuffer& result );
 
 	// Zkopiruje do subresource '0' size pocet bajtu, kopirovani zacina offset bajtu od zacatku bufferu.
-	void UpdateBuffer( Buffer& buffer, void* const data, const int offset, const int size );
+	//void UpdateBuffer( Buffer& buffer, void* const data, const int offset, const int size );
 
 
 	//void UpdateSubtexture(  buffer, texturearrindex, texturemipindex, data );
@@ -216,7 +216,7 @@ private:
 	*/
 	struct TargetWindow {
 		const Window* window;
-		RenderInterface::PBackBuffer backBuffer;
+		//RenderInterface::PBackBuffer backBuffer;
 		RenderInterface::PRenderTargetView renderTargetView;
 	};
 

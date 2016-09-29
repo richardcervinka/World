@@ -14,16 +14,25 @@ public:
 		Release();
 	}
 
-	template< typename P >
-	ComPtr( const ComPtr< P >& cp ) {
+	ComPtr( const ComPtr& cp ) {
 		ptr = cp.GetRef();
 	}
-
-	template< typename P >
-	ComPtr( P* const ptr ) {
-		ptr->AddRef();
+	
+	explicit ComPtr( T* const ptr ) {
+		if ( ptr != nullptr ) {
+			ptr->AddRef();
+		}
 		Release();
 		this->ptr = ptr;
+	}
+
+	ComPtr& operator=( T* const ptr ) {
+		if ( ptr != nullptr ) {
+			ptr->AddRef();
+		}
+		Release();
+		this->ptr = ptr;
+		return *this;
 	}
 
 	ComPtr& operator=( const nullptr_t ptr ) {
@@ -31,19 +40,18 @@ public:
 		return *this;
 	}
 	
-	template< typename P >
-	ComPtr& operator=( const ComPtr< P >& cp ) {
-		T* cpptr = cp.GetRef();
+	ComPtr& operator=( const ComPtr& cp ) {
+		T* const cpptr = cp.GetRef();
 		Release();
 		ptr = cpptr;
 		return *this;
 	}
 
-	bool operator==( const ComPtr< T >& cptr ) const noexcept {
+	bool operator==( const ComPtr& cptr ) const noexcept {
 		return this->ptr == cptr.ptr;
 	}
 
-	bool operator!=( const ComPtr< T >& cptr ) const noexcept {
+	bool operator!=( const ComPtr& cptr ) const noexcept {
 		return this->ptr != cptr.ptr;
 	}
 

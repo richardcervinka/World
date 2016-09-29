@@ -44,6 +44,7 @@ public:
 /*
 Index buffer (uint16_t)
 */
+/*
 class IndexBuffer: public Buffer {
 public:
 	void Create( std::shared_ptr< RenderInterface::Buffer > buffer );
@@ -51,26 +52,29 @@ public:
 
 private:
 };
+*/
 
 /*
 2D Texture buffer 
 */
+/*
 class Texture2D: public Buffer {
 public:
 	//Texture2D( std::shared_ptr< RenderInterface::Buffer > buffer, format, width, height, mipLevels );
 
 private:
 };
-
+*/
 /*
 2D Texture array buffer 
 */
+/*
 class Texture2DArray: public Buffer {
 public:
 
 private:
 };
-
+*/
 /*
 Vytvareni a sprava zdroju graficke karty (textury a buffery).
 Objekt uchovava ukazatel na kazdy vytvoreny RenderInterface objekt.

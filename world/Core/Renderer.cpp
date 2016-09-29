@@ -44,6 +44,7 @@ bool Renderer::RenderBuffer::Create(
 	const int samplesCount,
 	const int samplesQuality
 ) {
+	/*
 	// buffer je nejdriv uvolnen, pri selhani zustane null
 	Release();
 
@@ -76,6 +77,7 @@ bool Renderer::RenderBuffer::Create(
 	this->buffer = std::move( buffer );
 	this->textureView = std::move( textureView );
 	this->renderTargetView = std::move( renderTargetView );
+	*/
 	return true;
 }
 
@@ -102,6 +104,7 @@ bool Renderer::DepthStencilBuffer::Create(
 	const int samplesCount,
 	const int samplesQuality
 ) {
+	/*
 	// buffer je nejdriv uvolnen, pri selhani zustane null
 	Release();
 
@@ -130,6 +133,7 @@ bool Renderer::DepthStencilBuffer::Create(
 	}
 	this->buffer = std::move( buffer );
 	this->view = std::move( view );
+	*/
 	return true;
 }
 
@@ -238,6 +242,8 @@ bool Renderer::CreateRenderBuffers( const int width, const int height, const Ant
 	//renderbufferViewport.height = height;
 	attributes.renderbuffersWidth = width;
 	attributes.renderbuffersHeight = height;
+
+	return true;
 }
 
 void Renderer::ResizeRenderBuffers( const int width, const int height ) {
@@ -245,6 +251,7 @@ void Renderer::ResizeRenderBuffers( const int width, const int height ) {
 }
 
 void Renderer::CreateBackBuffer( const Window& window ) {
+	/*
 	// overit jestli okno neni registrovane
 	for ( const TargetWindow& tw : targetWindows ) {
 		if ( tw.window == &window ) {
@@ -264,6 +271,7 @@ void Renderer::CreateBackBuffer( const Window& window ) {
 	tw.backBuffer = std::move( backBuffer );
 	tw.renderTargetView = std::move( renderTargetView );
 	targetWindows.push_back( tw );
+	*/
 }
 
 void Renderer::DeleteBackBuffer( const Window& window ) {
@@ -276,6 +284,7 @@ void Renderer::DeleteBackBuffer( const Window& window ) {
 }
 
 void Renderer::ResizeBackBuffer( const Window& window ) {
+	/*
 	for ( TargetWindow &tw : targetWindows ) {
 		if ( tw.window == &window ) {
 			tw.renderTargetView->Release();
@@ -285,6 +294,7 @@ void Renderer::ResizeBackBuffer( const Window& window ) {
 			return;
 		}
 	}
+	*/
 }
 
 void Renderer::SetAntialiasing( const Antialiasing antialiasing ) {
@@ -381,6 +391,7 @@ Identifier Renderer::CreatePixelShader( const char* const source, const RenderIn
 }
 
 bool Renderer::LoadShaders() {
+	/*
 	struct ShaderInfo {
 		int id;
 		const char16_t* const file;
@@ -427,10 +438,12 @@ bool Renderer::LoadShaders() {
 	// store new objects
 	this->shaders = std::move( shaders );
 	this->renderPrograms = std::move( renderPrograms );
+	*/
 	return true;
 }
 
 Identifier Renderer::CreateRenderProgram( const Identifier vsid, const Identifier psid, const Identifier gsid ) {
+	/*
 	// get vertex shader
 	RenderInterface::Shader* vs = nullptr;
 	if ( vsid >= 0  && vsid < shaders.size() ) {
@@ -464,6 +477,9 @@ Identifier Renderer::CreateRenderProgram( const Identifier vsid, const Identifie
 	}
 	renderPrograms.push_back( renderProgram );
 	return static_cast< Identifier >( renderPrograms.size() ) - 1;
+	*/
+
+	return 0;
 }
 
 void Renderer::ReleaseCreatedShaders() {
@@ -479,7 +495,7 @@ void Renderer::ReleaseCreatedRenderPrograms() {
 }
 
 RenderInterface::RenderProgram* Renderer::GetRenderProgram( const Identifier id ) {
-	if ( id < 0 || id >= renderPrograms.size() ) {
+	if ( id < 0 || id >= static_cast< Identifier >( renderPrograms.size() ) ) {
 		return nullptr;
 	}
 	return renderPrograms[ id ].get();
@@ -507,6 +523,7 @@ void Renderer::SetViewport( const Viewport& viewport ) {
 	this->viewport = viewport;
 }
 
+/*
 void Renderer::UpdateBuffer( Buffer& buffer, void* const data, const int offset, const int size ) {
 	RenderInterface::Buffer* const dest = buffer.GetBuffer();
 	if ( dest == nullptr ) {
@@ -519,6 +536,7 @@ void Renderer::UpdateBuffer( Buffer& buffer, void* const data, const int offset,
 	memcpy( static_cast< char* >( map.data ) + static_cast< unsigned int >( offset ), data, static_cast< unsigned int >( size ) );
 	immediateCommands->Unmap( dest, map );
 }
+*/
 
 //******************************************************************************
 

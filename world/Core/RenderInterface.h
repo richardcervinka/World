@@ -708,9 +708,9 @@ namespace RenderInterface {
 	class CommandList : public DeviceObject {};
 
 	/*
-	Vytvoreni objectu SwapChain zavisi na cilove platforme a pouzitem 3D api.
-	Proto neni soucasti rozhrani Device funkce CreateSwapChain(). Ta se nachazi v
-	konkretni implementaci rozhrani Device (DirectX11Renderinterface::Device).
+	Vytvoreni objectu SwapChain zavisi na cilove platforme a pouzitem 3D api,
+	proto neni soucasti rozhrani Device zadna funkce CreateSwapChain().
+	Ta se nachazi v implementaci rozhrani Device (napr. DirectX11Renderinterface::Device).
 	*/
 	class SwapChain : public DeviceObject {
 	public:
